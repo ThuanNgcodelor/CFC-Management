@@ -1,0 +1,28 @@
+# Decisions Log (BookingBase / HR)
+
+Append-only log of technical decisions. Newest at the bottom of each section. Before reversing a decision here, ask the user. Add an entry whenever you choose or remove a library/dependency, change a rule in AGENTS.md, or pick an approach others must follow.
+
+Entry format: `date | decision | reason | status`
+
+## Decided
+
+| Date | Decision | Reason |
+| --- | --- | --- |
+| 2026-07-27 | Only the HR domain is under active development; Booking room/car and approval are frozen | Product focus; shared Auth/Notification/PWA stay in place |
+| 2026-10-20 | Remove `clean_database_master.sql` from the docs | File does not exist; schema source of truth is entities + Flyway migrations (V1 to V28) |
+| 2026-10-20 | New screens use TanStack Query for server state; old screens migrate only when a task touches them | Replaces hand-written fetch + sequence guards (184 `useEffect` fetches today) without a risky mass refactor |
+| 2026-10-20 | Existing sequence guards (`shiftsSeq`, `summariesSeq`) stay until their screen moves to Query | Avoid regressions on the shift screens |
+| 2026-10-20 | Caching: default no cache; if needed Spring Cache + Caffeine, only for config-like data, every cache registered in `CONFIG_AND_CACHE.md` | Matches the "no Redis just because" rule; wrong cache on DRAFT data would show stale attendance |
+| 2026-10-20 | Heavy client libraries (`xlsx`, `xlsx-js-style`) must be loaded with dynamic `import()`; new chunk limit 500 kB | `HrNightRewards` chunk is 914 kB because of a static import |
+| 2026-10-20 | Rules in AGENTS.md are in English; business descriptions stay in Vietnamese | AI follows English rules more closely |
+| 2026-10-20 | Vitest is not added yet | Adding a test runner is a new dependency; revisit when frontend tests are needed |
+| 2026-10-20 | Technical debt is tracked in `documents/TECH_DEBT.md`, not in AGENTS.md | AGENTS.md stays short; AI fixes debt only when assigned |
+
+## Open (not decided; AI must ask before acting)
+
+| Topic | Question | Where |
+| --- | --- | --- |
+| Timezone | JDBC uses `serverTimezone=UTC` while the business runs at +07:00; change or keep? Risk: shifting already finalized shift dates | `application.yml:16` |
+| Night reward amounts and cycles | Move 12/24-month cycles and amounts (500k, 1M, 6M, 24M) into `HrNightRewardProgram`? This changes how money rules are configured | `HrNightRewardService.java:32-37` |
+| Redis | Remove the unused `spring-boot-starter-data-redis` and use Caffeine, or keep it for a future multi-instance setup? | `pom.xml:48` |
+| Secrets and identity | Committed secret defaults and client-trusted identity (P0) | Needs a dedicated security task |
