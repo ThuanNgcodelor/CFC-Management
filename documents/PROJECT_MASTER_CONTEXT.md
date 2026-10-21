@@ -44,7 +44,7 @@ flowchart TB
 - Backend: Spring Boot **4.0.0**, Java **21**, Spring MVC, JPA/Hibernate, Security, WebSocket/STOMP, Redis, Mail, Actuator.
 - Database: MySQL 8; các đối tượng HR do Flyway sở hữu. `LegacySchemaFilterProvider` ngăn Hibernate tự tạo/sửa/xóa bảng `hr_*`.
 - Migration hiện có: **V1 đến V28**, tổng cộng **55 bảng `hr_*`**. V27 thêm lịch sử nâng lương, snapshot bậc/ngạch/chu kỳ/ngày hiệu lực và import type `SALARY_RAISE`; V28 thêm trạng thái rà soát, ngày theo dõi lại và index danh sách tới hạn. Tích hợp ONLYOFFICE mặc định tắt; [hướng dẫn bật](HR_WORD_EDITOR_SETUP.md). Chưa deploy/kiểm thử Document Server live.
-- File Excel/DOCX: Apache POI 5.4.1; hợp đồng DOCX dùng mẫu classpath mặc định hoặc phiên bản active trong kho DB. `HrDocxEngine` thay biến xuyên qua các Word run. Hướng dẫn và giới hạn hiện hành: [Word và Payroll](HR_WORD_PAYROLL_GUIDE.md).
+- File Excel/DOCX: Apache POI 5.4.1; hợp đồng DOCX dùng mẫu classpath mặc định hoặc phiên bản active trong kho DB. `HrDocxEngine` thay biến xuyên qua các Word run. Hướng dẫn cài đặt Document Server: [ONLYOFFICE Setup](HR_WORD_EDITOR_SETUP.md).
 - Frontend: React **19.2**, React Router **7**, Vite **8**, Tailwind CSS **4**, Axios, `react-datepicker`, `xlsx`, Lucide, PWA Workbox.
 - Token: access JWT ngắn hạn, refresh JWT lưu cookie/Redis; mọi API HR yêu cầu principal ADMIN hoặc MANAGER, trừ các route được permit riêng.
 
@@ -123,8 +123,13 @@ CFCBase/
 │   └── window/ (build-prod.bat, run.bat, start-tunnel.bat, stop-prod.bat)
 ├── documents/
 │   ├── PROJECT_MASTER_CONTEXT.md       # file master này
-│   ├── ATTENDANCE_MIGRATION_PLAN.md
-│   └── DATABASE_BACKUP.md
+│   ├── TECH_DEBT.md                    # nợ kỹ thuật thực tế sau audit
+│   ├── DECISIONS.md                    # nhật ký quyết định kiến trúc
+│   ├── CONFIG_AND_CACHE.md             # sổ theo dõi config & cache
+│   ├── DATABASE_BACKUP.md              # quy trình backup & restore DB
+│   ├── WORKER_ATTENDANCE_USAGE_GUIDE.md# cẩm nang sử dụng ca sản xuất
+│   ├── HR_WORD_EDITOR_SETUP.md         # hướng dẫn ONLYOFFICE document server
+│   └── HR_GENERAL_LABOR_OCR_CAPTURE.md # đặc tả OCR chụp CCCD qua điện thoại
 ├── frontend/
 │   ├── package.json, package-lock.json, vite.config.js, index.html
 │   ├── public/ (logo, OG image, robots, sitemap, offline, PWA icons)
@@ -395,12 +400,13 @@ Không ghi token Cloudflare, Telegram, JWT, SMTP, VAPID hay database password v�
 ## 14. Tài liệu liên quan
 
 - [AGENTS.md](../AGENTS.md) — luật repository và checklist bảo mật.
-- [ATTENDANCE_MIGRATION_PLAN.md](ATTENDANCE_MIGRATION_PLAN.md) — kế hoạch port Attendance chi tiết.
-- [HR_PHASE_3_4_GUIDE.md](HR_PHASE_3_4_GUIDE.md) — phạm vi, cách sử dụng hồ sơ 360°, lịch sử nhân sự và kho hợp đồng/bản Word.
-- [HR_SALARY_RAISE_IMPLEMENTATION_PLAN.md](HR_SALARY_RAISE_IMPLEMENTATION_PLAN.md) — kế hoạch import nâng lương theo MS, lịch sử hiệu lực, ngày tới hạn và export theo kỳ.
-- [Attendance/TONG_HOP_DU_AN_ATTENDANCE.md](../Attendance/TONG_HOP_DU_AN_ATTENDANCE.md) — bản đồ Apps Script gốc.
-- [Attendance/docs/README.md](../Attendance/docs/README.md) — vận hành, cấu hình, quy tắc và xử lý sự cố Apps Script.
+- [TECH_DEBT.md](TECH_DEBT.md) — danh mục nợ kỹ thuật thực tế sau audit.
+- [DECISIONS.md](DECISIONS.md) — nhật ký quyết định kiến trúc và công nghệ.
+- [CONFIG_AND_CACHE.md](CONFIG_AND_CACHE.md) — sổ đăng ký cấu hình và caching.
 - [DATABASE_BACKUP.md](DATABASE_BACKUP.md) — backup/restore database.
+- [WORKER_ATTENDANCE_USAGE_GUIDE.md](WORKER_ATTENDANCE_USAGE_GUIDE.md) — cẩm nang sử dụng Chấm công ca sản xuất.
+- [HR_WORD_EDITOR_SETUP.md](HR_WORD_EDITOR_SETUP.md) — hướng dẫn ONLYOFFICE Document Server trên Linux.
+- [HR_GENERAL_LABOR_OCR_CAPTURE.md](HR_GENERAL_LABOR_OCR_CAPTURE.md) — đặc tả chụp ảnh CCCD qua điện thoại cho LĐ phổ thông.
 - [HUONG_DAN_CAI_TELEGRAM_NHAN_PHIEU_LUONG.md](../HUONG_DAN_CAI_TELEGRAM_NHAN_PHIEU_LUONG.md) — hướng dẫn worker đăng ký bot.
 
 ## 15. Lịch sử cập nhật master
