@@ -1,10 +1,10 @@
 import { canApproveNightRewards } from '../../utils/hrPermissions';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
   Building2,
   CheckCircle2,
-  ChevronRight,
   Clock3,
   FileSpreadsheet,
   Info,
@@ -19,6 +19,8 @@ import { Button } from '../../components/ui/Button';
 import { HrAttendanceTabs } from '../../components/hr/HrAttendanceTabs';
 import { HrDrawer, HrEmpty, HrError, HrLoading, HrPageHeader, HrPageShell, HrStatusBadge } from '../../components/hr/HrUi';
 import { HrNightRewardReconcileModal } from '../../components/hr/HrNightRewardReconcileModal';
+import { HrNightRewardMonthTable } from '../../components/hr/HrNightRewardMonthTable';
+import { HrNightRewardEmployeeHistory } from '../../components/hr/HrNightRewardEmployeeHistory';
 import { authApi } from '../../api/authApi';
 import { hrNightRewardApi as api } from '../../api/hrNightRewardApi';
 import { apiErrorMessage, formatHrDate, formatHrDateTime } from '../../utils/hr';
@@ -59,61 +61,6 @@ function Metric({ label: title, value, description, tone = 'slate' }) {
     </article>
   );
 }
-
-function Progress({ progress, pendingMonth }) {
-  if (!progress) return '—';
-  return (
-    <div className="space-y-1 text-xs">
-      <p>Đã chốt · định kỳ: <b>{progress.periodicQualifiedMonths}/{progress.periodicRequiredMonths}</b> tháng</p>
-      <p>Đã chốt · gắn bó: <b>{progress.loyaltyQualifiedMonths}/{progress.loyaltyRequiredMonths}</b> tháng</p>
-      {pendingMonth && <p className="font-medium text-emerald-700">Tháng này dự kiến +1 sau khi chốt</p>}
-    </div>
-  );
-}
-
-const NightRewardEmployeeRows = memo(function NightRewardEmployeeRows({ employees, onOpenTimeline }) {
-  return (
-    <tbody className="divide-y divide-gray-100">
-      {employees.map((item) => (
-        <tr key={item.employeeId} className="hover:bg-slate-50">
-          <td className="px-5 py-4">
-            <b>{item.employeeCode}</b>
-            <p className="text-xs text-gray-500">{item.employeeName}</p>
-          </td>
-          <td className="px-4 py-4 text-center font-semibold">
-            {item.actualNightShiftCount}/{item.requiredNightShiftCount}
-          </td>
-          <td className="px-4 py-4">
-            <HrStatusBadge
-              status={item.finalizedStatus || item.calculatedStatus}
-              label={label(item.finalizedStatus || item.calculatedStatus)}
-            />
-            <p className="mt-1 max-w-xs text-xs text-gray-500">{item.calculatedReason}</p>
-          </td>
-          <td className="px-4 py-4">
-            <Progress
-              progress={item.progress}
-              pendingMonth={
-                ['QUALIFIED', 'QUALIFIED_EXCEPTION'].includes(item.calculatedStatus) &&
-                (!item.finalizedStatus || item.finalizedStatus === 'STALE')
-              }
-            />
-          </td>
-          <td className="px-4 py-4 text-xs text-gray-600">
-            {item.sourceShifts?.length
-              ? item.sourceShifts.map((source) => formatHrDate(source.workDate)).join(', ')
-              : '—'}
-          </td>
-          <td className="px-5 py-4 text-right">
-            <Button type="button" size="sm" variant="secondary" onClick={() => onOpenTimeline(item.employeeCode)}>
-              Lịch sử <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  );
-});
 
 function TimelineDrawer({ value, onClose }) {
   return (
@@ -193,6 +140,9 @@ function TimelineDrawer({ value, onClose }) {
 // Main page
 // ──────────────────────────────────────────────────────────
 export default function HrNightRewards() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeView = searchParams.get('view') === 'person' ? 'person' : 'month';
+  const selectedEmployeeCode = searchParams.get('employee') || '';
   const [month, setMonth] = useState(() => localStorage.getItem('hr-night-reward-month') || currentMonth());
   const [data, setData] = useState(null);
   const [exceptions, setExceptions] = useState([]);
@@ -244,8 +194,27 @@ export default function HrNightRewards() {
   }, [month]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (activeView === 'month') load();
+  }, [activeView, load]);
+
+  const showPerson = (code) => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.set('view', 'person');
+      if (code) next.set('employee', code);
+      else next.delete('employee');
+      return next;
+    });
+  };
+
+  const showMonth = () => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete('view');
+      next.delete('employee');
+      return next;
+    });
+  };
 
   const openTimeline = useCallback(async (code) => {
     try {
@@ -323,7 +292,7 @@ export default function HrNightRewards() {
     }
   };
 
-  if (loading && !data) {
+  if (activeView === 'month' && loading && !data) {
     return (
       <HrPageShell size="wide">
         <HrLoading label="Đang tổng hợp thưởng ca đêm..." />
@@ -331,7 +300,7 @@ export default function HrNightRewards() {
     );
   }
 
-  if (error && !data) {
+  if (activeView === 'month' && error && !data) {
     return (
       <HrPageShell size="wide">
         <HrError message={error} onRetry={load} />
@@ -346,7 +315,7 @@ export default function HrNightRewards() {
         eyebrow="QUẢN LÝ NHÂN SỰ"
         title="Thưởng gắn bó ca đêm"
         description="Theo dõi ca đêm đã chốt theo tháng, bảo lưu tháng đạt điều kiện và kiểm soát ngoại lệ trước khi chi trả."
-        actions={
+        actions={activeView === 'month' ?
           <div className="flex gap-2">
             <input
               aria-label="Tháng"
@@ -365,11 +334,27 @@ export default function HrNightRewards() {
               {refreshing ? 'Đang tải...' : 'Tải lại'}
             </Button>
           </div>
-        }
+        : null}
       />
 
       {/* Unified Attendance Tabs */}
       <HrAttendanceTabs activeTab="night-rewards" />
+
+      <nav aria-label="Cách xem thưởng ca đêm" className="mb-5 inline-flex max-w-full gap-1 rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+        <button type="button" onClick={showMonth} aria-current={activeView === 'month' ? 'page' : undefined}
+          className={`rounded-lg px-4 py-2 text-sm font-semibold ${activeView === 'month' ? 'bg-emerald-600 text-white' : 'text-gray-600 hover:bg-slate-50'}`}>
+          Theo tháng
+        </button>
+        <button type="button" onClick={() => showPerson(selectedEmployeeCode)} aria-current={activeView === 'person' ? 'page' : undefined}
+          className={`rounded-lg px-4 py-2 text-sm font-semibold ${activeView === 'person' ? 'bg-emerald-600 text-white' : 'text-gray-600 hover:bg-slate-50'}`}>
+          Theo nhân viên
+        </button>
+      </nav>
+
+      {activeView === 'person' ? (
+        <HrNightRewardEmployeeHistory employeeCode={selectedEmployeeCode} initialMonth={month}
+          onSelectEmployee={showPerson} onOpenRewardTimeline={openTimeline} />
+      ) : (<>
 
       {/* Busy processing banner */}
       {busy && (
@@ -523,33 +508,7 @@ export default function HrNightRewards() {
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="min-w-[1020px] w-full text-left text-sm">
-            <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-              <tr>
-                <th className="px-5 py-3">Nhân viên</th>
-                <th className="px-4 py-3 text-center">Ca đêm hợp lệ</th>
-                <th className="px-4 py-3">Kết quả tháng</th>
-                <th className="px-4 py-3">Tháng đã ghi nhận</th>
-                <th className="px-4 py-3">Nguồn đối soát</th>
-                <th className="px-5 py-3 text-right">Chi tiết</th>
-              </tr>
-            </thead>
-            <NightRewardEmployeeRows employees={data?.employees || []} onOpenTimeline={openTimeline} />
-          </table>
-          {refreshing && !data?.employees?.length ? (
-            <div className="p-8">
-              <HrLoading label="Đang tải dữ liệu công nhân..." />
-            </div>
-          ) : !data?.employees?.length ? (
-            <div className="p-6">
-              <HrEmpty
-                title="Chưa có dữ liệu công nhân để xét"
-                description="Hãy chốt file ca sản xuất và đảm bảo ca đêm được cấu hình đúng trước."
-              />
-            </div>
-          ) : null}
-        </div>
+        <HrNightRewardMonthTable employees={data?.employees || []} onOpenEmployee={showPerson} />
       </section>
 
       {/* Exception section */}
@@ -661,6 +620,7 @@ export default function HrNightRewards() {
         </section>
       </section>
 
+      </>)}
       <TimelineDrawer value={timeline} onClose={() => setTimeline(null)} />
       <HrNightRewardReconcileModal
         key={month}

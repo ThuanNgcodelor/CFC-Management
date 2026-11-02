@@ -31,6 +31,7 @@ import java.util.Set;
         HrOcrController.class,
         HrOcrCaptureController.class,
         HrProductionAttendanceController.class,
+        HrNightRewardController.class,
         HrAttendanceSandboxController.class,
         HrEmployeeProfileController.class,
         HrSalaryRaiseController.class

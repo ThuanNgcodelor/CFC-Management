@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.time.LocalDate;
 
 public interface HrProductionAttendanceShiftRepository extends HrRepository<HrProductionAttendanceShift, String> {
     Page<HrProductionAttendanceShift> findByImportIdAndActiveTrueOrderByEmployeeCodeAscWorkDateAsc(String importId, Pageable pageable);
@@ -17,6 +18,22 @@ public interface HrProductionAttendanceShiftRepository extends HrRepository<HrPr
     List<HrProductionAttendanceShift> findByImportIdAndActiveTrueOrderByEmployeeCodeAscWorkDateAsc(String importId);
     List<HrProductionAttendanceShift> findByImportIdAndActiveTrueAndEmployeeCodeOrderByWorkDateAsc(
             String importId, String employeeCode);
+
+    @Query("""
+            select shift from HrProductionAttendanceShift shift
+            where shift.active = true and shift.employeeCode = :employeeCode
+              and shift.workDate between :from and :through
+              and shift.importId in (
+                  select batch.id from HrProductionAttendanceImport batch
+                  where batch.attendanceMonth between :fromMonth and :throughMonth and batch.status = :status
+              )
+            order by shift.workDate, shift.createdAt
+            """)
+    List<HrProductionAttendanceShift> findConfirmedEmployeeShiftsInRange(
+            @Param("employeeCode") String employeeCode,
+            @Param("from") LocalDate from, @Param("through") LocalDate through,
+            @Param("fromMonth") String fromMonth, @Param("throughMonth") String throughMonth,
+            @Param("status") com.booking.system.hr.enums.HrAttendanceImportStatus status);
 
     @Query(value = """
             select distinct shift.employeeCode from HrProductionAttendanceShift shift

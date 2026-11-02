@@ -12,5 +12,9 @@ export const hrNightRewardApi = {
   approveException: async (id, payload) => unwrapApiData(await baseApi.post(`${root}/exceptions/${id}/approve`, payload)),
   rejectException: async (id, payload) => unwrapApiData(await baseApi.post(`${root}/exceptions/${id}/reject`, payload)),
   cancelException: async (id, payload) => unwrapApiData(await baseApi.post(`${root}/exceptions/${id}/cancel`, payload)),
-  timeline: async (employeeCode) => unwrapApiData(await baseApi.get(`${root}/employees/${encodeURIComponent(employeeCode)}/timeline`)),
+  timeline: async (employeeCode, signal) => unwrapApiData(await baseApi.get(`${root}/employees/${encodeURIComponent(employeeCode)}/timeline`, { signal })),
+  searchEmployees: async (keyword, page = 0, signal) => unwrapApiData(await baseApi.get(`${root}/employees/search`, { params: { keyword, page }, signal })),
+  attendanceHistory: async (employeeCode, through, months = 12, signal) => unwrapApiData(await baseApi.get(
+    `${root}/employees/${encodeURIComponent(employeeCode)}/attendance-history`, { params: { through, months }, signal },
+  )),
 };

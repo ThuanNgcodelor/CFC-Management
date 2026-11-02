@@ -18,6 +18,9 @@ import java.util.Optional;
 public interface HrEmployeeRepository extends HrRepository<HrEmployee, String> {
     Optional<HrEmployee> findByEmployeeCode(String employeeCode);
 
+    @Query("select employee from HrEmployee employee where lower(employee.employeeCode) like :keyword or lower(employee.fullName) like :keyword")
+    Page<HrEmployee> searchNightRewardEmployees(@Param("keyword") String keyword, Pageable pageable);
+
     boolean existsByEmployeeCode(String employeeCode);
 
     List<HrEmployee> findAllByEmployeeCodeIn(Collection<String> employeeCodes);

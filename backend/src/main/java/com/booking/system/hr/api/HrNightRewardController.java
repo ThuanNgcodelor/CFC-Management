@@ -3,7 +3,9 @@ package com.booking.system.hr.api;
 import com.booking.system.dto.ApiResponse;
 import com.booking.system.entity.User;
 import com.booking.system.hr.api.dto.HrNightRewardDtos;
+import com.booking.system.hr.api.dto.HrPageResponse;
 import com.booking.system.hr.importer.HrImportActor;
+import com.booking.system.hr.service.HrNightRewardEmployeeAttendanceService;
 import com.booking.system.hr.service.HrNightRewardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ import java.util.List;
 @RequestMapping("/api/v1/hr/attendance/night-rewards")
 public class HrNightRewardController {
     private final HrNightRewardService service;
+    private final HrNightRewardEmployeeAttendanceService employeeAttendanceService;
     private final HrActorResolver actorResolver;
 
     @GetMapping("/months/{month}")
@@ -89,5 +92,23 @@ public class HrNightRewardController {
             @PathVariable String employeeCode, @AuthenticationPrincipal User principal) {
         actorResolver.fromPrincipal(principal);
         return ResponseEntity.ok(ApiResponse.success(service.employeeTimeline(employeeCode), "Đã lấy lịch sử thưởng ca đêm"));
+    }
+
+    @GetMapping("/employees/search")
+    public ResponseEntity<ApiResponse<HrPageResponse<HrNightRewardDtos.EmployeeLookupResponse>>> searchEmployees(
+            @RequestParam String keyword, @RequestParam(defaultValue = "0") int page,
+            @AuthenticationPrincipal User principal) {
+        actorResolver.fromPrincipal(principal);
+        return ResponseEntity.ok(ApiResponse.success(employeeAttendanceService.search(keyword, page),
+                "Đã tìm nhân viên để xem lịch sử thưởng ca đêm"));
+    }
+
+    @GetMapping("/employees/{employeeCode}/attendance-history")
+    public ResponseEntity<ApiResponse<HrNightRewardDtos.EmployeeAttendanceHistoryResponse>> attendanceHistory(
+            @PathVariable String employeeCode, @RequestParam String through,
+            @RequestParam(defaultValue = "12") int months, @AuthenticationPrincipal User principal) {
+        actorResolver.fromPrincipal(principal);
+        return ResponseEntity.ok(ApiResponse.success(employeeAttendanceService.history(employeeCode, through, months),
+                "Đã lấy lịch sử chấm công ca sản xuất theo nhân viên"));
     }
 }

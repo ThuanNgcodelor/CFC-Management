@@ -78,4 +78,16 @@ public final class HrNightRewardDtos {
                                            ProgramResponse program, ProgressResponse progress,
                                            List<QualificationResponse> qualifications,
                                            List<EntitlementResponse> entitlements) { }
+
+    public record EmployeeLookupResponse(String employeeCode, String employeeName) { }
+
+    public record AttendanceDayResponse(LocalDate workDate, BigDecimal workValue,
+                                        String shiftCode, HrProductionAttendanceShiftStatus status) { }
+
+    public record AttendanceMonthResponse(String attendanceMonth, boolean hasConfirmedImport,
+                                          boolean hasEmployeeData, BigDecimal totalWorkValue,
+                                          int nightShifts, List<AttendanceDayResponse> days) { }
+
+    public record EmployeeAttendanceHistoryResponse(String employeeCode, String employeeName,
+                                                     String through, List<AttendanceMonthResponse> months) { }
 }
