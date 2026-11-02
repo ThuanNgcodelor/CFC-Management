@@ -2,9 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { LOGIN_ROLES, canAccessHrPath, canApproveNightRewards, canEditPersonnel } from './hrPermissions.js';
 
-test('HR staff can navigate the four approved modules but cannot enter personnel write routes', () => {
+test('HR staff can open the isolated attendance sandbox but cannot enter personnel write routes', () => {
   for (const path of ['/manager/hr', '/manager/hr/employees', '/manager/hr/employees/e1',
-    '/manager/hr/attendance', '/manager/hr/attendance/production', '/manager/hr/attendance/night-rewards']) {
+    '/manager/hr/attendance', '/manager/hr/attendance/production', '/manager/hr/attendance/night-rewards',
+    '/manager/hr/attendance/sandbox']) {
     assert.equal(canAccessHrPath('HR_STAFF', path), true, path);
   }
   for (const path of ['/manager/hr/employees/new', '/manager/hr/employees/new/',

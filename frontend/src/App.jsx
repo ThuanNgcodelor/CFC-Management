@@ -37,6 +37,7 @@ const HrTelegramEmployees = lazy(() => import('./pages/hr/HrTelegramEmployees'))
 const HrPayroll = lazy(() => import('./pages/hr/HrPayroll'));
 const HrAttendance = lazy(() => import('./pages/hr/HrAttendance'));
 const HrProductionAttendance = lazy(() => import('./pages/hr/HrProductionAttendance'));
+const HrAttendanceSandbox = lazy(() => import('./pages/hr/HrAttendanceSandbox'));
 const HrNightRewards = lazy(() => import('./pages/hr/HrNightRewards'));
 
 const SessionCheckScreen = ({ unavailable = false }) => (
@@ -195,6 +196,7 @@ function App() {
         <Route path="manager/hr/word-editor/:id" element={<Navigate to="/manager/hr" replace />} />
         <Route path="manager/hr/attendance" element={<HrRoute><HrAttendance /></HrRoute>} />
         <Route path="manager/hr/attendance/production" element={<HrRoute><HrProductionAttendance /></HrRoute>} />
+        <Route path="manager/hr/attendance/sandbox" element={<HrRoute><HrAttendanceSandbox /></HrRoute>} />
         <Route path="manager/hr/attendance/night-rewards" element={<HrRoute><HrNightRewards /></HrRoute>} />
 
         {/* Quản trị tài khoản */}
