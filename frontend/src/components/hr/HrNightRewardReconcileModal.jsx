@@ -86,7 +86,7 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
     if (!result) return;
     setExporting(true);
     try {
-      exportReconcileXlsx(result, month);
+      await exportReconcileXlsx(result, month);
       toast.success('Đã xuất file đối soát ca đêm!');
     } catch (err) {
       toast.error('Xuất file thất bại: ' + err.message);
@@ -194,7 +194,7 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
                     {parsing ? 'Đang đọc và phân tích file...' : 'Tải lên file Excel từ xí nghiệp'}
                   </p>
                   <p className="mt-1.5 text-xs text-gray-500">
-                    {fileHint || 'Kéo thả file vào đây hoặc bấm để chọn file .xlsx · Cột yêu cầu: MV, Họ và tên, Công ca đêm, Tích 12, Tích 24'}
+                    {fileHint || 'Kéo thả file vào đây hoặc bấm để chọn file .xlsx · Cột yêu cầu: MS hoặc MV, Họ và tên, Công ca đêm; Tích 12/24 nếu có.'}
                   </p>
                 </div>
                 <Button type="button" variant="secondary" size="sm" className="pointer-events-none mt-1">

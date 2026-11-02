@@ -30,6 +30,7 @@ Entry format: `date | decision | reason | status`
 
 - 2026-11-02 | Thêm khu Thử chấm công riêng cho HR_STAFF: backend chỉ đọc file/config và gọi parser/matcher hiện hữu; thao tác sửa/xác nhận và đối soát xí nghiệp chỉ nằm trong phiên trình duyệt. | Kiểm tra các file công và người có/không có trong danh sách xí nghiệp mà không tạo import, ghi DB, chốt công hoặc ảnh hưởng thưởng ca đêm thật. Số đối soát là ca đêm dự kiến sau chỉnh sửa thử, có báo ngày chưa xử lý; không phải kết quả chốt chính thức.
 - 2026-11-02 | Thay khu thử độc lập bằng tab Thử nghiệm trong Chấm công, dùng chung bảng tổng quan, form quyết định ca và modal đối soát với màn chính. Quyết định thử được ghép lại trên backend từ file gốc nhưng không lưu. | Màn thử cũ khác giao diện và tính sai số ngày cần xử lý của nhân viên chưa có hồ sơ (A001); cần so sánh trực tiếp theo luồng chính mà vẫn giữ dữ liệu thật bất biến.
+- 2026-11-02 | Bộ đọc Excel đối soát ca đêm nhận `MS` và `MV`; khi có cả hai bảng cùng dòng tiêu đề, lấy bảng `MS` có đủ họ tên và công ca đêm. Quét 30 dòng đầu và chỉ tải thư viện Excel khi người dùng đọc/xuất file. | File đối chiếu T9 chỉ có `MS` nên trước đây bị từ chối; file Gửi thuận có `MV` rỗng nên qua bước tiêu đề nhưng không đọc đúng 2 nhân viên. Giữ thao tác đối soát ở trình duyệt, không ghi DB.
 
 ## Open (not decided; AI must ask before acting)
 

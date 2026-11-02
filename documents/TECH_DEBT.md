@@ -7,7 +7,6 @@ Source: codebase audit on 2026-10-16. Read this file only when a task touches an
 | # | Issue | Where | Fix |
 | --- | --- | --- | --- |
 | 1 | Controllers missing from exception advice: errors return Spring default JSON instead of `ApiResponse.error()` | `HrApiExceptionHandler.java` `assignableTypes`; missing `HrNightRewardController`, `HrAttendanceController`, `HrLeaveSyncController`, `HrEmployeeDocumentController`, `HrDocumentTemplateController`, `HrWordEditorController` | Remove `assignableTypes` (apply to the whole `hr.api` package) or add all controllers |
-| 2 | Static import of heavy lib bloats `HrNightRewards` chunk to 914 kB | `utils/nightRewardReconcile.js:18` | `await import('xlsx-js-style')` when the reconcile modal opens |
 | 3 | `show-sql: true` | `application.yml` | `${SHOW_SQL:false}` |
 | 4 | Missing index for night-shift scan | `hr_attendance_shifts` | New migration: index `(import_id, counts_toward_night_reward)` |
 | 5 | Missing index for ledger lookup | `hr_night_reward_ledger` | New migration: index `(qualification_id, track_code, entry_type)` |
@@ -32,6 +31,7 @@ Source: codebase audit on 2026-10-16. Read this file only when a task touches an
 | 17 | 6 POST/PUT endpoints without `@Valid` | `HrOcrController:38`, `HrWordEditorController:18, 31`, others | Add `@Valid` and DTO constraints |
 
 | 17b | Two attendance tests depend on missing local `CongXn.xlsx`; full suite cannot pass on this checkout | `HrProductionAttendanceServiceTest`, `HrProductionShiftMatcherTest` | Supply a sanitized, versioned fixture or generate representative workbook data; do not commit real employee data |
+| 17c | Styled Excel library is loaded on demand but its `xlsx.min` chunk is still about 863 kB, above the 500 kB target | `utils/nightRewardReconcile.js` parse/export | Evaluate a smaller reader and a styled export path that preserves the current workbook formatting |
 
 ## Group 3: Needs an owner decision (do not change on your own)
 

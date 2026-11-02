@@ -3,17 +3,15 @@
  * Đọc file Excel từ xí nghiệp, đối soát với dữ liệu hệ thống,
  * xuất file Excel hai cột so sánh có highlight màu.
  *
- * Format file XN (HUYEN.xlsx):
+ * Format file XN:
  *   Row 1-2: tiêu đề / trống
- *   Row 3  : header (STT | MV | Họ và tên | Công ca đêm | Tích 12 | Tích 24 | ...)
+ *   Row 3+ : header (STT | MS/MV | Họ và tên | Công ca đêm | Tích 12 | Tích 24 | ...)
  *   Row 4+ : data
  *
  * Tích 12 = mức thưởng định kỳ (500k/tháng) — dùng để nhận biết chu kỳ, không so sánh số tiền
  * Tích 24 = mức thưởng gắn bó (1tr/tháng)   — tương tự
  * → So sánh thực tế: Công ca đêm, periodicQualifiedMonths (Tích 12), loyaltyQualifiedMonths (Tích 24)
  */
-import XLSX from 'xlsx-js-style';
-
 // ──────────────────────────────────────────────
 // 1. Parse file Excel từ xí nghiệp
 // ──────────────────────────────────────────────
@@ -23,72 +21,61 @@ import XLSX from 'xlsx-js-style';
  * @param {File} file
  * @returns {Promise<Array<{maNV, hoTen, caDem, tich12Rate, tich24Rate}>>}
  */
+const normalizeHeader = (value) => String(value ?? '').normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/đ/g, 'd').replace(/\s+/g, ' ').trim();
+const codeHeaders = new Set(['ms', 'mv', 'ma', 'ma nv', 'manv', 'ma nhan vien']);
+
+function findHeader(rows) {
+  for (let rowIndex = 0; rowIndex < Math.min(rows.length, 30); rowIndex++) {
+    const headers = (rows[rowIndex] || []).map(normalizeHeader);
+    const codeColumns = headers.flatMap((value, index) => codeHeaders.has(value) ? [index] : []);
+    const preferred = [...codeColumns].sort((left, right) =>
+      Number(headers[left] !== 'ms') - Number(headers[right] !== 'ms') || left - right);
+    for (const code of preferred) {
+      const end = codeColumns.find((index) => index > code) ?? headers.length;
+      const find = (predicate) => headers.findIndex((value, index) => index > code && index < end && predicate(value));
+      const name = find((value) => value.includes('ho va ten') || value.includes('ho ten'));
+      const night = find((value) => value.includes('cong ca dem') || value === 'ca dem');
+      if (name < 0 || night < 0) continue;
+      return {
+        rowIndex, code, name, night,
+        periodic: find((value) => value.includes('tich 12')),
+        loyalty: find((value) => value.includes('tich 24')),
+      };
+    }
+  }
+  return null;
+}
+
+export function parseNightRewardRows(rows) {
+  const header = findHeader(rows);
+  if (!header) throw new Error('Không tìm thấy dòng tiêu đề có MS/MV, Họ và tên và Công ca đêm trong 30 dòng đầu.');
+  const result = [];
+  for (let index = header.rowIndex + 1; index < rows.length; index++) {
+    const row = rows[index] || [];
+    const maNV = String(row[header.code] ?? '').trim().toUpperCase();
+    if (!maNV) continue;
+    result.push({
+      stt: index - header.rowIndex,
+      maNV,
+      hoTen: String(row[header.name] ?? '').trim(),
+      caDem: toNumber(row[header.night]),
+      tich12Rate: header.periodic < 0 ? null : toNumber(row[header.periodic]),
+      tich24Rate: header.loyalty < 0 ? null : toNumber(row[header.loyalty]),
+    });
+  }
+  return result;
+}
+
 export async function parseNightRewardXlsx(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const wb = XLSX.read(data, { type: 'array', cellFormula: false, cellNF: false });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-
-        // Tìm header row (có chứa "MV" hoặc "Mã")
-        let headerRowIdx = -1;
-        for (let i = 0; i < Math.min(rows.length, 6); i++) {
-          const r = rows[i];
-          if (r && r.some((c) => typeof c === 'string' && c.trim().toUpperCase().startsWith('MV'))) {
-            headerRowIdx = i;
-            break;
-          }
-        }
-        if (headerRowIdx === -1) throw new Error('Không tìm thấy dòng tiêu đề trong file. Kiểm tra file có đúng định dạng không.');
-
-        const headers = rows[headerRowIdx].map((h) => (h ? String(h).trim() : ''));
-        // Detect column indices by header name
-        const colIdx = (keywords) => {
-          for (const kw of keywords) {
-            const idx = headers.findIndex((h) => h.toLowerCase().includes(kw.toLowerCase()));
-            if (idx !== -1) return idx;
-          }
-          return -1;
-        };
-        const idxMV   = colIdx(['MV', 'mã', 'ma nv', 'manv']);
-        const idxName = colIdx(['họ và tên', 'ho va ten', 'họ tên', 'tên']);
-        const idxCaDem = colIdx(['công ca đêm', 'ca đêm', 'ca dem']);
-        const idxT12  = colIdx(['tích 12', 'tich 12', 'tic 12']);
-        const idxT24  = colIdx(['tích 24', 'tich 24', 'tic 24']);
-
-        if (idxMV === -1) throw new Error('Không tìm thấy cột "MV" (Mã nhân viên) trong file.');
-
-        const result = [];
-        for (let i = headerRowIdx + 1; i < rows.length; i++) {
-          const row = rows[i];
-          if (!row || row.every((c) => c === null || c === undefined || c === '')) continue;
-          const maNV = row[idxMV] ? String(row[idxMV]).trim().toUpperCase() : null;
-          if (!maNV) continue;
-
-          const caDem = idxCaDem !== -1 ? toNumber(row[idxCaDem]) : null;
-          const tich12Rate = idxT12 !== -1 ? toNumber(row[idxT12]) : null;
-          const tich24Rate = idxT24 !== -1 ? toNumber(row[idxT24]) : null;
-
-          result.push({
-            stt: i - headerRowIdx,
-            maNV,
-            hoTen: idxName !== -1 ? (row[idxName] ? String(row[idxName]).trim() : '') : '',
-            caDem,        // Công ca đêm tháng (số ca)
-            tich12Rate,   // Mức thưởng chu kỳ 12 (500000 = 500k)
-            tich24Rate,   // Mức thưởng chu kỳ 24 (1000000 = 1tr)
-          });
-        }
-        resolve(result);
-      } catch (err) {
-        reject(err);
-      }
-    };
-    reader.onerror = () => reject(new Error('Không đọc được file.'));
-    reader.readAsArrayBuffer(file);
-  });
+  const { default: XLSX } = await import('xlsx-js-style');
+  const workbook = XLSX.read(new Uint8Array(await file.arrayBuffer()),
+    { type: 'array', cellFormula: false, cellNF: false });
+  for (const name of workbook.SheetNames) {
+    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[name], { header: 1, defval: null });
+    if (findHeader(rows)) return parseNightRewardRows(rows);
+  }
+  throw new Error('Không tìm thấy dòng tiêu đề có MS/MV, Họ và tên và Công ca đêm trong 30 dòng đầu.');
 }
 
 function toNumber(val) {
@@ -323,7 +310,8 @@ function formatRate(val) {
  * @param {{ matched, onlyInXN, onlyInSystem }} reconcileResult
  * @param {string} month  - vd "2026-08"
  */
-export function exportReconcileXlsx(reconcileResult, month) {
+export async function exportReconcileXlsx(reconcileResult, month) {
+  const { default: XLSX } = await import('xlsx-js-style');
   const { matched, onlyInXN, onlyInSystem } = reconcileResult;
   const wb = XLSX.utils.book_new();
 

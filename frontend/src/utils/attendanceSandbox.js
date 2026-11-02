@@ -1,29 +1,19 @@
+import { parseNightRewardXlsx } from './nightRewardReconcile.js';
+
 export async function parseFactoryNightReward(file) {
   if (!file?.name?.toLowerCase().endsWith('.xlsx')) {
     throw new Error('Chọn file đối soát định dạng .xlsx.');
   }
-  const XLSX = await import('xlsx');
-  const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellFormula: false });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
-  const headerIndex = rows.findIndex((row) => row?.some((cell) => String(cell || '').trim().toUpperCase() === 'MS')
-    && row.some((cell) => String(cell || '').toLowerCase().includes('công ca đêm')));
-  if (headerIndex < 0) throw new Error('Không tìm thấy cột MS và Công ca đêm trong file xí nghiệp.');
-  const header = rows[headerIndex].map((cell) => String(cell || '').trim().toLowerCase());
-  const codeIndex = header.indexOf('ms');
-  const nameIndex = header.findIndex((cell, index) => index > codeIndex && cell.includes('họ và tên'));
-  const nightIndex = header.findIndex((cell, index) => index > codeIndex && cell.includes('công ca đêm'));
+  const rows = await parseNightRewardXlsx(file);
   const seen = new Set();
-  const result = [];
-  for (const row of rows.slice(headerIndex + 1)) {
-    const code = String(row?.[codeIndex] || '').trim().toUpperCase();
-    if (!code) continue;
+  const result = rows.map((row) => {
+    const code = row.maNV;
     if (seen.has(code)) throw new Error(`Mã nhân viên ${code} bị trùng trong file xí nghiệp.`);
     seen.add(code);
-    const count = Number(row[nightIndex]);
+    const count = Number(row.caDem);
     if (!Number.isFinite(count) || count < 0) throw new Error(`Công ca đêm của ${code} không hợp lệ.`);
-    result.push({ employeeCode: code, employeeName: String(row[nameIndex] || '').trim(), nightShifts: count });
-  }
+    return { employeeCode: code, employeeName: row.hoTen, nightShifts: count };
+  });
   if (!result.length) throw new Error('File xí nghiệp không có nhân viên hợp lệ.');
   return result;
 }
