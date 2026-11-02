@@ -1,5 +1,5 @@
 import { canApproveNightRewards } from '../../utils/hrPermissions';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Building2,
@@ -70,6 +70,50 @@ function Progress({ progress, pendingMonth }) {
     </div>
   );
 }
+
+const NightRewardEmployeeRows = memo(function NightRewardEmployeeRows({ employees, onOpenTimeline }) {
+  return (
+    <tbody className="divide-y divide-gray-100">
+      {employees.map((item) => (
+        <tr key={item.employeeId} className="hover:bg-slate-50">
+          <td className="px-5 py-4">
+            <b>{item.employeeCode}</b>
+            <p className="text-xs text-gray-500">{item.employeeName}</p>
+          </td>
+          <td className="px-4 py-4 text-center font-semibold">
+            {item.actualNightShiftCount}/{item.requiredNightShiftCount}
+          </td>
+          <td className="px-4 py-4">
+            <HrStatusBadge
+              status={item.finalizedStatus || item.calculatedStatus}
+              label={label(item.finalizedStatus || item.calculatedStatus)}
+            />
+            <p className="mt-1 max-w-xs text-xs text-gray-500">{item.calculatedReason}</p>
+          </td>
+          <td className="px-4 py-4">
+            <Progress
+              progress={item.progress}
+              pendingMonth={
+                ['QUALIFIED', 'QUALIFIED_EXCEPTION'].includes(item.calculatedStatus) &&
+                (!item.finalizedStatus || item.finalizedStatus === 'STALE')
+              }
+            />
+          </td>
+          <td className="px-4 py-4 text-xs text-gray-600">
+            {item.sourceShifts?.length
+              ? item.sourceShifts.map((source) => formatHrDate(source.workDate)).join(', ')
+              : '—'}
+          </td>
+          <td className="px-5 py-4 text-right">
+            <Button type="button" size="sm" variant="secondary" onClick={() => onOpenTimeline(item.employeeCode)}>
+              Lịch sử <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  );
+});
 
 function TimelineDrawer({ value, onClose }) {
   return (
@@ -203,13 +247,13 @@ export default function HrNightRewards() {
     load();
   }, [load]);
 
-  const openTimeline = async (code) => {
+  const openTimeline = useCallback(async (code) => {
     try {
       setTimeline(await api.timeline(code));
     } catch (requestError) {
       toast.error(apiErrorMessage(requestError, 'Không tải được lịch sử nhân viên.'));
     }
-  };
+  }, []);
 
   const isFinalized = Boolean(
     data?.finalized ?? (
@@ -491,45 +535,7 @@ export default function HrNightRewards() {
                 <th className="px-5 py-3 text-right">Chi tiết</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              {data?.employees?.map((item) => (
-                <tr key={item.employeeId} className="hover:bg-slate-50">
-                  <td className="px-5 py-4">
-                    <b>{item.employeeCode}</b>
-                    <p className="text-xs text-gray-500">{item.employeeName}</p>
-                  </td>
-                  <td className="px-4 py-4 text-center font-semibold">
-                    {item.actualNightShiftCount}/{item.requiredNightShiftCount}
-                  </td>
-                  <td className="px-4 py-4">
-                    <HrStatusBadge
-                      status={item.finalizedStatus || item.calculatedStatus}
-                      label={label(item.finalizedStatus || item.calculatedStatus)}
-                    />
-                    <p className="mt-1 max-w-xs text-xs text-gray-500">{item.calculatedReason}</p>
-                  </td>
-                  <td className="px-4 py-4">
-                    <Progress
-                      progress={item.progress}
-                      pendingMonth={
-                        ['QUALIFIED', 'QUALIFIED_EXCEPTION'].includes(item.calculatedStatus) &&
-                        (!item.finalizedStatus || item.finalizedStatus === 'STALE')
-                      }
-                    />
-                  </td>
-                  <td className="px-4 py-4 text-xs text-gray-600">
-                    {item.sourceShifts?.length
-                      ? item.sourceShifts.map((source) => formatHrDate(source.workDate)).join(', ')
-                      : '—'}
-                  </td>
-                  <td className="px-5 py-4 text-right">
-                    <Button type="button" size="sm" variant="secondary" onClick={() => openTimeline(item.employeeCode)}>
-                      Lịch sử <ChevronRight className="h-3.5 w-3.5" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+            <NightRewardEmployeeRows employees={data?.employees || []} onOpenTimeline={openTimeline} />
           </table>
           {refreshing && !data?.employees?.length ? (
             <div className="p-8">
@@ -657,6 +663,7 @@ export default function HrNightRewards() {
 
       <TimelineDrawer value={timeline} onClose={() => setTimeline(null)} />
       <HrNightRewardReconcileModal
+        key={month}
         isOpen={showReconcile}
         onClose={() => setShowReconcile(false)}
         month={month}

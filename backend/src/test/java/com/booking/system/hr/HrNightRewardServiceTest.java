@@ -3,6 +3,7 @@ package com.booking.system.hr;
 import com.booking.system.hr.api.dto.HrNightRewardDtos;
 import com.booking.system.hr.entity.HrAttendanceShiftPolicy;
 import com.booking.system.hr.entity.HrEmployee;
+import com.booking.system.hr.entity.HrNightRewardEntitlement;
 import com.booking.system.hr.entity.HrNightRewardMonthlyQualification;
 import com.booking.system.hr.entity.HrNightRewardProgram;
 import com.booking.system.hr.entity.HrProductionAttendanceImport;
@@ -13,6 +14,7 @@ import com.booking.system.hr.enums.HrAttendanceResolutionType;
 import com.booking.system.hr.enums.HrEmploymentStatus;
 import com.booking.system.hr.enums.HrNightRewardEntitlementStatus;
 import com.booking.system.hr.enums.HrNightRewardMonthlyStatus;
+import com.booking.system.hr.enums.HrNightRewardTrack;
 import com.booking.system.hr.enums.HrProductionAttendanceShiftStatus;
 import com.booking.system.hr.importer.HrImportActor;
 import com.booking.system.hr.repository.*;
@@ -35,6 +37,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class HrNightRewardServiceTest {
@@ -112,17 +116,20 @@ class HrNightRewardServiceTest {
                 eq("program"), any(), eq(MONTH))).thenReturn(List.of());
         when(qualificationRepository.findCurrentForEmployees(eq("program"), any(), eq(HrNightRewardMonthlyStatus.STALE)))
                 .thenAnswer(invocation -> finalized.get() == null ? priorQualifications : List.of(finalized.get()));
-        when(qualificationRepository.findFirstByProgramIdAndEmployeeIdAndAttendanceMonthOrderByRevisionDesc(
-                "program", "employee", MONTH))
-                .thenAnswer(invocation -> Optional.ofNullable(finalized.get()));
-        when(entitlementRepository.findByProgramIdAndEmployeeIdAndStatus(
-                "program", "employee", HrNightRewardEntitlementStatus.DRAFT)).thenReturn(List.of());
+        when(qualificationRepository.findByProgramIdAndEmployeeIdInAndAttendanceMonthOrderByEmployeeIdAscRevisionDesc(
+                eq("program"), any(), eq(MONTH)))
+                .thenAnswer(invocation -> finalized.get() == null ? List.of() : List.of(finalized.get()));
+        when(entitlementRepository.findByProgramIdAndEmployeeIdInAndStatus(
+                eq("program"), any(), eq(HrNightRewardEntitlementStatus.DRAFT))).thenReturn(List.of());
     }
 
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "HR_STAFF"})
     void finalizesConfirmedEmployeesWhenPendingFileHasDifferentEmployees(String role) {
         HrImportActor actor = new HrImportActor("USER:test", "Người chốt", role);
+        when(qualificationRepository.findFirstByProgramIdAndEmployeeIdAndAttendanceMonthOrderByRevisionDesc(
+                "program", "employee", MONTH))
+                .thenAnswer(invocation -> Optional.ofNullable(finalized.get()));
         when(attendanceShiftRepository.findActiveEmployeeCodesByImportIdsAndPolicyGroup(
                 List.of("pending"), HrAttendancePolicyGroup.PRODUCTION_WORKER)).thenReturn(List.of("00186"));
         when(qualificationRepository.save(any())).thenAnswer(invocation -> {
@@ -162,6 +169,33 @@ class HrNightRewardServiceTest {
         var reopened = service.reopenMonth(MONTH, new HrNightRewardDtos.ReopenMonthRequest("Cần tính lại"), actor);
         assertThat(reopened.staleQualifications()).isEqualTo(1);
         assertThat(finalized.get().getStatus()).isEqualTo(HrNightRewardMonthlyStatus.STALE);
+    }
+
+    @Test
+    void previewLoadsQualificationAndEntitlementDetailsInBatches() {
+        HrNightRewardMonthlyQualification qualification = new HrNightRewardMonthlyQualification();
+        qualification.setEmployeeId("employee");
+        qualification.setAttendanceMonth(MONTH);
+        qualification.setStatus(HrNightRewardMonthlyStatus.QUALIFIED);
+        qualification.setRevision(2);
+        finalized.set(qualification);
+        HrNightRewardEntitlement entitlement = new HrNightRewardEntitlement();
+        entitlement.setEmployeeId("employee");
+        entitlement.setTrackCode(HrNightRewardTrack.PERIODIC_NIGHT);
+        when(entitlementRepository.findByProgramIdAndEmployeeIdInAndStatus(
+                eq("program"), any(), eq(HrNightRewardEntitlementStatus.DRAFT))).thenReturn(List.of(entitlement));
+
+        assertThat(service.preview(MONTH).employees()).singleElement().satisfies(value -> {
+            assertThat(value.finalizedStatus()).isEqualTo(HrNightRewardMonthlyStatus.QUALIFIED);
+            assertThat(value.finalizedRevision()).isEqualTo(2);
+            assertThat(value.progress().draftPeriodicEntitlements()).isEqualTo(1);
+        });
+        verify(qualificationRepository).findByProgramIdAndEmployeeIdInAndAttendanceMonthOrderByEmployeeIdAscRevisionDesc(
+                eq("program"), any(), eq(MONTH));
+        verify(entitlementRepository).findByProgramIdAndEmployeeIdInAndStatus(
+                eq("program"), any(), eq(HrNightRewardEntitlementStatus.DRAFT));
+        verify(qualificationRepository, never()).findFirstByProgramIdAndEmployeeIdAndAttendanceMonthOrderByRevisionDesc(
+                "program", "employee", MONTH);
     }
 
     @org.junit.jupiter.params.ParameterizedTest

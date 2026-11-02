@@ -9,6 +9,7 @@ import {
 import toast from 'react-hot-toast';
 import { Button } from '../ui/Button';
 import { HrEmpty } from './HrUi';
+import { HrNightRewardReconcileMobileRows } from './HrNightRewardReconcileMobileRows';
 import { exportReconcileXlsx, parseNightRewardXlsx, reconcile } from '../../utils/nightRewardReconcile';
 
 const statusText = {
@@ -30,21 +31,31 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
   const [dragOver, setDragOver] = useState(false);
   const [fileName, setFileName] = useState('');
   const [parsing, setParsing] = useState(false);
-  const [result, setResult] = useState(null);
+  const [sourceRows, setSourceRows] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [tabFilter, setTabFilter] = useState('all'); // 'all' | 'diff' | 'match' | 'onlyXn' | 'onlySys'
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches);
+  const result = useMemo(() => sourceRows ? reconcile(sourceRows, systemEmployees || []) : null,
+    [sourceRows, systemEmployees]);
+
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 768px)');
+    const onChange = (event) => setIsDesktop(event.matches);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
 
   const reset = () => {
     setStep('upload');
     setFileName('');
-    setResult(null);
+    setSourceRows(null);
     setTabFilter('all');
     setSearchTerm('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleClose = () => {
-    reset();
     onClose();
   };
 
@@ -62,8 +73,7 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
         setParsing(false);
         return;
       }
-      const rec = reconcile(xlsRows, systemEmployees || []);
-      setResult(rec);
+      setSourceRows(xlsRows);
       setStep('result');
     } catch (err) {
       toast.error(err.message || 'Không đọc được file.');
@@ -132,7 +142,7 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-4" role="presentation">
+    <div className="fixed inset-0 z-[80] flex items-end justify-center p-0 sm:items-center sm:p-4" role="presentation">
       <div
         className="fixed inset-0 bg-[var(--cfc-navy)]/50 backdrop-blur-[2px]"
         onClick={handleClose}
@@ -140,27 +150,27 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
       <section
         aria-labelledby="reconcile-modal-title"
         aria-modal="true"
-        className="relative z-50 flex max-h-[92dvh] w-full max-w-6xl flex-col rounded-2xl border border-gray-200 bg-white shadow-2xl overflow-hidden"
+        className="cfc-safe-bottom relative z-50 flex h-[100dvh] max-h-[100dvh] w-full max-w-[1680px] flex-col overflow-hidden rounded-none border border-gray-200 bg-white shadow-2xl sm:h-auto sm:max-h-[92dvh] sm:rounded-2xl"
         role="dialog"
       >
         {/* Header */}
-        <header className="flex min-h-16 shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+        <header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
               <FileSpreadsheet className="h-5 w-5" />
             </div>
-            <div>
-              <h2 id="reconcile-modal-title" className="text-lg font-semibold text-gray-900">
+            <div className="min-w-0">
+              <h2 id="reconcile-modal-title" className="text-base font-semibold text-gray-900 sm:text-lg">
                 Rà soát Excel ca đêm — Tháng {month}
               </h2>
-              <p className="text-xs text-gray-500">
+              <p className="hidden text-xs text-gray-500 sm:block">
                 So sánh danh sách từ xí nghiệp với hệ thống để phát hiện lệch ca trước khi chốt thưởng
               </p>
             </div>
           </div>
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition hover:bg-slate-100 hover:text-gray-700"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-400 transition hover:bg-slate-100 hover:text-gray-700"
             onClick={handleClose}
             aria-label="Đóng"
           >
@@ -171,7 +181,7 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
         {/* Modal body */}
         <div className="cfc-scrollbar min-h-0 flex-1 overflow-y-auto">
           {step === 'upload' && (
-            <div className="p-8 sm:p-12">
+            <div className="p-4 sm:p-12">
               <div
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -180,7 +190,7 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
                 onDragLeave={() => setDragOver(false)}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className={`flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-12 text-center transition ${
+                className={`flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-6 text-center transition sm:p-12 ${
                   dragOver
                     ? 'border-emerald-500 bg-emerald-50/60'
                     : 'border-gray-300 bg-slate-50/50 hover:border-emerald-400 hover:bg-emerald-50/20'
@@ -206,17 +216,17 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
           )}
 
           {step === 'result' && result && (
-            <div className="space-y-5 p-6">
+            <div className="space-y-4 p-3 sm:space-y-5 sm:p-6">
               {/* Stat summary cards */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="rounded-xl border border-gray-200 bg-slate-50 p-4">
+                <div className="rounded-xl border border-gray-200 bg-slate-50 p-3 sm:p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">File xí nghiệp</p>
                   <p className="mt-1 text-2xl font-bold text-gray-900">
                     {result.summary.total} <span className="text-xs font-normal text-gray-500">người</span>
                   </p>
                 </div>
                 <div
-                  className={`rounded-xl border p-4 ${
+                  className={`rounded-xl border p-3 sm:p-4 ${
                     result.summary.diffCount > 0 ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50'
                   }`}
                 >
@@ -237,7 +247,7 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
                   </p>
                 </div>
                 <div
-                  className={`rounded-xl border p-4 ${
+                  className={`rounded-xl border p-3 sm:p-4 ${
                     result.summary.onlyInXN > 0 ? 'border-orange-200 bg-orange-50' : 'border-gray-200 bg-slate-50'
                   }`}
                 >
@@ -258,7 +268,7 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
                   </p>
                 </div>
                 <div
-                  className={`rounded-xl border p-4 ${
+                  className={`rounded-xl border p-3 sm:p-4 ${
                     result.summary.onlyInSystem > 0 ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-slate-50'
                   }`}
                 >
@@ -281,8 +291,9 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
               </div>
 
               {/* Filter bar */}
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50/70 p-3">
-                <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1 shadow-sm">
+              <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50/70 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                <div className="min-w-0 max-w-full overflow-x-auto">
+                  <div className="inline-flex w-max rounded-lg border border-gray-200 bg-white p-1 shadow-sm">
                   <button
                     type="button"
                     onClick={() => setTabFilter('all')}
@@ -332,9 +343,10 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
                       Chỉ ở HT ({result.onlyInSystem.length})
                     </button>
                   )}
+                  </div>
                 </div>
 
-                <div className="relative min-w-[240px]">
+                <div className="relative w-full sm:min-w-[240px] sm:flex-1 xl:w-auto xl:flex-none">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                   <input
                     type="text"
@@ -346,6 +358,7 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
                 </div>
               </div>
 
+              {isDesktop ? (<>
               {/* Main table: Matched rows */}
               {(tabFilter === 'all' || tabFilter === 'diff' || tabFilter === 'match') && (
                 <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -516,13 +529,17 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
                   </table>
                 </div>
               )}
+              </>) : (
+                <HrNightRewardReconcileMobileRows tabFilter={tabFilter} filteredMatched={filteredMatched}
+                  result={result} month={month} statusLabel={label} />
+              )}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-100 bg-gray-50/70 px-6 py-4">
-          <p className="text-xs text-gray-500">
+        <footer className="flex max-h-[42dvh] shrink-0 flex-col gap-3 overflow-y-auto border-t border-gray-100 bg-gray-50/70 px-4 py-3 sm:max-h-none sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:overflow-visible sm:px-6 sm:py-4">
+          <p className="min-w-0 break-all text-xs text-gray-500">
             {result ? (
               <span>
                 File: <strong className="text-gray-800">{fileName}</strong> · Tổng cộng <strong>{result.summary.total}</strong> dòng từ xí nghiệp
@@ -531,20 +548,20 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
               'Chọn file .xlsx từ xí nghiệp để bắt đầu đối soát'
             )}
           </p>
-          <div className="flex gap-2">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
             {step === 'result' && (
               <>
-                <Button type="button" variant="secondary" size="sm" onClick={reset}>
+                <Button type="button" variant="secondary" size="sm" onClick={reset} className="min-w-0 whitespace-normal text-center">
                   <Upload className="h-4 w-4" />
                   Chọn file khác
                 </Button>
-                <Button type="button" size="sm" disabled={exporting} onClick={handleExport}>
+                <Button type="button" size="sm" disabled={exporting} onClick={handleExport} className="min-w-0 whitespace-normal text-center">
                   <Download className="h-4 w-4" />
                   {exporting ? 'Đang xuất...' : 'Xuất file đối soát Excel'}
                 </Button>
               </>
             )}
-            <Button type="button" variant="secondary" size="sm" onClick={handleClose}>
+            <Button type="button" variant="secondary" size="sm" onClick={handleClose} className="col-span-2 sm:col-auto">
               Đóng
             </Button>
           </div>

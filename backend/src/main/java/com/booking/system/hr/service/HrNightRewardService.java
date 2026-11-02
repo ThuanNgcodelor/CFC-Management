@@ -385,13 +385,25 @@ public class HrNightRewardService {
                 : qualificationRepository.findCurrentForEmployees(
                         program.getId(), candidateEmployeeIds, HrNightRewardMonthlyStatus.STALE))
                 .stream().collect(Collectors.groupingBy(HrNightRewardMonthlyQualification::getEmployeeId));
+        Map<String, HrNightRewardMonthlyQualification> latestByEmployee = (candidateEmployeeIds.isEmpty()
+                ? List.<HrNightRewardMonthlyQualification>of()
+                : qualificationRepository.findByProgramIdAndEmployeeIdInAndAttendanceMonthOrderByEmployeeIdAscRevisionDesc(
+                        program.getId(), candidateEmployeeIds, monthText))
+                .stream().collect(Collectors.toMap(HrNightRewardMonthlyQualification::getEmployeeId,
+                        Function.identity(), (latest, earlier) -> latest));
+        Map<String, List<HrNightRewardEntitlement>> draftEntitlements = (candidateEmployeeIds.isEmpty()
+                ? List.<HrNightRewardEntitlement>of()
+                : entitlementRepository.findByProgramIdAndEmployeeIdInAndStatus(
+                        program.getId(), candidateEmployeeIds, HrNightRewardEntitlementStatus.DRAFT))
+                .stream().collect(Collectors.groupingBy(HrNightRewardEntitlement::getEmployeeId));
         List<HrNightRewardDtos.MonthlyEmployeeResponse> employeeResponses = candidates.stream().map(candidate -> {
-            HrNightRewardMonthlyQualification latest = latestQualification(program.getId(), candidate.employee().getId(), monthText);
+            String employeeId = candidate.employee().getId();
+            HrNightRewardMonthlyQualification latest = latestByEmployee.get(employeeId);
             return new HrNightRewardDtos.MonthlyEmployeeResponse(candidate.employee().getEmployeeCode(), candidate.employee().getFullName(),
-                    candidate.employee().getId(), candidate.eligibleShifts().size(), program.getQualifyingNightThreshold(), candidate.status(),
+                    employeeId, candidate.eligibleShifts().size(), program.getQualifyingNightThreshold(), candidate.status(),
                     candidate.reason(), candidate.hasApprovedException(), latest == null ? null : latest.getStatus(),
-                    latest == null ? null : latest.getRevision(), progress(program, candidate.employee().getId(),
-                    currentQualifications(history.getOrDefault(candidate.employee().getId(), List.of()))),
+                    latest == null ? null : latest.getRevision(), progress(currentQualifications(history.getOrDefault(employeeId, List.of())),
+                    draftEntitlements.getOrDefault(employeeId, List.of())),
                     candidate.eligibleShifts().stream().map(this::sourceResponse).toList());
         }).toList();
         int qualified = (int) candidates.stream().filter(value -> value.status() == HrNightRewardMonthlyStatus.QUALIFIED).count();
@@ -509,13 +521,17 @@ public class HrNightRewardService {
 
     private HrNightRewardDtos.ProgressResponse progress(HrNightRewardProgram program, String employeeId,
                                                          List<HrNightRewardMonthlyQualification> current) {
+        return progress(current, entitlementRepository.findByProgramIdAndEmployeeIdAndStatus(program.getId(), employeeId,
+                HrNightRewardEntitlementStatus.DRAFT));
+    }
+
+    private HrNightRewardDtos.ProgressResponse progress(List<HrNightRewardMonthlyQualification> current,
+                                                         List<HrNightRewardEntitlement> draftEntitlements) {
         int qualified = (int) current.stream().filter(value -> isQualified(value.getStatus())).count();
         int periodic = qualified % PERIODIC_CYCLE_MONTHS;
         int loyalty = qualified % LOYALTY_CYCLE_MONTHS;
-        int draftPeriodic = (int) entitlementRepository.findByProgramIdAndEmployeeIdAndStatus(program.getId(), employeeId,
-                HrNightRewardEntitlementStatus.DRAFT).stream().filter(value -> value.getTrackCode() == HrNightRewardTrack.PERIODIC_NIGHT).count();
-        int draftLoyalty = (int) entitlementRepository.findByProgramIdAndEmployeeIdAndStatus(program.getId(), employeeId,
-                HrNightRewardEntitlementStatus.DRAFT).stream().filter(value -> value.getTrackCode() == HrNightRewardTrack.LOYALTY_NIGHT).count();
+        int draftPeriodic = (int) draftEntitlements.stream().filter(value -> value.getTrackCode() == HrNightRewardTrack.PERIODIC_NIGHT).count();
+        int draftLoyalty = (int) draftEntitlements.stream().filter(value -> value.getTrackCode() == HrNightRewardTrack.LOYALTY_NIGHT).count();
         return new HrNightRewardDtos.ProgressResponse(periodic, PERIODIC_CYCLE_MONTHS, loyalty, LOYALTY_CYCLE_MONTHS,
                 draftPeriodic, draftLoyalty);
     }

@@ -34,6 +34,7 @@ export default function HrAttendanceSandbox() {
   const [dayPage, setDayPage] = useState(0);
   const [decisionShift, setDecisionShift] = useState(null);
   const [reconcileOpen, setReconcileOpen] = useState(false);
+  const [reconcileMounted, setReconcileMounted] = useState(false);
 
   const summaries = useMemo(() => summarizeSandbox(days), [days]);
   const filteredEmployees = useMemo(() => summaries.filter((item) =>
@@ -100,7 +101,7 @@ export default function HrAttendanceSandbox() {
       <label className="block text-sm font-medium text-gray-700">File công thử nghiệm (.xlsx)
         <input type="file" accept=".xlsx" disabled={busy} onChange={loadAttendance} className="mt-2 block w-full rounded-lg border border-gray-300 p-2 text-sm" />
       </label>
-      {preview && <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-gray-600">Tháng {preview.attendanceMonth} · {preview.totalRows} ngày công · {preview.totalPunches} dấu chấm</p><div className="flex flex-wrap gap-2"><Button type="button" variant="secondary" onClick={reset}><RefreshCw className="h-4 w-4" />Đặt lại kết quả thử</Button><Button type="button" onClick={() => setReconcileOpen(true)}>Đối soát thưởng ca đêm</Button></div></div>}
+      {preview && <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-gray-600">Tháng {preview.attendanceMonth} · {preview.totalRows} ngày công · {preview.totalPunches} dấu chấm</p><div className="flex flex-wrap gap-2"><Button type="button" variant="secondary" onClick={reset}><RefreshCw className="h-4 w-4" />Đặt lại kết quả thử</Button><Button type="button" onClick={() => { setReconcileMounted(true); setReconcileOpen(true); }}>Đối soát thưởng ca đêm</Button></div></div>}
     </section>
     {busy && <div className="mt-5"><HrLoading label="Đang tính thử ca sản xuất..." /></div>}
     {error && <div className="mt-5"><HrError message={error} /></div>}
@@ -113,6 +114,6 @@ export default function HrAttendanceSandbox() {
       </section>
     </>}
     <HrAttendanceShiftDecisionDrawer shift={decisionShift} policies={preview?.policies || []} readOnly={false} draft onDraftDecision={decideDraft} onClose={() => setDecisionShift(null)} onSaved={async (saved) => { setDecisionShift(null); toast.success(`Đã lưu quyết định thử ${saved.employeeCode} · ${formatHrDate(saved.workDate)}.`); }} />
-    {reconcileOpen && <Suspense fallback={<HrLoading label="Đang mở đối soát..." />}><HrNightRewardReconcileModal isOpen onClose={() => setReconcileOpen(false)} month={preview.attendanceMonth} systemEmployees={systemEmployees} parseFile={parseFactory} fileHint="Chọn file .xlsx từ xí nghiệp có cột MS, Họ và tên, Công ca đêm." /></Suspense>}
+    {reconcileMounted && preview && <Suspense fallback={<HrLoading label="Đang mở đối soát..." />}><HrNightRewardReconcileModal key={preview.attendanceMonth} isOpen={reconcileOpen} onClose={() => setReconcileOpen(false)} month={preview.attendanceMonth} systemEmployees={systemEmployees} parseFile={parseFactory} fileHint="Chọn file .xlsx từ xí nghiệp có cột MS, Họ và tên, Công ca đêm." /></Suspense>}
   </HrPageShell>;
 }

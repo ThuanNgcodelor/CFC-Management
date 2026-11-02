@@ -18,6 +18,8 @@ public interface HrNightRewardMonthlyQualificationRepository extends HrRepositor
             String programId, String attendanceMonth);
     List<HrNightRewardMonthlyQualification> findByProgramIdAndEmployeeIdOrderByAttendanceMonthAscRevisionAsc(
             String programId, String employeeId);
+    List<HrNightRewardMonthlyQualification> findByProgramIdAndEmployeeIdInAndAttendanceMonthOrderByEmployeeIdAscRevisionDesc(
+            String programId, Collection<String> employeeIds, String attendanceMonth);
     Page<HrNightRewardMonthlyQualification> findByProgramIdAndAttendanceMonthOrderByEmployeeCodeAscRevisionDesc(
             String programId, String attendanceMonth, Pageable pageable);
     @Query("""
