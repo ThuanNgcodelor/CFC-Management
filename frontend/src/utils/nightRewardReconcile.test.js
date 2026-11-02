@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseNightRewardRows, parseNightRewardXlsx } from './nightRewardReconcile.js';
+import { exportReconcileXlsx, parseNightRewardRows, parseNightRewardXlsx, reconcile } from './nightRewardReconcile.js';
 
 const title = [
   ['DANH SÁCH CNXNPBHC'],
@@ -51,4 +51,23 @@ test('reads workbook bytes through the same file path used by the modal', async 
   const bytes = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   const parsed = await parseNightRewardXlsx({ arrayBuffer: async () => bytes });
   assert.deepEqual(parsed.map((row) => [row.maNV, row.caDem]), [['B109', 17]]);
+});
+
+test('exports a downloadable Excel file with the compared and unmatched employees', async () => {
+  const { default: XLSX } = await import('xlsx-js-style');
+  const comparison = reconcile([
+    { maNV: 'B124', hoTen: 'Đỗ Đình Cường', caDem: 2, tich12Rate: null, tich24Rate: null },
+    { maNV: 'C743', hoTen: 'Phùng Ngọc Ẩn', caDem: 10, tich12Rate: null, tich24Rate: null },
+  ], [
+    { employeeCode: 'B124', employeeName: 'Đỗ Đình Cường', actualNightShiftCount: 2 },
+    { employeeCode: 'A001', employeeName: 'Nguyễn Trung Thuận', actualNightShiftCount: 6 },
+  ]);
+
+  const { fileName, blob } = await exportReconcileXlsx(comparison, '2026-10');
+  const workbook = XLSX.read(await blob.arrayBuffer(), { type: 'array' });
+
+  assert.equal(fileName, 'DoiSoat_CaDem_2026-10.xlsx');
+  assert.equal(blob.type, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  assert.deepEqual(workbook.SheetNames, ['Đối soát ca đêm', 'Chỉ có trong file XN', 'Chỉ có trong hệ thống']);
+  assert.equal(workbook.Sheets['Đối soát ca đêm'].B5.v, 'B124');
 });

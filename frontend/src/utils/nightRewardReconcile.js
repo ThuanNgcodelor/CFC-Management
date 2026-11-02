@@ -332,8 +332,11 @@ export async function exportReconcileXlsx(reconcileResult, month) {
   }
 
   const fileName = `DoiSoat_CaDem_${month}.xlsx`;
-  XLSX.writeFile(wb, fileName);
-  return fileName;
+  const bytes = XLSX.write(wb, { bookType: 'xlsx', type: 'array', compression: true });
+  return {
+    fileName,
+    blob: new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+  };
 }
 
 function buildMainSheet(matched, month) {

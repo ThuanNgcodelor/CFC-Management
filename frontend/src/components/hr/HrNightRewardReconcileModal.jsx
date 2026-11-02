@@ -33,6 +33,7 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
   const [parsing, setParsing] = useState(false);
   const [sourceRows, setSourceRows] = useState(null);
   const [exporting, setExporting] = useState(false);
+  const [exportedFile, setExportedFile] = useState(null);
   const [tabFilter, setTabFilter] = useState('all'); // 'all' | 'diff' | 'match' | 'onlyXn' | 'onlySys'
   const [searchTerm, setSearchTerm] = useState('');
   const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches);
@@ -46,10 +47,21 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
     return () => query.removeEventListener('change', onChange);
   }, []);
 
+  useEffect(() => () => {
+    if (exportedFile?.url) URL.revokeObjectURL(exportedFile.url);
+  }, [exportedFile]);
+
+  useEffect(() => {
+    if (exportedFile && (exportedFile.result !== result || exportedFile.month !== month)) {
+      setExportedFile(null);
+    }
+  }, [exportedFile, result, month]);
+
   const reset = () => {
     setStep('upload');
     setFileName('');
     setSourceRows(null);
+    setExportedFile(null);
     setTabFilter('all');
     setSearchTerm('');
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -96,8 +108,16 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
     if (!result) return;
     setExporting(true);
     try {
-      await exportReconcileXlsx(result, month);
-      toast.success('Đã xuất file đối soát ca đêm!');
+      const { fileName: downloadName, blob } = await exportReconcileXlsx(result, month);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = downloadName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setExportedFile({ fileName: downloadName, url, result, month });
+      toast.success('File đối soát đã sẵn sàng. Có thể bấm tên file để tải lại.');
     } catch (err) {
       toast.error('Xuất file thất bại: ' + err.message);
     } finally {
@@ -539,7 +559,7 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
 
         {/* Footer */}
         <footer className="flex max-h-[42dvh] shrink-0 flex-col gap-3 overflow-y-auto border-t border-gray-100 bg-gray-50/70 px-4 py-3 sm:max-h-none sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:overflow-visible sm:px-6 sm:py-4">
-          <p className="min-w-0 break-all text-xs text-gray-500">
+          <div className="min-w-0 break-all text-xs text-gray-500">
             {result ? (
               <span>
                 File: <strong className="text-gray-800">{fileName}</strong> · Tổng cộng <strong>{result.summary.total}</strong> dòng từ xí nghiệp
@@ -547,7 +567,13 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
             ) : (
               'Chọn file .xlsx từ xí nghiệp để bắt đầu đối soát'
             )}
-          </p>
+            {exportedFile && (
+              <a href={exportedFile.url} download={exportedFile.fileName}
+                className="mt-1 block font-semibold text-blue-700 underline underline-offset-2 hover:text-blue-900">
+                Tải lại file đối soát: {exportedFile.fileName}
+              </a>
+            )}
+          </div>
           <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
             {step === 'result' && (
               <>
