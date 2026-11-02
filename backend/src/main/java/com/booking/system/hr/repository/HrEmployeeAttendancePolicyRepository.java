@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Collection;
 
 public interface HrEmployeeAttendancePolicyRepository extends HrRepository<HrEmployeeAttendancePolicy, String> {
     List<HrEmployeeAttendancePolicy> findByEmployeeIdOrderByValidFromDesc(String employeeId);
@@ -18,6 +19,16 @@ public interface HrEmployeeAttendancePolicyRepository extends HrRepository<HrEmp
             """)
     List<HrEmployeeAttendancePolicy> findEffective(@Param("employeeId") String employeeId,
                                                    @Param("date") LocalDate date);
+
+    @Query("""
+            select policy from HrEmployeeAttendancePolicy policy
+            where policy.employeeId in :employeeIds
+              and policy.validFrom <= :toDate
+              and (policy.validTo is null or policy.validTo >= :fromDate)
+            order by policy.validFrom desc
+            """)
+    List<HrEmployeeAttendancePolicy> findEffectiveForEmployees(@Param("employeeIds") Collection<String> employeeIds,
+            @Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate);
 
     @Query("""
             select policy from HrEmployeeAttendancePolicy policy

@@ -24,7 +24,7 @@ const statusText = {
 };
 const label = (value) => statusText[value] || value || '—';
 
-export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmployees }) {
+export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmployees, parseFile = parseNightRewardXlsx, fileHint }) {
   const fileInputRef = useRef(null);
   const [step, setStep] = useState('upload'); // 'upload' | 'result'
   const [dragOver, setDragOver] = useState(false);
@@ -56,7 +56,7 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
     setParsing(true);
     setFileName(file.name);
     try {
-      const xlsRows = await parseNightRewardXlsx(file);
+      const xlsRows = await parseFile(file);
       if (!xlsRows.length) {
         toast.error('File không có dữ liệu nhân viên.');
         setParsing(false);
@@ -194,7 +194,7 @@ export function HrNightRewardReconcileModal({ isOpen, onClose, month, systemEmpl
                     {parsing ? 'Đang đọc và phân tích file...' : 'Tải lên file Excel từ xí nghiệp'}
                   </p>
                   <p className="mt-1.5 text-xs text-gray-500">
-                    Kéo thả file vào đây hoặc bấm để chọn file .xlsx · Cột yêu cầu: MV, Họ và tên, Công ca đêm, Tích 12, Tích 24
+                    {fileHint || 'Kéo thả file vào đây hoặc bấm để chọn file .xlsx · Cột yêu cầu: MV, Họ và tên, Công ca đêm, Tích 12, Tích 24'}
                   </p>
                 </div>
                 <Button type="button" variant="secondary" size="sm" className="pointer-events-none mt-1">

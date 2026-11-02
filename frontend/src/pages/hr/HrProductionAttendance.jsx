@@ -10,6 +10,8 @@ import {
   HrDrawer, HrEmpty, HrError, HrLoading, HrPageHeader, HrPageShell, HrPagination, HrStatusBadge,
 } from '../../components/hr/HrUi';
 import { HrAttendanceTabs } from '../../components/hr/HrAttendanceTabs';
+import { HrAttendanceEmployeeOverview } from '../../components/hr/HrAttendanceEmployeeOverview';
+import { HrAttendanceShiftDecisionDrawer } from '../../components/hr/HrAttendanceShiftDecisionDrawer';
 import { Button } from '../../components/ui/Button';
 import SEOHead from '../../components/SEOHead';
 import { apiErrorMessage, formatHrDate, formatHrDateTime } from '../../utils/hr';
@@ -35,35 +37,6 @@ function work(value) {
 function time(value) {
   if (!value) return '—';
   return formatHrDateTime(value);
-}
-
-function datePlusDays(value, days) {
-  const [year, month, day] = String(value || '').slice(0, 10).split('-').map(Number);
-  if (!year || !month || !day) return '';
-  const date = new Date(Date.UTC(year, month - 1, day + days));
-  return date.toISOString().slice(0, 10);
-}
-
-function punchMinutes(value) {
-  const match = String(value || '').match(/T(\d{2}):(\d{2})/);
-  return match ? Number(match[1]) * 60 + Number(match[2]) : null;
-}
-
-function decisionPunches(punches, shift, policy, direction) {
-  if (!shift) return [];
-  const crossesMidnight = Boolean(policy?.crossesMidnight);
-  const expectedDate = direction === 'out' && crossesMidnight
-    ? datePlusDays(shift.workDate, 1)
-    : shift.workDate;
-  return punches.filter((punch) => {
-    if (String(punch.punchedAt || '').slice(0, 10) !== expectedDate) return false;
-    if (!crossesMidnight) return true;
-    const minutes = punchMinutes(punch.punchedAt);
-    if (minutes === null) return false;
-    // Ca qua đêm: chiều/tối là lượt vào; sáng hôm sau là lượt ra.
-    // Tách hai nhóm này để không lấy lượt ra của ngày trước làm lượt vào hôm nay.
-    return direction === 'in' ? minutes >= 12 * 60 : minutes < 12 * 60;
-  });
 }
 
 function policyLabel(value) {
@@ -136,111 +109,7 @@ function WorkflowGuide({ item }) {
   </section>;
 }
 
-function EmployeeOverview({ result, keyword, onKeywordChange, selectedCode, onSelect, onPageChange, loading }) {
-  const employees = result.content || [];
-  if (!employees.length && !keyword && !loading) return null;
-  return <section className="mt-5 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-    <div className="flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <div className="flex items-center gap-2">
-          <h2 className="font-semibold text-gray-900">Tổng quan theo nhân viên</h2>
-          {loading && <Loader2 className="h-4 w-4 animate-spin text-blue-600" />}
-        </div>
-        <p className="mt-1 text-xs text-gray-500">Dữ liệu được phân trang từ máy chủ. Chọn một người để xem riêng từng ngày.</p>
-      </div>
-      <input value={keyword} onChange={(event) => onKeywordChange(event.target.value)} placeholder="Tìm mã hoặc tên nhân viên" className="h-10 min-w-64 rounded-lg border border-gray-300 px-3 text-sm" />
-    </div>
-    {loading ? (
-      <div className="mt-4 p-8"><HrLoading label="Đang tải tổng quan theo nhân viên..." /></div>
-    ) : (
-      <>
-        <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[940px] text-left text-sm"><thead className="bg-gray-50 text-xs uppercase text-gray-500"><tr><th className="px-3 py-3">Nhân viên</th><th className="px-3 py-3">Nhóm</th><th className="px-3 py-3 text-center">Ngày</th><th className="px-3 py-3 text-center">Công tạm tính</th><th className="px-3 py-3 text-center">Ca đêm</th><th className="px-3 py-3 text-center">Tăng ca (2 công)</th><th className="px-3 py-3 text-center">Đêm + tăng ca</th><th className="px-3 py-3 text-center">Cần xử lý</th><th className="px-3 py-3">Trạng thái</th></tr></thead><tbody className="divide-y divide-gray-100">{employees.map((item) => <tr key={item.employeeCode} onClick={() => onSelect(item)} className={`cursor-pointer hover:bg-emerald-50 ${selectedCode === item.employeeCode ? 'bg-emerald-50' : ''}`}><td className="px-3 py-3"><b>{item.employeeCode}</b><p className="text-xs text-gray-500">{item.employeeName}</p></td><td className="px-3 py-3">{policyLabel(item.policyGroup)}</td><td className="px-3 py-3 text-center">{item.totalDays}</td><td className="px-3 py-3 text-center font-semibold">{work(item.proposedWorkValue)}</td><td className="px-3 py-3 text-center">{item.nightShifts}</td><td className="px-3 py-3 text-center">{item.overtimeShifts}</td><td className="px-3 py-3 text-center font-bold text-blue-700">{item.nightAndOvertimeShifts}</td><td className={`px-3 py-3 text-center font-semibold ${item.reviewShifts ? 'text-amber-700' : 'text-emerald-700'}`}>{item.reviewShifts}</td><td className="px-3 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.reviewShifts ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>{item.reviewShifts ? 'Cần kiểm tra' : 'Đã ổn'}</span></td></tr>)}</tbody></table></div>
-        {!employees.length && <HrEmpty title="Không tìm thấy nhân viên" description="Thử tìm bằng mã hoặc họ tên khác." />}
-        <HrPagination page={result.page || 0} totalPages={result.totalPages || 0} totalElements={result.totalElements || 0} onPageChange={onPageChange} />
-      </>
-    )}
-  </section>;
-}
 
-function ShiftDecisionDrawer({ shift, policies, readOnly, onClose, onSaved }) {
-  const [punches, setPunches] = useState([]);
-  const [adjustments, setAdjustments] = useState([]);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState(null);
-  const savingRef = useRef(false);
-  const selectedPolicy = useMemo(() => policies.find((item) => item.code === (form?.shiftCode || shift?.shiftCode)),
-    [form?.shiftCode, policies, shift?.shiftCode]);
-  const checkInPunches = useMemo(() => decisionPunches(punches, shift, selectedPolicy, 'in'),
-    [punches, selectedPolicy, shift]);
-  const checkOutPunches = useMemo(() => decisionPunches(punches, shift, selectedPolicy, 'out'),
-    [punches, selectedPolicy, shift]);
-
-  useEffect(() => {
-    if (!shift) return;
-    setForm({
-      action: 'CONFIRM', shiftCode: shift.shiftCode || '', checkInPunchId: '', checkOutPunchId: '',
-      workValue: String(shift.workValue ?? 0), nightAllowanceAmount: String(shift.nightAllowanceAmount ?? 0), reason: '',
-    });
-    Promise.all([api.shiftPunches(shift.id), api.adjustments(shift.id)])
-      .then(([nextPunches, nextAdjustments]) => {
-        setPunches(nextPunches || []); setAdjustments(nextAdjustments || []);
-        setForm((value) => ({ ...value, checkInPunchId: shift.checkInAt ? (nextPunches || []).find((item) => item.punchedAt === shift.checkInAt)?.id || '' : '', checkOutPunchId: shift.checkOutAt ? (nextPunches || []).find((item) => item.punchedAt === shift.checkOutAt)?.id || '' : '' }));
-      })
-      .catch((error) => toast.error(apiErrorMessage(error, 'Không tải được chi tiết ca.')));
-  }, [shift]);
-
-  const submit = async (event) => {
-    event.preventDefault();
-    if (savingRef.current) return;
-    if (!form.reason.trim()) return toast.error('Phải nhập lý do quyết định.');
-    savingRef.current = true;
-    setSaving(true);
-    try {
-      const saved = await api.decideShift(shift.id, {
-        ...form,
-        shiftCode: form.shiftCode || null,
-        checkInPunchId: form.checkInPunchId || null,
-        checkOutPunchId: form.checkOutPunchId || null,
-        workValue: Number(form.workValue),
-        nightAllowanceAmount: Number(form.nightAllowanceAmount),
-        rowVersion: shift.rowVersion,
-      });
-      // Do not treat a 2xx alone as a completed attendance decision. The
-      // backend must have persisted the audit trail before the drawer closes;
-      // otherwise HR would be left with a misleading success state.
-      const persistedAdjustments = await api.adjustments(shift.id);
-      if (!persistedAdjustments?.length) {
-        throw new Error('ATTENDANCE_DECISION_NOT_PERSISTED');
-      }
-      setAdjustments(persistedAdjustments);
-      await onSaved(saved, form.action);
-    } catch (error) {
-      toast.error(error?.message === 'ATTENDANCE_DECISION_NOT_PERSISTED'
-        ? 'Máy chủ chưa xác nhận lịch sử điều chỉnh. Ca vẫn đang mở; không coi là đã lưu.'
-        : apiErrorMessage(error, 'Không thể lưu quyết định ca.'));
-    }
-    finally { savingRef.current = false; setSaving(false); }
-  };
-
-  return <HrDrawer isOpen={Boolean(shift)} onClose={onClose} title={shift ? `${shift.employeeCode} · ${formatHrDate(shift.workDate)}` : ''} description="Dấu chấm gốc không bị sửa; mọi quyết định đều lưu lịch sử." size="wide">
-    {shift && form && <form onSubmit={submit} className="space-y-5 p-5 sm:p-7">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="text-sm font-medium text-gray-700">Quyết định<select disabled={readOnly} value={form.action} onChange={(event) => setForm({ ...form, action: event.target.value, ...(event.target.value === 'REJECT' ? { checkInPunchId: '', checkOutPunchId: '' } : {}) })} className="mt-1 h-11 w-full rounded-lg border border-gray-300 bg-white px-3"><option value="CONFIRM">Xác nhận/điều chỉnh</option><option value="REJECT">Từ chối, tính 0 công</option></select></label>
-        <label className="text-sm font-medium text-gray-700">Ca<select disabled={readOnly || form.action === 'REJECT'} value={form.shiftCode} onChange={(event) => { const shiftCode = event.target.value; const selected = policies.find((item) => item.code === shiftCode); setForm({ ...form, shiftCode, checkInPunchId: '', checkOutPunchId: '', nightAllowanceAmount: String(selected?.nightAllowanceAmount ?? form.nightAllowanceAmount) }); }} className="mt-1 h-11 w-full rounded-lg border border-gray-300 bg-white px-3"><option value="">Giữ ca đề xuất</option>{policies.filter((item) => item.policyGroup === shift.policyGroup).map((item) => <option key={item.id} value={item.code}>{item.code} · {item.name}</option>)}</select></label>
-        <label className="text-sm font-medium text-gray-700">Lượt vào<select disabled={readOnly || form.action === 'REJECT'} value={form.checkInPunchId} onChange={(event) => setForm({ ...form, checkInPunchId: event.target.value })} className="mt-1 h-11 w-full rounded-lg border border-gray-300 bg-white px-3"><option value="">Để trống</option>{checkInPunches.map((item) => <option key={item.id} value={item.id}>{time(item.punchedAt)} · cột {item.sourceColumn}</option>)}</select></label>
-        <label className="text-sm font-medium text-gray-700">Lượt ra<select disabled={readOnly || form.action === 'REJECT'} value={form.checkOutPunchId} onChange={(event) => setForm({ ...form, checkOutPunchId: event.target.value })} className="mt-1 h-11 w-full rounded-lg border border-gray-300 bg-white px-3"><option value="">Để trống</option>{checkOutPunches.map((item) => <option key={item.id} value={item.id}>{time(item.punchedAt)} · cột {item.sourceColumn}</option>)}</select></label>
-        <label className="text-sm font-medium text-gray-700">Số công<select disabled={readOnly} value={form.workValue} onChange={(event) => setForm({ ...form, workValue: event.target.value })} className="mt-1 h-11 w-full rounded-lg border border-gray-300 bg-white px-3"><option value="0">0</option><option value="1">1</option><option value="1.5">1,5</option><option value="2">2</option></select></label>
-        <label className="text-sm font-medium text-gray-700">Phụ cấp đêm<input disabled={readOnly} type="number" min="0" step="1000" value={form.nightAllowanceAmount} onChange={(event) => setForm({ ...form, nightAllowanceAmount: event.target.value })} className="mt-1 h-11 w-full rounded-lg border border-gray-300 px-3" /></label>
-      </div>
-      {!readOnly && <label className="block text-sm font-medium text-gray-700">Lý do bắt buộc<textarea value={form.reason} onChange={(event) => setForm({ ...form, reason: event.target.value })} rows={3} className="mt-1 w-full rounded-lg border border-gray-300 p-3" /></label>}
-      {!readOnly && <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900"><p className="font-semibold">Hệ thống sẽ kiểm tra các ngày liên quan</p><p className="mt-1">Ca đêm dùng lượt vào chiều/tối của ngày bắt đầu và lượt ra sáng hôm sau. Dấu đang thuộc ngày liền trước/sau sẽ bị chặn, không còn tự chuyển lỗi lùi từng ngày.</p></div>}
-      <div className="rounded-xl bg-slate-50 p-4 text-sm text-gray-600"><p className="font-semibold text-gray-800">Giải thích hệ thống</p><p className="mt-1">{shift.explanation || 'Không có.'}</p></div>
-      <div><h3 className="text-sm font-semibold text-gray-900">Dấu chấm gốc</h3><div className="mt-2 space-y-2">{punches.map((item) => <div key={item.id} className="flex justify-between rounded-lg border border-gray-200 p-3 text-sm"><span>{time(item.punchedAt)}</span><span className="text-gray-500">Dòng {item.sourceRowNumber} · {item.sourceColumn} · {item.rawValue}</span></div>)}{!punches.length && <p className="text-sm text-gray-500">Không có dấu chấm.</p>}</div></div>
-      <details><summary className="cursor-pointer text-sm font-semibold text-gray-800">Lịch sử điều chỉnh ({adjustments.length})</summary><div className="mt-2 space-y-2">{adjustments.map((item) => <div key={item.id} className="rounded-lg border border-gray-200 p-3 text-sm"><p>{item.reason}</p><p className="mt-1 text-xs text-gray-500">{formatHrDateTime(item.createdAt)} · {item.createdByActor}</p></div>)}</div></details>
-      <div className="flex justify-end gap-2"><Button type="button" variant="secondary" onClick={onClose} disabled={saving}>{readOnly ? 'Đóng' : 'Hủy'}</Button>{!readOnly && <Button type="submit" disabled={saving}>{saving ? 'Đang lưu...' : 'Lưu và tính lại chuỗi'}</Button>}</div>
-    </form>}
-  </HrDrawer>;
-}
 
 function ConfigurationDrawer({ open, policies, creditRules, onClose, onRefresh }) {
   const [employeeCode, setEmployeeCode] = useState('');
@@ -605,7 +474,7 @@ export default function HrProductionAttendance() {
     <section className="mt-5 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><h2 className="font-semibold">File đang xử lý</h2><p className="mt-1 text-xs text-gray-500">Chọn một file. File chờ xác nhận có thể xóa; file đã chốt có thể mở khóa để điều chỉnh.</p></div><span className="text-sm text-gray-500">{imports.length} file</span></div><div className="mt-4 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">{imports.map((item) => <ImportCard key={item.id} item={item} active={item.id === activeImportId} canReopen={canReopen} onSelect={() => { setActiveImportId(item.id); setPage(0); }} onConfirm={() => confirmImport(item)} onRecalculate={() => mutate(() => api.recalculate(item.id), 'Đã tính lại từ dấu chấm gốc.', 'Không thể tính lại file.')} onDelete={() => deleteImport(item)} onReopen={() => reopen(item)} />)}{!imports.length && <HrEmpty title="Chưa có file ca sản xuất" description="Chọn tháng và import file Time Attendance ở phía trên." />}</div></section>
 
     <WorkflowGuide item={activeImport} />
-    <EmployeeOverview result={employeeSummaries} keyword={employeeSummaryKeyword} onKeywordChange={(value) => { setEmployeeSummaryKeyword(value); setEmployeeSummaryPage(0); }} selectedCode={employeeCode} onPageChange={setEmployeeSummaryPage} loading={summariesLoading} onSelect={(item) => { setEmployeeCode(item.employeeCode); setView(item.reviewShifts > 0 ? 'NEEDS_REVIEW' : 'ALL'); setPage(0); }} />
+    <HrAttendanceEmployeeOverview result={employeeSummaries} keyword={employeeSummaryKeyword} onKeywordChange={(value) => { setEmployeeSummaryKeyword(value); setEmployeeSummaryPage(0); }} selectedCode={employeeCode} onPageChange={setEmployeeSummaryPage} loading={summariesLoading} onSelect={(item) => { setEmployeeCode(item.employeeCode); setView(item.reviewShifts > 0 ? 'NEEDS_REVIEW' : 'ALL'); setPage(0); }} />
 
     {activeImport && <section className="mt-5 space-y-4"><div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"><div className="mb-3"><h2 className="font-semibold text-gray-900">Chi tiết ngày chấm công</h2><p className="mt-1 text-xs text-gray-500">Mặc định chỉ hiện việc cần xử lý. Chọn nhân viên ở bảng trên để xem riêng 31 ngày.</p></div><div className="flex flex-wrap items-center gap-2">{views.map(([key, label]) => { const count = viewCount(key); return <button key={key} type="button" onClick={() => { setView(key); setPage(0); setSelected(new Set()); }} className={`rounded-lg px-3 py-2 text-sm font-semibold ${view === key ? 'bg-emerald-600 text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}>{label}{Number.isInteger(count) ? ` (${count})` : ''}</button>; })}<input value={employeeCode} onChange={(event) => { setEmployeeCode(event.target.value.toUpperCase()); setPage(0); }} placeholder="Tìm mã nhân viên" className="h-10 min-w-44 flex-1 rounded-lg border border-gray-300 px-3 text-sm" />{employeeCode && <Button type="button" size="sm" variant="secondary" onClick={() => { setEmployeeCode(''); setPage(0); }}>Xem mọi người</Button>}</div>{view === 'AUTO_MATCHED' && activeImport.status === 'PREVIEWED' && selectableIds.length > 0 && <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-blue-50 p-3 text-sm"><span className="mr-auto text-blue-900">Các ca này đã được hệ thống ghép đủ lượt vào/ra.</span><Button type="button" size="sm" variant="secondary" onClick={() => setSelected(new Set(selectableIds))}>Chọn {selectableIds.length} ca trang này</Button>{selected.size > 0 && <><Button type="button" size="sm" variant="secondary" onClick={() => setSelected(new Set())}>Bỏ chọn</Button><Button type="button" size="sm" onClick={bulkConfirm}><CheckCircle2 className="h-4 w-4" />Xác nhận {selected.size} ca đã chọn</Button></>}</div>}</div>
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -622,7 +491,7 @@ export default function HrProductionAttendance() {
       <HrPagination page={shifts.page || 0} totalPages={shifts.totalPages || 0} totalElements={shifts.totalElements || 0} onPageChange={setPage} />
     </section>}
 
-    <ShiftDecisionDrawer shift={decisionShift} policies={policies} readOnly={activeImport?.status !== 'PREVIEWED'} onClose={() => setDecisionShift(null)} onSaved={async (saved, action) => {
+    <HrAttendanceShiftDecisionDrawer shift={decisionShift} policies={policies} readOnly={activeImport?.status !== 'PREVIEWED'} onClose={() => setDecisionShift(null)} onSaved={async (saved, action) => {
       const reviewBefore = activeImport?.reviewShifts;
       setDecisionShift(null);
       const nextImports = await loadImports();

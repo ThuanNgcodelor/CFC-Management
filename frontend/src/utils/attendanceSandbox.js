@@ -1,9 +1,3 @@
-const WORK_VALUES = new Set([0, 0.5, 1, 1.5, 2]);
-
-export function validWorkValue(value) {
-  return WORK_VALUES.has(Number(value));
-}
-
 export async function parseFactoryNightReward(file) {
   if (!file?.name?.toLowerCase().endsWith('.xlsx')) {
     throw new Error('Chọn file đối soát định dạng .xlsx.');
@@ -39,31 +33,20 @@ export function summarizeSandbox(days) {
   for (const day of days) {
     const item = byCode.get(day.employeeCode) || {
       employeeCode: day.employeeCode, employeeName: day.employeeName,
-      days: 0, workValue: 0, proposedNightShifts: 0, confirmedNightShifts: 0, reviewDays: 0,
+      policyGroup: day.policyGroup || 'PRODUCTION_WORKER', totalDays: 0, proposedWorkValue: 0,
+      nightShifts: 0, overtimeShifts: 0, nightAndOvertimeShifts: 0, reviewShifts: 0,
+      readyShifts: 0, confirmedShifts: 0, noPunchRows: 0,
     };
-    item.days += 1;
-    item.workValue += Number(day.workValue || 0);
-    if (day.status === 'NEEDS_REVIEW' || day.status === 'NO_PUNCH') item.reviewDays += 1;
-    if (day.countsTowardNightReward && Number(day.workValue) > 0) {
-      item.proposedNightShifts += 1;
-      if (day.status === 'CONFIRMED') item.confirmedNightShifts += 1;
-    }
+    item.totalDays += 1;
+    if (day.status === 'NEEDS_REVIEW') item.reviewShifts += 1;
+    if (day.status === 'AUTO_MATCHED') item.readyShifts += 1;
+    if (day.status === 'CONFIRMED') item.confirmedShifts += 1;
+    if (day.status === 'NO_PUNCH') item.noPunchRows += 1;
+    if (!['EXCLUDED', 'REJECTED'].includes(day.status)) item.proposedWorkValue += Number(day.workValue || 0);
+    if (Number(day.nightAllowanceAmount || 0) > 0) item.nightShifts += 1;
+    if (!['EXCLUDED', 'REJECTED'].includes(day.status) && Number(day.workValue) === 2) item.overtimeShifts += 1;
+    item.nightAndOvertimeShifts = item.nightShifts + item.overtimeShifts;
     byCode.set(day.employeeCode, item);
   }
   return [...byCode.values()].sort((left, right) => left.employeeCode.localeCompare(right.employeeCode));
-}
-
-export function reconcileSandbox(factoryRows, summaries) {
-  const attendance = new Map(summaries.map((row) => [row.employeeCode, row]));
-  const factory = new Map(factoryRows.map((row) => [row.employeeCode, row]));
-  return {
-    matched: factoryRows.filter((row) => attendance.has(row.employeeCode)).map((row) => {
-      const system = attendance.get(row.employeeCode);
-      return { ...row, systemNightShifts: system.proposedNightShifts,
-        confirmedNightShifts: system.confirmedNightShifts, unresolvedDays: system.reviewDays,
-        difference: row.nightShifts - system.proposedNightShifts };
-    }),
-    onlyInFactory: factoryRows.filter((row) => !attendance.has(row.employeeCode)),
-    onlyInAttendance: summaries.filter((row) => !factory.has(row.employeeCode)),
-  };
 }

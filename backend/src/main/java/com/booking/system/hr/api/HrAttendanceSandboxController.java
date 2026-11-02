@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.validation.Valid;
 
 import java.io.IOException;
 
@@ -30,5 +31,15 @@ public class HrAttendanceSandboxController {
         actors.fromPrincipal(principal);
         service.validateFileSize(file.getSize());
         return ApiResponse.success(service.preview(file.getBytes()), "Đã tính thử chấm công, không lưu dữ liệu.");
+    }
+
+    @PostMapping(value = "/rematch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<HrAttendanceSandboxDtos.Preview> rematch(@RequestPart("file") MultipartFile file,
+            @Valid @RequestPart("request") HrAttendanceSandboxDtos.RematchRequest request,
+            @AuthenticationPrincipal User principal) throws IOException {
+        actors.fromPrincipal(principal);
+        service.validateFileSize(file.getSize());
+        return ApiResponse.success(service.preview(file.getBytes(), request.decisions()),
+                "Đã tính lại chuỗi ca thử, không lưu dữ liệu.");
     }
 }

@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 
 /**
  * Thanh tab điều hướng chung giữa các màn hình Chấm công
- * @param {'attendance' | 'production' | 'night-rewards'} activeTab
+ * @param {'attendance' | 'production' | 'night-rewards' | 'sandbox'} activeTab
  */
 export function HrAttendanceTabs({ activeTab = 'attendance' }) {
   const navigate = useNavigate();
@@ -41,6 +41,10 @@ export function HrAttendanceTabs({ activeTab = 'attendance' }) {
         }`}
       >
         Thưởng ca đêm
+      </button>
+      <button type="button" onClick={() => navigate('/manager/hr/attendance/sandbox')}
+        className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTab === 'sandbox' ? 'bg-emerald-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
+        Thử nghiệm
       </button>
     </div>
   );

@@ -3,7 +3,6 @@ import {
   Clock3,
   ContactRound,
   FileCheck2,
-  FlaskConical,
   HardHat,
   LayoutDashboard,
   Library,
@@ -41,7 +40,6 @@ export function buildNavigation({ isAdmin, isHrUser = false, role = isAdmin ? 'A
     { name: 'Gửi phiếu lương', path: '/manager/hr/payroll', icon: Send },
     { name: 'Chấm công', path: '/manager/hr/attendance', icon: Clock3 },
     { name: 'Thưởng ca đêm', path: '/manager/hr/attendance/night-rewards', icon: Trophy },
-    { name: 'Thử chấm công', path: '/manager/hr/attendance/sandbox', icon: FlaskConical, show: role === 'HR_STAFF' },
     { name: 'Danh mục', path: '/manager/hr/catalogs', icon: Library },
   ].filter((item) => item.show !== false && canAccessHrPath(role, item.path));
 
@@ -83,7 +81,7 @@ export function isNavigationItemActive(item, pathname) {
   if (!item?.path) return false;
   if (item.exact || item.path === '/') return pathname === item.path;
   if (item.path === '/manager/hr/attendance' &&
-      (pathname.startsWith('/manager/hr/attendance/night-rewards') || pathname.startsWith('/manager/hr/attendance/sandbox'))) {
+      pathname.startsWith('/manager/hr/attendance/night-rewards')) {
     return false;
   }
   return pathname === item.path || pathname.startsWith(`${item.path}/`);
@@ -100,7 +98,7 @@ export function getPageTitle(pathname, items) {
     ['/manager/hr/telegram', 'Telegram nhân viên'],
     ['/manager/hr/payroll', 'Gửi phiếu lương'],
     ['/manager/hr/attendance/night-rewards', 'Thưởng ca đêm'],
-    ['/manager/hr/attendance/sandbox', 'Thử chấm công'],
+    ['/manager/hr/attendance/sandbox', 'Thử nghiệm chấm công'],
     ['/manager/hr/attendance', 'Chấm công'],
     ['/admin/profile-approvals/', 'Chi tiết hồ sơ'],
     ['/profile', 'Hồ sơ cá nhân'],

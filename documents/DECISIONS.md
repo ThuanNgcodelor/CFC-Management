@@ -29,6 +29,7 @@ Entry format: `date | decision | reason | status`
 - 2026-11-02 | Tắt tính năng Mẫu Word/ONLYOFFICE theo yêu cầu: gỡ menu, route, nút sửa; bỏ màn hình editor khỏi đồ thị import frontend; API editor/kho mẫu chỉ đăng ký khi bật cờ; triển khai ép cờ tắt và dừng Document Server cũ. | Giảm RAM, tránh màn hình soạn thảo chậm; vẫn giữ dữ liệu mẫu và chức năng xuất/xem/tải hợp đồng DOCX thông thường. Việc bật lại cần thay đổi có chủ đích.
 
 - 2026-11-02 | Thêm khu Thử chấm công riêng cho HR_STAFF: backend chỉ đọc file/config và gọi parser/matcher hiện hữu; thao tác sửa/xác nhận và đối soát xí nghiệp chỉ nằm trong phiên trình duyệt. | Kiểm tra các file công và người có/không có trong danh sách xí nghiệp mà không tạo import, ghi DB, chốt công hoặc ảnh hưởng thưởng ca đêm thật. Số đối soát là ca đêm dự kiến sau chỉnh sửa thử, có báo ngày chưa xử lý; không phải kết quả chốt chính thức.
+- 2026-11-02 | Thay khu thử độc lập bằng tab Thử nghiệm trong Chấm công, dùng chung bảng tổng quan, form quyết định ca và modal đối soát với màn chính. Quyết định thử được ghép lại trên backend từ file gốc nhưng không lưu. | Màn thử cũ khác giao diện và tính sai số ngày cần xử lý của nhân viên chưa có hồ sơ (A001); cần so sánh trực tiếp theo luồng chính mà vẫn giữ dữ liệu thật bất biến.
 
 ## Open (not decided; AI must ask before acting)
 
