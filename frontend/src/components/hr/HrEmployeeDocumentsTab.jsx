@@ -1,3 +1,5 @@
+import { authApi } from '../../api/authApi';
+import { canEditPersonnel } from '../../utils/hrPermissions';
 import { useEffect, useState } from 'react';
 import { Download, Eye, FilePenLine, Files, FileText, FolderPlus, Inbox, Plus, Search, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -11,6 +13,7 @@ import { apiErrorMessage, formatHrDate, formatHrDateTime } from '../../utils/hr'
 import { downloadResponseBlob } from '../../utils/downloadResponseBlob';
 
 export function HrEmployeeDocumentsTab({ employeeId, employeeName, onDocumentCountChange }) {
+  const canEdit = canEditPersonnel(authApi.getRole());
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -116,7 +119,7 @@ export function HrEmployeeDocumentsTab({ employeeId, employeeName, onDocumentCou
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        {canEdit && <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="secondary"
@@ -139,7 +142,7 @@ export function HrEmployeeDocumentsTab({ employeeId, employeeName, onDocumentCou
           >
             <Plus className="mr-1.5 h-4 w-4" /> Thêm 1 hồ sơ
           </Button>
-        </div>
+        </div>}
       </div>
 
       {/* Filter and Search Bar */}
@@ -207,7 +210,7 @@ export function HrEmployeeDocumentsTab({ employeeId, employeeName, onDocumentCou
               <p className="mt-1 text-xs text-gray-500 max-w-md">
                 Bạn có thể tải lên 1 hoặc nhiều tài liệu cùng lúc như CCCD, Sơ yếu lý lịch, Bằng cấp & Chứng chỉ, Giấy khám sức khỏe, HĐ scan...
               </p>
-              <div className="mt-4 flex gap-2">
+              {canEdit && <div className="mt-4 flex gap-2">
                 <Button
                   type="button"
                   variant="secondary"
@@ -231,7 +234,7 @@ export function HrEmployeeDocumentsTab({ employeeId, employeeName, onDocumentCou
                 >
                   <FolderPlus className="mr-1.5 h-4 w-4" /> Thêm hồ sơ đầu tiên
                 </Button>
-              </div>
+              </div>}
             </div>
           )}
 
@@ -305,7 +308,7 @@ export function HrEmployeeDocumentsTab({ employeeId, employeeName, onDocumentCou
                       >
                         <Download className="h-4 w-4" />
                       </button>
-                      <button
+                      {canEdit && <button
                         type="button"
                         onClick={() => {
                           setEditingDoc(doc);
@@ -316,8 +319,8 @@ export function HrEmployeeDocumentsTab({ employeeId, employeeName, onDocumentCou
                         aria-label="Chỉnh sửa"
                       >
                         <FilePenLine className="h-4 w-4" />
-                      </button>
-                      <button
+                      </button>}
+                      {canEdit && <button
                         type="button"
                         onClick={() => handleDelete(doc)}
                         disabled={deletingId === doc.id}
@@ -326,7 +329,7 @@ export function HrEmployeeDocumentsTab({ employeeId, employeeName, onDocumentCou
                         aria-label="Xóa"
                       >
                         <Trash2 className="h-4 w-4" />
-                      </button>
+                      </button>}
                     </div>
                   </div>
                 </div>

@@ -68,7 +68,7 @@ class HrMySqlPhase1IT {
         MigrateResult firstRun = flyway.migrate();
         MigrateResult secondRun = flyway.migrate();
 
-        assertThat(firstRun.migrationsExecuted).isEqualTo(28);
+        assertThat(firstRun.migrationsExecuted).isEqualTo(29);
         assertThat(secondRun.migrationsExecuted).isZero();
 
         verifyMySqlConstraintsAndLegacyData();

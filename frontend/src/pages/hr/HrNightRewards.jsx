@@ -1,3 +1,4 @@
+import { canApproveNightRewards } from '../../utils/hrPermissions';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AlertTriangle,
@@ -165,7 +166,7 @@ export default function HrNightRewards() {
   const [showReconcile, setShowReconcile] = useState(false);
   const loadSeq = useRef(0);
   const hasDataRef = useRef(false);
-  const canAdmin = authApi.getRole() === 'ADMIN';
+  const canApprove = canApproveNightRewards(authApi.getRole());
 
   useEffect(() => {
     hasDataRef.current = Boolean(data);
@@ -253,7 +254,7 @@ export default function HrNightRewards() {
     try {
       await api.createException({ ...exceptionForm, attendanceMonth: month });
       setExceptionForm({ employeeCode: '', exceptionType: 'COMPANY_PRODUCTION_PLAN', reason: '', evidenceReference: '' });
-      toast.success('Đã tạo ngoại lệ, chờ quản trị viên duyệt.');
+      toast.success('Đã tạo ngoại lệ, chờ người có quyền phê duyệt.');
       await load(true);
     } catch (requestError) {
       toast.error(apiErrorMessage(requestError, 'Không thể tạo ngoại lệ.'));
@@ -417,7 +418,7 @@ export default function HrNightRewards() {
               Rà soát Excel
             </Button>
             {isFinalized ? (
-              canAdmin && (
+              canApprove && (
                 <Button
                   type="button"
                   variant="secondary"
@@ -431,7 +432,7 @@ export default function HrNightRewards() {
                 </Button>
               )
             ) : (
-              canAdmin && (
+              canApprove && (
                 <Button
                   type="button"
                   disabled={busy || !data?.readyToFinalize}
@@ -623,7 +624,7 @@ export default function HrNightRewards() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <HrStatusBadge status={item.status} />
-                    {item.status === 'DRAFT' && canAdmin && (
+                    {item.status === 'DRAFT' && canApprove && (
                       <>
                         <Button type="button" size="sm" onClick={() => review(item, 'approve')}>
                           Duyệt

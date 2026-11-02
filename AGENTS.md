@@ -2,6 +2,13 @@
 
 Read this file before changing code in this repository. Rules are written in English; business descriptions stay in Vietnamese.
 
+## Knowledge graph navigation
+
+- For broad architecture, business-flow, or documentation relationships, use Graphify MCP `query_graph` when `graphify-out/graph.json` exists. Start with a named module/symbol, `depth: 1` or `2`, and `token_budget: 1500`; narrow the question before increasing the budget.
+- For exact source, callers, or impact analysis, follow the CodeGraph-first instructions supplied by the environment. Verify Graphify findings against current source before editing; the graph is a static snapshot and may contain inferred or unresolved edges.
+- Do not read the entire graph JSON, cache, or full report into context. If MCP is unavailable, use `~/.local/share/graphify/venv/bin/graphify query "<symbol or question>" --budget 1500`.
+- After relevant code changes, refresh the local graph with `bash scripts/update-knowledge-graph.sh`. This uses local AST parsing and preserves the semantic layer. Documentation/image semantic changes require a Graphify skill update; do not treat an AST refresh as semantic re-extraction.
+
 ## 1. Active Product Scope
 
 - Since 2026-07-27, only the HR management domain is under active product development.
@@ -14,7 +21,7 @@ Read this file before changing code in this repository. Rules are written in Eng
 ## 2. Source Of Truth
 
 1. Current code and config.
-2. Current schema: entities + Flyway migrations (`db/migration/`, V1 to V28 at the time of writing). `clean_database_master.sql` does not exist.
+2. Current schema: entities + Flyway migrations (`db/migration/`, V1 to V29 at the time of writing; V29 is a Java migration for the users role enum). `clean_database_master.sql` does not exist.
 3. Master architecture and business flow: `documents/PROJECT_MASTER_CONTEXT.md`.
 
 ## 3. Stack And Commands

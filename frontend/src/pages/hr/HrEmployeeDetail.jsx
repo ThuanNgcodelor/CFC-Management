@@ -1,3 +1,5 @@
+import { authApi } from '../../api/authApi';
+import { canEditPersonnel } from '../../utils/hrPermissions';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -74,6 +76,7 @@ function DetailItem({ label, value, wide = false }) {
 }
 
 export default function HrEmployeeDetail() {
+  const canEdit = canEditPersonnel(authApi.getRole());
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -274,13 +277,13 @@ export default function HrEmployeeDetail() {
                 </span>
               )}
             </Button>
-            {currentContract && (
+            {canEdit && currentContract && (
               <ContractExportButton disabled={exportingContract} loading={exportingContract} onClick={exportEmploymentContract} />
             )}
-            <Button type="button" onClick={() => navigate(`/manager/hr/employees/${id}/edit`)}>
+            {canEdit && <Button type="button" onClick={() => navigate(`/manager/hr/employees/${id}/edit`)}>
               <FilePenLine className="mr-1.5 h-4 w-4" />Chỉnh sửa thông tin
-            </Button>
-            {canDeleteDraft && (
+            </Button>}
+            {canEdit && canDeleteDraft && (
               <Button type="button" variant="danger" disabled={deleting} onClick={deleteDraft}><Trash2 className="mr-1.5 h-4 w-4" />Xóa bản nháp</Button>
             )}
           </>
@@ -431,11 +434,11 @@ export default function HrEmployeeDetail() {
                 ) : (
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
                     <p className="text-sm text-emerald-800">
-                      Hệ thống tự lấy ngày phép nền từ điều kiện lao động và cộng thâm niên mỗi 5 năm. Nếu cần, bạn có thể chỉnh tay cho riêng nhân sự này.
+                      Hệ thống tự lấy ngày phép nền từ điều kiện lao động và cộng thâm niên mỗi 5 năm. Việc chỉnh tay được giới hạn theo quyền của tài khoản.
                     </p>
-                    <Button type="button" onClick={openLeaveModal} disabled={leaveLoading || !leaveData}>
+                    {canEdit && <Button type="button" onClick={openLeaveModal} disabled={leaveLoading || !leaveData}>
                       Sửa ngày phép năm
-                    </Button>
+                    </Button>}
                   </div>
                 )}
               </div>

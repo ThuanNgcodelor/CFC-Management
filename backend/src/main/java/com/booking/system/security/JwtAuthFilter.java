@@ -1,7 +1,6 @@
 package com.booking.system.security;
 
 import com.booking.system.entity.User;
-import com.booking.system.enums.RoleEnum;
 import com.booking.system.enums.UserStatus;
 import com.booking.system.repository.UserRepository;
 import jakarta.servlet.FilterChain;
@@ -53,7 +52,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 // A token may remain cryptographically valid after an account is
                 // disabled. Never rebuild an authenticated principal for such an
                 // account; protected endpoints must treat that request as anonymous.
-                boolean loginRole = user.getRole() == RoleEnum.ADMIN || user.getRole() == RoleEnum.MANAGER;
+                boolean loginRole = user.getRole() != null && user.getRole().canLogin();
                 if (user.getStatus() == UserStatus.ACTIVE && loginRole) {
                     List<SimpleGrantedAuthority> authorities = Collections.singletonList(
                             new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));

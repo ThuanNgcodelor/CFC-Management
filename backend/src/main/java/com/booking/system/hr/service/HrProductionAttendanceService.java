@@ -581,7 +581,7 @@ public class HrProductionAttendanceService {
     @Transactional
     public HrProductionAttendanceDtos.ImportResponse reopenImport(
             String importId, HrProductionAttendanceDtos.ReopenImportRequest request, HrImportActor actor) {
-        if (actor == null || (!"ADMIN".equalsIgnoreCase(actor.role()) && !"MANAGER".equalsIgnoreCase(actor.role()))) {
+        if (actor == null || !actor.canManageAttendance()) {
             throw new HrApiException(org.springframework.http.HttpStatus.FORBIDDEN,
                     "PRODUCTION_ATTENDANCE_REOPEN_FORBIDDEN", "Chỉ quản trị viên hoặc nhân viên phụ trách chấm công được mở khóa kỳ chấm công.");
         }

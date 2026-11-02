@@ -80,8 +80,23 @@ public class SecurityConfig {
                                                 // payroll through Telegram and cannot access HR APIs.
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/word-editor/*/content").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/v1/word-editor/*/callback").permitAll()
+                                                // HR staff can read personnel records, but writes belong to
+                                                // the attendance/reward modules only. Keep these before the fallback.
+                                                .requestMatchers(HttpMethod.GET,
+                                                                "/api/v1/hr/overview",
+                                                                "/api/v1/hr/employees", "/api/v1/hr/employees/**",
+                                                                "/api/v1/hr/catalogs/*",
+                                                                "/api/v1/hr/employee-documents/**",
+                                                                "/api/v1/hr/employment-contract-documents/*/download")
+                                                .hasAnyRole("ADMIN", "MANAGER", "HR_STAFF")
+                                                .requestMatchers("/api/v1/hr/attendance", "/api/v1/hr/attendance/**")
+                                                .hasAnyRole("ADMIN", "MANAGER", "HR_STAFF")
                                                 .requestMatchers("/api/v1/hr/**").hasAnyRole("ADMIN", "MANAGER")
                                                 .requestMatchers("/api/v1/dashboard/admin").hasRole("ADMIN")
+                                                .requestMatchers("/api/v1/users/me", "/api/v1/users/me/**",
+                                                                "/api/v1/notifications/**", "/api/v1/push/**",
+                                                                "/api/v1/profile-requests/**").authenticated()
+                                                .requestMatchers("/api/v1/**").hasAnyRole("ADMIN", "MANAGER")
                                                 .anyRequest().authenticated())
                                 .exceptionHandling(exceptions -> exceptions
                                                 .authenticationEntryPoint((request, response, exception) -> response

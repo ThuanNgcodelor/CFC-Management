@@ -1,6 +1,7 @@
 # Standalone, optional service. Does not change the existing database/Redis deployment.
 services:
   documentserver:
+    profiles: ["word-editor"]
     image: ${ONLYOFFICE_IMAGE:-onlyoffice/documentserver:9.4.0}
     restart: unless-stopped
     ports:

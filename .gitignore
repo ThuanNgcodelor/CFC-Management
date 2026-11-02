@@ -38,6 +38,9 @@ Thumbs.db
 .~lock.*#
 .codegraph/
 
+# Generated knowledge graph, reports and extraction caches
+/graphify-out/
+
 # Redis / DB 
 *.rdb
 !backend/src/main/resources/db/

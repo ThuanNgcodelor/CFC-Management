@@ -1,3 +1,5 @@
+import { authApi } from '../../api/authApi';
+import { canEditPersonnel } from '../../utils/hrPermissions';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, Filter, PencilLine, Plus, Search, UserRound } from 'lucide-react';
@@ -84,6 +86,7 @@ function EmployeeAvatar({ employee }) {
 }
 
 export default function HrEmployees() {
+  const canEdit = canEditPersonnel(authApi.getRole());
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const searchParamsKey = searchParams.toString();
@@ -181,7 +184,7 @@ export default function HrEmployees() {
       <HrPageHeader
         title="Danh sách nhân sự"
         description="Tra cứu hồ sơ theo từng trang. Dữ liệu nhạy cảm xem ở trang chi tiết; hồ sơ nháp có thể chỉnh sửa trực tiếp."
-        actions={<Button type="button" onClick={() => navigate('/manager/hr/employees/new')}><Plus className="mr-1.5 h-4 w-4" />Thêm hồ sơ nháp</Button>}
+        actions={canEdit && <Button type="button" onClick={() => navigate('/manager/hr/employees/new')}><Plus className="mr-1.5 h-4 w-4" />Thêm hồ sơ nháp</Button>}
       />
 
       <form onSubmit={applyFilters} className="mb-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -270,9 +273,9 @@ export default function HrEmployees() {
                 <td className="whitespace-nowrap px-5 py-4"><HrStatusBadge status={employee.employmentStatus || employee.status} label={employmentStatusLabel(employee.employmentStatus || employee.status)} /></td>
                 <td className="px-5 py-4 text-right">
                   <div className="flex justify-end gap-2">
-                    <Button type="button" size="sm" variant="secondary" onClick={() => navigate(`/manager/hr/employees/${employee.id}/edit`)}>
+                    {canEdit && <Button type="button" size="sm" variant="secondary" onClick={() => navigate(`/manager/hr/employees/${employee.id}/edit`)}>
                       <PencilLine className="mr-1.5 h-4 w-4" />Sửa
-                    </Button>
+                    </Button>}
                     <Button type="button" size="sm" variant="secondary" onClick={() => navigate(`/manager/hr/employees/${employee.id}`)}>
                       <Eye className="mr-1.5 h-4 w-4" />Chi tiết
                     </Button>
@@ -308,7 +311,7 @@ export default function HrEmployees() {
               <div><span className="text-gray-400">Ngày vào làm</span><p className="mt-1 font-medium text-gray-700">{formatHrDate(employee.hireDate || employee.employment?.hireDate)}</p></div>
             </div>
             <div className="mt-3 flex gap-2">
-              {(employee.employmentStatus || employee.status) === 'DRAFT' && (
+              {canEdit && (employee.employmentStatus || employee.status) === 'DRAFT' && (
                 <Button type="button" size="sm" onClick={() => navigate(`/manager/hr/employees/${employee.id}/edit`)}>
                   <PencilLine className="mr-1.5 h-4 w-4" />Sửa nháp
                 </Button>

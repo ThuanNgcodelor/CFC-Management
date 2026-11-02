@@ -191,7 +191,7 @@ public class UserController {
             if (role == RoleEnum.EMPLOYEE) {
                 return ResponseEntity.badRequest().body(ApiResponse.error(
                         400,
-                        "EMPLOYEE không được phép đăng nhập; hãy tạo tài khoản MANAGER hoặc ADMIN"));
+                        "EMPLOYEE không được phép đăng nhập; hãy tạo tài khoản MANAGER, HR_STAFF hoặc ADMIN"));
             }
 
             Department department = null;

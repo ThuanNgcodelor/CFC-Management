@@ -312,7 +312,7 @@ public class AuthService {
     }
 
     private void requireLoginRole(User user) {
-        if (user.getRole() != RoleEnum.ADMIN && user.getRole() != RoleEnum.MANAGER) {
+        if (user.getRole() == null || !user.getRole().canLogin()) {
             throw new RuntimeException("Tài khoản nhân viên không được phép đăng nhập hệ thống quản lý nhân sự");
         }
     }

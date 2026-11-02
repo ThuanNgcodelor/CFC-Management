@@ -63,10 +63,11 @@ function DashboardLayoutContent() {
   const navigation = useMemo(
     () => buildNavigation({
       isAdmin,
+      role: user.role,
       isHrUser: true,
       pendingRegistrationCount,
     }),
-    [isAdmin, pendingRegistrationCount],
+    [isAdmin, user.role, pendingRegistrationCount],
   );
   const mobileNavigation = useMemo(
     () => buildMobileNavigation({

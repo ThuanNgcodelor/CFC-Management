@@ -6,6 +6,7 @@ import HrOcrSettingsModal from '../../components/hr/HrOcrSettingsModal';
 const ROLE_LABELS = {
   ADMIN: 'Quản trị hệ thống',
   MANAGER: 'Phòng Nhân sự',
+  HR_STAFF: 'Nhân viên nhân sự',
   EMPLOYEE: 'Nhân viên',
 };
 

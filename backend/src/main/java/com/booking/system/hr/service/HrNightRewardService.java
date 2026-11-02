@@ -58,7 +58,7 @@ public class HrNightRewardService {
     public HrNightRewardDtos.FinalizeMonthResponse finalizeMonth(String monthValue,
                                                                   HrNightRewardDtos.FinalizeMonthRequest request,
                                                                   HrImportActor actor) {
-        requireAdmin(actor, "Chỉ quản trị viên được chốt thưởng ca đêm.");
+        requireRewardApprover(actor, "Chỉ quản trị viên hoặc nhân viên nhân sự được chốt thưởng ca đêm.");
         MonthBuild build = buildMonth(monthValue);
         if (!build.response().readyToFinalize()) {
             throw HrApiException.conflict("NIGHT_REWARD_MONTH_NOT_READY",
@@ -114,7 +114,7 @@ public class HrNightRewardService {
     public HrNightRewardDtos.ReopenMonthResponse reopenMonth(String monthValue,
                                                              HrNightRewardDtos.ReopenMonthRequest request,
                                                              HrImportActor actor) {
-        requireAdmin(actor, "Chỉ quản trị viên được mở khóa thưởng ca đêm.");
+        requireRewardApprover(actor, "Chỉ quản trị viên hoặc nhân viên nhân sự được mở khóa thưởng ca đêm.");
         YearMonth month = parseMonth(monthValue);
         HrNightRewardProgram program = effectiveProgram(month);
         String monthText = month.toString();
@@ -180,7 +180,7 @@ public class HrNightRewardService {
     @Transactional
     public HrNightRewardDtos.ExceptionResponse approveException(String id, HrNightRewardDtos.ReviewExceptionRequest request,
                                                                  HrImportActor actor) {
-        requireAdmin(actor, "Chỉ quản trị viên được duyệt ngoại lệ thưởng ca đêm.");
+        requireRewardApprover(actor, "Chỉ quản trị viên hoặc nhân viên nhân sự được duyệt ngoại lệ thưởng ca đêm.");
         HrNightRewardException value = exception(id);
         if (value.getStatus() != HrNightRewardExceptionStatus.DRAFT) {
             throw HrApiException.conflict("NIGHT_REWARD_EXCEPTION_NOT_DRAFT", "Chỉ ngoại lệ đang chờ duyệt mới có thể duyệt.");
@@ -199,7 +199,7 @@ public class HrNightRewardService {
     @Transactional
     public HrNightRewardDtos.ExceptionResponse rejectException(String id, HrNightRewardDtos.ReviewExceptionRequest request,
                                                                 HrImportActor actor) {
-        requireAdmin(actor, "Chỉ quản trị viên được từ chối ngoại lệ thưởng ca đêm.");
+        requireRewardApprover(actor, "Chỉ quản trị viên hoặc nhân viên nhân sự được từ chối ngoại lệ thưởng ca đêm.");
         HrNightRewardException value = exception(id);
         if (value.getStatus() != HrNightRewardExceptionStatus.DRAFT) {
             throw HrApiException.conflict("NIGHT_REWARD_EXCEPTION_NOT_DRAFT", "Chỉ ngoại lệ đang chờ duyệt mới có thể từ chối.");
@@ -222,7 +222,7 @@ public class HrNightRewardService {
         if (value.getStatus() == HrNightRewardExceptionStatus.CANCELLED) {
             throw HrApiException.conflict("NIGHT_REWARD_EXCEPTION_CANCELLED", "Ngoại lệ đã được hủy.");
         }
-        if (!"ADMIN".equalsIgnoreCase(actor.role()) && !Objects.equals(value.getCreatedByActor(), actor.subject())) {
+        if (!actor.canApproveNightRewards() && !Objects.equals(value.getCreatedByActor(), actor.subject())) {
             throw new HrApiException(org.springframework.http.HttpStatus.FORBIDDEN,
                     "NIGHT_REWARD_EXCEPTION_CANCEL_FORBIDDEN", "Chỉ người tạo hoặc quản trị viên được hủy ngoại lệ.");
         }
@@ -584,8 +584,8 @@ public class HrNightRewardService {
         return status == HrNightRewardMonthlyStatus.QUALIFIED || status == HrNightRewardMonthlyStatus.QUALIFIED_EXCEPTION;
     }
 
-    private void requireAdmin(HrImportActor actor, String message) {
-        if (!"ADMIN".equalsIgnoreCase(actor.role())) {
+    private void requireRewardApprover(HrImportActor actor, String message) {
+        if (actor == null || !actor.canApproveNightRewards()) {
             throw new HrApiException(org.springframework.http.HttpStatus.FORBIDDEN, "NIGHT_REWARD_ADMIN_REQUIRED", message);
         }
     }

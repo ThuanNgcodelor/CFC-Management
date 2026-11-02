@@ -14,8 +14,9 @@ import {
   Users,
   Trophy,
 } from 'lucide-react';
+import { canAccessHrPath } from '../../utils/hrPermissions';
 
-export function buildNavigation({ isAdmin, isHrUser = false, pendingRegistrationCount = 0 }) {
+export function buildNavigation({ isAdmin, isHrUser = false, role = isAdmin ? 'ADMIN' : 'MANAGER', pendingRegistrationCount = 0 }) {
   const primaryItems = [];
   const adminItems = [
     { name: 'Duyệt hồ sơ', path: '/admin/profile-approvals', icon: FileCheck2, show: isAdmin },
@@ -40,8 +41,7 @@ export function buildNavigation({ isAdmin, isHrUser = false, pendingRegistration
     { name: 'Chấm công', path: '/manager/hr/attendance', icon: Clock3 },
     { name: 'Thưởng ca đêm', path: '/manager/hr/attendance/night-rewards', icon: Trophy },
     { name: 'Danh mục', path: '/manager/hr/catalogs', icon: Library },
-    { name: 'Mẫu Word', path: '/manager/hr/document-templates', icon: FileCheck2 },
-  ];
+  ].filter((item) => canAccessHrPath(role, item.path));
 
   // Nhóm nghiệp vụ đặt trước vì đây là khu vực sử dụng hằng ngày.
   // Các công cụ quản trị đặt cuối và có đường phân cách riêng, tránh trộn với HR.

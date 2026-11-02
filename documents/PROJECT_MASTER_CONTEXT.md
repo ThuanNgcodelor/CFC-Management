@@ -31,7 +31,7 @@ flowchart TB
     Security --> Legacy[Legacy booking/auth/notification controllers]
     HR --> MySQL[(MySQL 8 booking_db)]
     HR --> Redis[(Redis 7 token + OTP/session data)]
-    Backend --> Flyway[Flyway V1..V28]
+    Backend --> Flyway[Flyway V1..V29]
     HR --> Gemini[Google Gemini REST]
     HR --> Groq[Groq OpenAI-compatible REST]
     HR --> Telegram[Telegram Bot API/webhook]
@@ -43,10 +43,10 @@ flowchart TB
 
 - Backend: Spring Boot **4.0.0**, Java **21**, Spring MVC, JPA/Hibernate, Security, WebSocket/STOMP, Redis, Mail, Actuator.
 - Database: MySQL 8; các đối tượng HR do Flyway sở hữu. `LegacySchemaFilterProvider` ngăn Hibernate tự tạo/sửa/xóa bảng `hr_*`.
-- Migration hiện có: **V1 đến V28**, tổng cộng **55 bảng `hr_*`**. V27 thêm lịch sử nâng lương, snapshot bậc/ngạch/chu kỳ/ngày hiệu lực và import type `SALARY_RAISE`; V28 thêm trạng thái rà soát, ngày theo dõi lại và index danh sách tới hạn. Tích hợp ONLYOFFICE mặc định tắt; [hướng dẫn bật](HR_WORD_EDITOR_SETUP.md). Chưa deploy/kiểm thử Document Server live.
+- Migration hiện có: **V1 đến V29**, tổng cộng **55 bảng `hr_*`**. V27 thêm lịch sử nâng lương, snapshot bậc/ngạch/chu kỳ/ngày hiệu lực và import type `SALARY_RAISE`; V28 thêm trạng thái rà soát, ngày theo dõi lại và index danh sách tới hạn. V29 mở rộng role HR_STAFF trên bảng users legacy. Màn hình Mẫu Word và ONLYOFFICE đã tắt: menu/route không truy cập được, API editor không đăng ký khi flag tắt, script triển khai không khởi động Document Server và dừng container cũ. Việc xuất/xem/tải hợp đồng DOCX và dữ liệu mẫu đã có vẫn hoạt động. [Ghi chú vận hành](HR_WORD_EDITOR_SETUP.md).
 - File Excel/DOCX: Apache POI 5.4.1; hợp đồng DOCX dùng mẫu classpath mặc định hoặc phiên bản active trong kho DB. `HrDocxEngine` thay biến xuyên qua các Word run. Hướng dẫn cài đặt Document Server: [ONLYOFFICE Setup](HR_WORD_EDITOR_SETUP.md).
 - Frontend: React **19.2**, React Router **7**, Vite **8**, Tailwind CSS **4**, Axios, `react-datepicker`, `xlsx`, Lucide, PWA Workbox.
-- Token: access JWT ngắn hạn, refresh JWT lưu cookie/Redis; mọi API HR yêu cầu principal ADMIN hoặc MANAGER, trừ các route được permit riêng.
+- Token: access JWT ngắn hạn, refresh JWT lưu cookie/Redis; API HR phân quyền theo ADMIN/MANAGER và phạm vi giới hạn của HR_STAFF (mục 6), trừ các route được permit riêng.
 
 ## 3. Cây thư mục source (đã loại `.git`, `target`, `node_modules`, `dist`, `.DS_Store`)
 
@@ -218,7 +218,7 @@ V21 bổ sung pipeline độc lập cho Công nhân/KCS, không thay đổi lu�
 - Ca đêm `CN_18_5` nhận 1,5 công và 50.000 đồng; trường hợp thiếu/mơ hồ đi vào `NEEDS_REVIEW`.
 - Có tính lại theo revision, quyết định có lý do, history trước/sau, sự cố máy draft/analyze/confirm/cancel và miễn chấm tạo/hủy.
 - Tab **Ca sản xuất** nằm cạnh tab **Hành chính**, có KPI, bộ lọc Công nhân/KCS/cần kiểm tra/sự cố/đã xác nhận, bảng review responsive, cấu hình ca/ngưỡng công/chính sách nhân viên/miễn chấm và chi tiết read-only sau khi chốt.
-- Tổng hợp chỉ đọc import `CONFIRMED`; file Excel có sheet **Bảng công** đủ ngày 1–31 và sheet **Đối soát**. Manager không thể mở khóa; ADMIN phải nhập lý do để mở khóa trước khi điều chỉnh.
+- Tổng hợp chỉ đọc import `CONFIRMED`; file Excel có sheet **Bảng công** đủ ngày 1–31 và sheet **Đối soát**. ADMIN/MANAGER/HR_STAFF có thể mở khóa chấm công với lý do; việc mở khóa vẫn kiểm tra phiên bản dữ liệu và đánh dấu kết quả thưởng liên quan cần tính lại.
 - Tổng quan nhân viên được phân trang/tìm kiếm tại database; tháng đang chọn được nhớ trên trình duyệt. Sau thao tác điều chỉnh, khi quay lại tab và theo chu kỳ 30 giây, UI tự tải lại các bảng liên quan. Chỉ số **Ca đêm + tăng ca** bằng số ca đêm cộng số ca có mức 2 công và cũng được ghi vào file Excel xuất.
 - Thưởng ca đêm chốt theo nhân viên thuộc file đã xác nhận; file chờ cùng tháng chỉ chặn khi có MS trùng trong nhóm xét thưởng. File chờ khác MS được báo phạm vi và chốt tiếp sau. Tiến độ 12/24 trên màn hình là số tháng đã chốt thưởng, không phải số ca hợp lệ của tháng đang xem.
 - Đã kiểm thử local B124: đủ 31 ngày, tổng 45 công, đúng 5 ca đêm ngày 04–08 và phụ cấp 250.000 đồng. Ngày 18 là ca ngày thiếu lượt vào do mất điện; quyết định thủ công giữ lượt vào trống, dùng lượt ra 17:24 và tự ghép lại chuỗi ngày sau mà không ghi đè các mốc thủ công.
@@ -228,20 +228,29 @@ API backend nằm dưới `/api/v1/hr/attendance/production`. Source và gate lo
 
 ## 6. Phân quyền và đăng nhập
 
-`RoleEnum` hiện có `ADMIN`, `MANAGER`, `EMPLOYEE`; `UserStatus` có trạng thái active/pending/rejected/inactive.
+`RoleEnum` hiện có `ADMIN`, `MANAGER`, `HR_STAFF` (Nhân viên nhân sự), `EMPLOYEE`; `UserStatus` có trạng thái active/pending/rejected/inactive.
 
 | Đối tượng | Đăng nhập | HR API | Admin user API |
 |---|---:|---:|---:|
 | ADMIN + ACTIVE | Có | Có | Có toàn quyền theo service |
 | MANAGER + ACTIVE | Có | Có | Không |
+| HR_STAFF + ACTIVE | Có | Tổng quan và Nhân sự chỉ đọc; Chấm công và Thưởng ca đêm toàn quyền | Không |
 | EMPLOYEE (kể cả ACTIVE) | Không | Không | Không |
 | Pending/rejected/inactive | Không | Không | Chỉ admin hiện hành có thể cập nhật trạng thái |
 
-`AuthService.requireLoginRole()` chặn EMPLOYEE ở password login, Google login và refresh. `JwtAuthFilter` chỉ dựng principal cho ACTIVE ADMIN/MANAGER; token cũ của user bị khóa không được dùng tiếp. `SecurityConfig` bảo vệ `/api/v1/hr/**` bằng ADMIN/MANAGER, `/api/v1/dashboard/admin` bằng ADMIN; webhook Telegram và `/api/v1/hr/sync/**` đang permit theo source.
+`AuthService.requireLoginRole()` chặn EMPLOYEE ở password login, Google login và refresh. `JwtAuthFilter` dựng principal từ tài khoản ACTIVE và role hiện tại trong DB (ADMIN/MANAGER/HR_STAFF); token cũ của user bị khóa hoặc hạ về EMPLOYEE không được dùng tiếp. Webhook Telegram và `/api/v1/hr/sync/**` giữ nguyên cơ chế hiện tại.
+
+HR_STAFF chỉ thấy bốn menu Tổng quan, Nhân sự, Chấm công, Thưởng ca đêm. Mục Nhân sự cho xem danh sách, chi tiết, lịch sử, ngày phép, hợp đồng và xem/tải các tài liệu đã có; không thêm/sửa/xóa nhân sự, chỉnh ngày phép, tải lên/sửa/xóa tài liệu, tạo bản Word hoặc sửa Word. API nhân sự chỉ cho GET đối với role này; đọc danh mục phục vụ bộ lọc, không cho sửa danh mục. URL trực tiếp của các màn hình ngoài phạm vi hoặc form nhân sự bị chặn, đồng thời backend kiểm tra độc lập.
+
+HR_STAFF được xử lý/chốt/mở khóa chấm công và chốt/mở khóa/duyệt/từ chối/hủy ngoại lệ thưởng ca đêm. Quyền ADMIN/MANAGER cũ giữ nguyên; MANAGER không được cấp thêm quyền duyệt thưởng ca đêm. Các quy tắc tính công, ngưỡng và số tiền thưởng không thay đổi. Hồ sơ cá nhân, thông báo và push vẫn dùng hạ tầng chung; không cấp quyền quản trị tài khoản, payroll, nâng lương, thử việc, tăng/giảm hoặc Booking cho HR_STAFF.
+
+V29 là Java Flyway migration mở rộng enum `users.role` trên MySQL, giữ các giá trị cũ, nullability và default. Nếu bảng users chưa có, dùng VARCHAR, hoặc enum đã có HR_STAFF thì không ALTER; bảng users mới vẫn do Hibernate tạo theo mô hình legacy. Sau cập nhật backend, Admin tạo hoặc đổi vai trò tài khoản thành **Nhân viên nhân sự** tại Tài khoản. Tài khoản mới phải ACTIVE; đăng ký OTP vẫn tạo MANAGER chờ duyệt như trước.
 
 Admin có thể phân trang/tìm kiếm user, lọc role/status, tạo/cập nhật user, reset password và thu hồi toàn bộ session; không thể tự hạ quyền hoặc tự khóa tài khoản ADMIN đang đăng nhập. Đăng ký OTP tạo tài khoản MANAGER `PENDING_APPROVAL`, sau đó Admin duyệt.
 
 Frontend `App.jsx` dùng `ProtectedRoute`, `AdminRoute`, `HrRoute`; `roleNavigation.js` đưa mọi role hợp lệ về `/manager/hr`. Các route booking/notification cũ redirect về HR để deep link không gãy; menu hiện tại chỉ hiển thị HR và khu vực quản trị tài khoản.
+
+Kiểm tra local 02/11/2026: 45 kiểm thử tập trung vào auth/role/migration/chấm công/thưởng đạt; bộ backend tổng thể còn hai lỗi thiếu fixture `CongXn.xlsx` (đã ghi TECH_DEBT), chưa chạy MySQL live hoặc deploy production. Frontend build đạt, lint 0 lỗi/10 cảnh báo nền; kiểm tra trình duyệt với API giả lập xác nhận menu desktop/mobile, hồ sơ chỉ đọc và chặn URL ngoài quyền. Bundle Thưởng ca đêm vẫn khoảng 914,62 kB (nợ kỹ thuật có sẵn), không thêm thư viện nặng.
 
 ## 7. API catalog hiện tại
 

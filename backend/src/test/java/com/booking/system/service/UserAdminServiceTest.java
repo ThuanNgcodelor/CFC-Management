@@ -47,9 +47,10 @@ class UserAdminServiceTest {
         verify(authService).revokeAllSessions(target.getEmail());
     }
 
-    @Test
-    void managerCannotManageOtherAccounts() {
-        User manager = user("manager-id", "manager@example.test", RoleEnum.MANAGER, UserStatus.ACTIVE);
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = RoleEnum.class, names = {"MANAGER", "HR_STAFF", "EMPLOYEE"})
+    void nonAdminCannotManageOtherAccounts(RoleEnum role) {
+        User manager = user("manager-id", "manager@example.test", role, UserStatus.ACTIVE);
 
         assertThatThrownBy(() -> service.resetPassword(
                 manager,
@@ -73,6 +74,19 @@ class UserAdminServiceTest {
         assertThatThrownBy(() -> service.update(admin, admin.getId(), request))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Không thể tự hạ quyền");
+    }
+
+    @Test
+    void adminCanAssignHrStaffAndRevokePreviousSessions() {
+        User admin = user("admin-id", "admin@example.test", RoleEnum.ADMIN, UserStatus.ACTIVE);
+        User target = user("target-id", "target@example.test", RoleEnum.MANAGER, UserStatus.ACTIVE);
+        when(userRepository.findById(admin.getId())).thenReturn(Optional.of(admin));
+        when(userRepository.findById(target.getId())).thenReturn(Optional.of(target));
+        when(userRepository.save(target)).thenReturn(target);
+        service.update(admin, target.getId(), new AdminUpdateUserRequest(
+                "Nhân viên nhân sự", RoleEnum.HR_STAFF, UserStatus.ACTIVE, null, null));
+        assertThat(target.getRole()).isEqualTo(RoleEnum.HR_STAFF);
+        verify(authService).revokeAllSessions(target.getEmail());
     }
 
     private static User user(String id, String email, RoleEnum role, UserStatus status) {

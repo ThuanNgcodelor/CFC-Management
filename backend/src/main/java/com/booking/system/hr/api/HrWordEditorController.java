@@ -4,12 +4,14 @@ import com.booking.system.dto.ApiResponse;
 import com.booking.system.entity.User;
 import com.booking.system.hr.service.HrWordEditorService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
+@ConditionalOnProperty(prefix = "cfc.word-editor", name = "enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class HrWordEditorController {
     private final HrWordEditorService service;

@@ -104,6 +104,57 @@ class HrSecurityContractTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void hrStaffCanReadPersonnelAndManageAttendanceButCannotWritePersonnelOrAccessOtherModules() throws Exception {
+        stubToken("hr-staff", user("staff@example.test", RoleEnum.HR_STAFF));
+        for (String path : new String[]{"/api/v1/hr/overview", "/api/v1/hr/employees",
+                "/api/v1/hr/employees/e1", "/api/v1/hr/employees/e1/contracts",
+                "/api/v1/hr/employee-documents/d1/download", "/api/v1/hr/catalogs/departments",
+                "/api/v1/hr/employment-contract-documents/d1/download"}) {
+            mockMvc.perform(get(path).header("Authorization", "Bearer hr-staff")).andExpect(status().isOk());
+        }
+        for (String path : new String[]{"/api/v1/hr/employees", "/api/v1/hr/employees/e1",
+                "/api/v1/hr/employees/e1/documents", "/api/v1/hr/employees/e1/leave-entitlement",
+                "/api/v1/hr/employee-documents/d1", "/api/v1/hr/employment-contracts/c1/documents",
+                "/api/v1/hr/employment-contract-documents/d1/revisions", "/api/v1/hr/catalogs/departments"}) {
+            for (var method : new org.springframework.http.HttpMethod[]{org.springframework.http.HttpMethod.POST,
+                    org.springframework.http.HttpMethod.PUT, org.springframework.http.HttpMethod.PATCH,
+                    org.springframework.http.HttpMethod.DELETE}) {
+                mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request(method, path)
+                        .header("Authorization", "Bearer hr-staff")).andExpect(status().isForbidden());
+            }
+        }
+        for (String path : new String[]{"/api/v1/hr/attendance/imports/i1/confirm",
+                "/api/v1/hr/attendance/production/imports/i1/reopen",
+                "/api/v1/hr/attendance/night-rewards/months/2026-08/finalize",
+                "/api/v1/hr/attendance/night-rewards/months/2026-08/reopen",
+                "/api/v1/hr/attendance/night-rewards/exceptions/x1/approve"}) {
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(path)
+                    .header("Authorization", "Bearer hr-staff")).andExpect(status().isOk());
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(path))
+                    .andExpect(status().isUnauthorized());
+        }
+        for (String path : new String[]{"/api/v1/hr/payroll/imports", "/api/v1/hr/salary-raises",
+                "/api/v1/hr/probation/candidates", "/api/v1/hr/general-labor/ocr-captures/c1",
+                "/api/v1/hr/word-editor/sessions/s1", "/api/v1/hr/rosters", "/api/v1/hr/movements",
+                "/api/v1/hr/telegram/settings", "/api/v1/users", "/api/v1/dashboard/admin", "/api/v1/bookings/rooms"}) {
+            mockMvc.perform(get(path).header("Authorization", "Bearer hr-staff")).andExpect(status().isForbidden());
+        }
+    }
+
+    @Test
+    void hrStaffLosesAccessImmediatelyWhenDisabledOrDowngraded() throws Exception {
+        User staff = user("changed@example.test", RoleEnum.HR_STAFF);
+        stubToken("changed-staff", staff);
+        staff.setStatus(UserStatus.INACTIVE);
+        mockMvc.perform(get("/api/v1/hr/overview").header("Authorization", "Bearer changed-staff"))
+                .andExpect(status().isUnauthorized());
+        staff.setStatus(UserStatus.ACTIVE);
+        staff.setRole(RoleEnum.EMPLOYEE);
+        mockMvc.perform(get("/api/v1/hr/overview").header("Authorization", "Bearer changed-staff"))
+                .andExpect(status().isUnauthorized());
+    }
+
     private void stubToken(String token, User user) {
         when(jwtUtils.validateJwtToken(token)).thenReturn(true);
         when(jwtUtils.getEmailFromJwtToken(token)).thenReturn(user.getEmail());
@@ -209,6 +260,9 @@ class HrSecurityContractTest {
 
     @RestController
     static class SecurityContractController {
+
+        @org.springframework.web.bind.annotation.RequestMapping("/api/v1/{*path}")
+        String resource() { return "ok"; }
 
         @GetMapping("/api/v1/hr/security-contract")
         String ping() {

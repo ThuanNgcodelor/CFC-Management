@@ -46,9 +46,11 @@ class AuthServiceTest {
         ReflectionTestUtils.setField(authService, "refreshExpirationMs", NINETY_DAYS_MS);
     }
 
-    @Test
-    void loginStoresRefreshTokenForNinetyDaysInDeviceSpecificSession() {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = RoleEnum.class, names = {"ADMIN", "MANAGER", "HR_STAFF"})
+    void loginStoresRefreshTokenForNinetyDaysInDeviceSpecificSession(RoleEnum role) {
         User user = activeUser();
+        user.setRole(role);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("123456", user.getPassword())).thenReturn(true);
@@ -65,9 +67,11 @@ class AuthServiceTest {
                 eq(TimeUnit.MILLISECONDS));
     }
 
-    @Test
-    void refreshKeepsTheSameDeviceSessionWithoutInvalidatingOtherDevices() {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = RoleEnum.class, names = {"ADMIN", "MANAGER", "HR_STAFF"})
+    void refreshKeepsTheSameDeviceSessionWithoutInvalidatingOtherDevices(RoleEnum role) {
         User user = activeUser();
+        user.setRole(role);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         String oldToken = "old-refresh-token";
         String sessionId = "ios-device-session";

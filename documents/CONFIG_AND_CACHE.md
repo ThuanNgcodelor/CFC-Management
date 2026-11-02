@@ -27,8 +27,9 @@ Never cache: DRAFT imports/shifts, unconfirmed qualifications, notifications, bo
 | Connection pool (HikariCP) | defaults (10 connections) | |
 | `spring.servlet.multipart.max-file-size` | 50MB | Upload limit for Excel imports |
 | Hibernate dialect | `MySQLDialect` | Tests use H2 |
-| Migrations | Flyway V1 to V28 in `db/migration/` | Schema changes only via new migration |
+| Migrations | Flyway V1 to V29; V1–V28 SQL resources and V29 Java migration in `db.migration` | Schema changes only via new migration |
 | Secrets and credentials (JWT, DB, SMTP, VAPID) | set through config/env; names only in `application.properties.example` | Defaults currently committed (P0 in TECH_DEBT). Never write values here |
+| `cfc.word-editor.enabled` / `WORD_EDITOR_ENABLED` | `false` mặc định; `run.sh` ép `false` sau khi đọc `.env` và trong backend launcher | Không đăng ký API editor/kho mẫu, không chạy ONLYOFFICE; `run.sh` dừng container cũ và không tạo ingress docs. Muốn bật lại cần quyết định và sửa code triển khai. |
 
 ## Frontend configuration
 
@@ -39,7 +40,17 @@ Never cache: DRAFT imports/shifts, unconfirmed qualifications, notifications, bo
 | HTTP client | Axios in `baseApi.js`: adds Bearer token, refreshes on 401 and retries; no central 403 handling |
 | Lint | `oxlint`; baseline 0 errors, 10 warnings |
 
-## Environment variables
+## Local knowledge graph tooling
+
+| Setting | Value | Purpose / refresh |
+| --- | --- | --- |
+| Graphify installation | `~/.local/share/graphify/venv`, `graphifyy[mcp,sql]==0.9.100`, MCP SDK `1.30.0` | Local development tool, separate from application dependencies; stdio initialize, tool listing, statistics and bounded query verified |
+| Codex MCP `graphify` | User-level `~/.codex/config.toml`; Python module `graphify.serve`, stdio; absolute path to this repository's `graphify-out/graph.json` | Reads the local snapshot; no HTTP listener or external LLM API is needed for queries |
+| Query budget | Start at 1,500 tokens, depth 1–2 | Narrow queries to reduce context; increase only if relevant results are truncated |
+| Codex Graphify tool allow list | `query_graph`, `get_node`, `get_neighbors`, `get_community`, `god_nodes`, `graph_stats`, `shortest_path` | Expose graph navigation tools only; repository working directory is pinned locally |
+| Graph / AST cache | `graphify-out/`, ignored by Git; no TTL or size cap configured | Refresh with `bash scripts/update-knowledge-graph.sh` after code changes; semantic docs/images require the Graphify skill. No background watcher or git hook |
+
+## Application environment variables
 
 List variable names (not values) that deploy relies on. Add a row when a new one is introduced.
 

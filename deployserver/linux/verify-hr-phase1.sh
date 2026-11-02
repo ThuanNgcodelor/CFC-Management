@@ -12,7 +12,7 @@ EXPECTED_FOREIGN_KEY_COUNT=83
 EXPECTED_UNIQUE_COUNT=48
 EXPECTED_NAMED_INDEX_COUNT=94
 EXPECTED_CONTRACT_COLUMN_COUNT=46
-EXPECTED_MIGRATION_COUNT=28
+EXPECTED_MIGRATION_COUNT=29
 
 log() {
   printf '[BookingBase HR Verify] %s\n' "$*"
@@ -79,7 +79,7 @@ all_hr_table_count="$(read_query "
 migration_count="$(read_query "
   SELECT COUNT(*)
   FROM flyway_schema_history
-  WHERE version IS NOT NULL AND success = 1 AND checksum IS NOT NULL;
+  WHERE version IS NOT NULL AND success = 1 AND type IN ('SQL', 'JDBC');
 ")"
 [[ "$migration_count" == "$EXPECTED_MIGRATION_COUNT" ]] \
   || fail "Flyway migration drift: $migration_count/$EXPECTED_MIGRATION_COUNT."
@@ -231,4 +231,4 @@ if [[ -n "$LEGACY_SNAPSHOT" ]]; then
   trap - EXIT
 fi
 
-log "PASS: V1-V28 dung table/column/constraint/index/retention contract, khong co HR -> users va khong co migration loi."
+log "PASS: V1-V29 dung table/column/constraint/index/retention contract, khong co HR -> users va khong co migration loi."

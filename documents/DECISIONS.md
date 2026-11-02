@@ -6,6 +6,10 @@ Entry format: `date | decision | reason | status`
 
 ## Decided
 
+- 2026-11-02 | Bỏ qua toàn bộ `/graphify-out/` trong Git theo yêu cầu. | Bản đồ và cache là artifact sinh lại được, dùng local; tránh đưa cache lớn vào repository.
+
+- 2026-11-02 | Tạo snapshot bản đồ tri thức bằng Graphify theo yêu cầu; giữ CodeGraph cho tra cứu source theo AGENTS.md. Graphify chạy trong môi trường Python tạm, không thêm dependency runtime, hook hay dịch vụ vào ứng dụng. | Phục vụ khám phá quan hệ giữa mã nguồn, schema và tài liệu; snapshot không thay thế source hoặc kiểm thử nghiệp vụ.
+
 | Date | Decision | Reason |
 | --- | --- | --- |
 | 2026-07-27 | Only the HR domain is under active development; Booking room/car and approval are frozen | Product focus; shared Auth/Notification/PWA stay in place |
@@ -18,7 +22,15 @@ Entry format: `date | decision | reason | status`
 | 2026-10-20 | Vitest is not added yet | Adding a test runner is a new dependency; revisit when frontend tests are needed |
 | 2026-10-20 | Technical debt is tracked in `documents/TECH_DEBT.md`, not in AGENTS.md | AGENTS.md stays short; AI fixes debt only when assigned |
 
+- 2026-11-02 | Theo yêu cầu tiếp theo của người dùng, cài Graphify bền vững và đăng ký MCP stdio cho Codex, đọc snapshot local của CFCBase. | Tra cứu đồ thị theo câu hỏi với budget nhỏ để giảm context; giữ CodeGraph cho source hiện tại, cập nhật AST bằng script chủ động, không thêm watcher/hook hoặc dependency ứng dụng.
+
+- 2026-11-02 | Thêm role HR_STAFF (Nhân viên nhân sự): Tổng quan/Nhân sự chỉ đọc; Chấm công/Thưởng ca đêm toàn quyền theo xác nhận người dùng. | Giới hạn cả API và UI, vẫn cho đọc danh mục lọc và tài liệu đã có; không cấp quyền sửa hồ sơ, quản trị, payroll hay các module HR khác. ADMIN/MANAGER giữ quyền cũ. V29 mở rộng enum users.role có sẵn trên MySQL để không phụ thuộc Hibernate tự sửa danh sách enum; không thay đổi bảng HR hoặc tiền/ngưỡng thưởng.
+
+- 2026-11-02 | Tắt tính năng Mẫu Word/ONLYOFFICE theo yêu cầu: gỡ menu, route, nút sửa; bỏ màn hình editor khỏi đồ thị import frontend; API editor/kho mẫu chỉ đăng ký khi bật cờ; triển khai ép cờ tắt và dừng Document Server cũ. | Giảm RAM, tránh màn hình soạn thảo chậm; vẫn giữ dữ liệu mẫu và chức năng xuất/xem/tải hợp đồng DOCX thông thường. Việc bật lại cần thay đổi có chủ đích.
+
 ## Open (not decided; AI must ask before acting)
+
+
 
 | Topic | Question | Where |
 | --- | --- | --- |

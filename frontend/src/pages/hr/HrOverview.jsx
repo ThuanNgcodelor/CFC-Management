@@ -1,3 +1,5 @@
+import { authApi } from '../../api/authApi';
+import { canAccessHrPath } from '../../utils/hrPermissions';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -45,6 +47,7 @@ function StatCard({ label, value, icon: Icon, color }) {
 }
 
 function QuickLink({ to, icon: Icon, title, description }) {
+  if (!canAccessHrPath(authApi.getRole(), to)) return null;
   return (
     <Link to={to} className="group rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-emerald-200 hover:shadow-md">
       <div className="flex items-start justify-between gap-4">

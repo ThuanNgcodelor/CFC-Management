@@ -23,13 +23,15 @@ Source: codebase audit on 2026-10-16. Read this file only when a task touches an
 | 10 | Long transaction around Excel parsing and SHA256 | `HrProductionAttendanceService.upload` (:219), `HrAttendanceService` (:171), `HrPayrollService` (:39) | Parse outside the transaction; open `@Transactional` only for persistence |
 | 11 | Per-file `existsByImportIdAndEmployeeCodeIn` loop | `HrProductionAttendanceService.java:302` | One query across active imports of the month |
 | 12 | `existsActiveAfter` called per row | `HrSalaryRaiseService.java:337` | Batch query |
-| 13 | Almost no tests for night reward rules (2 tests, only pending-import blocking) | `HrNightRewardServiceTest.java` | Add tests: threshold 10, FAILED month keeps accrued months, `reopenMonth` to `STALE`, entitlement generation at 12/24 |
+| 13 | Entitlement generation at 12/24 months still lacks direct tests | `HrNightRewardServiceTest.java` | Threshold 9/10, accrued months after NOT_QUALIFIED (FAILED), ADMIN/HR_STAFF finalize and reopen to STALE covered on 2026-11-02; add entitlement boundary tests |
 | 14 | God components: `HrProductionAttendance.jsx` (41 `useState` + 8 `useEffect`, 641 lines), `HrMovements.jsx` (840 lines, 19 `useState`), `HrPayroll.jsx` (32 hooks) | those files | Split drawers/forms into child components; `useReducer` for the adjustment form |
 | 14b | Large shift list filtered inline in JSX on every render | `HrProductionAttendance.jsx:490-530` | Move the filter into `useMemo` (or into a child component) |
 | 14c | No central handling of HTTP 403 (only 401 refresh) | `baseApi.js` | Add a response interceptor for 403 with a Vietnamese toast |
 | 15 | No debounce, no virtualization on large tables; two shift screens use `useRef` sequence guards instead of request cancellation | `HrProductionAttendance.jsx`, `HrNightRewards.jsx`, HR search inputs | `useDebounce`; `@tanstack/react-virtual`; `AbortController` or TanStack Query |
 | 16 | Unpaginated list endpoints (17 found) | `HrProductionAttendanceController` `/exemptions` and `/shifts/{shiftId}/punches`, `HrNightRewardController` `/exceptions`, `HrEmployeeDocumentController`, `HrLeaveSyncController` | Add pagination or range filter and a max `size` |
 | 17 | 6 POST/PUT endpoints without `@Valid` | `HrOcrController:38`, `HrWordEditorController:18, 31`, others | Add `@Valid` and DTO constraints |
+
+| 17b | Two attendance tests depend on missing local `CongXn.xlsx`; full suite cannot pass on this checkout | `HrProductionAttendanceServiceTest`, `HrProductionShiftMatcherTest` | Supply a sanitized, versioned fixture or generate representative workbook data; do not commit real employee data |
 
 ## Group 3: Needs an owner decision (do not change on your own)
 

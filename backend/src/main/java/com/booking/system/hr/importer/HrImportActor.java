@@ -12,6 +12,15 @@ public record HrImportActor(String subject, String displayName, String role) {
         return new HrImportActor("SYSTEM:HR_IMPORT_RETENTION", "HR import retention", "SYSTEM");
     }
 
+    public boolean canApproveNightRewards() {
+        return "ADMIN".equalsIgnoreCase(role)
+                || "HR_STAFF".equalsIgnoreCase(role);
+    }
+
+    public boolean canManageAttendance() {
+        return canApproveNightRewards() || "MANAGER".equalsIgnoreCase(role);
+    }
+
     public static HrImportActor systemSalaryActor() {
         return new HrImportActor("SYSTEM:HR_SALARY_EFFECTIVE", "HR salary effective date", "SYSTEM");
     }

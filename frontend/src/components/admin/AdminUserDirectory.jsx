@@ -13,6 +13,7 @@ const INPUT_CLASS = 'min-h-11 w-full rounded-lg border border-gray-300 bg-white 
 const ROLE_LABELS = {
   ADMIN: 'Quản trị viên',
   MANAGER: 'Quản lý nhân sự',
+  HR_STAFF: 'Nhân viên nhân sự',
   EMPLOYEE: 'Nhân viên (không đăng nhập)',
 };
 
@@ -150,6 +151,7 @@ export default function AdminUserDirectory({ departments }) {
           <option value="">Tất cả vai trò</option>
           <option value="ADMIN">Quản trị viên</option>
           <option value="MANAGER">Quản lý nhân sự</option>
+                <option value="HR_STAFF">Nhân viên nhân sự</option>
           <option value="EMPLOYEE">Nhân viên (bị chặn)</option>
         </select>
         <select value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))} className="min-h-10 rounded-lg border border-gray-300 px-3 text-sm">
@@ -219,6 +221,7 @@ export default function AdminUserDirectory({ departments }) {
               <select value={editForm.role} onChange={(event) => setEditForm((current) => ({ ...current, role: event.target.value }))} className={INPUT_CLASS}>
                 <option value="ADMIN">Quản trị viên</option>
                 <option value="MANAGER">Quản lý nhân sự</option>
+                <option value="HR_STAFF">Nhân viên nhân sự</option>
                 <option value="EMPLOYEE">Nhân viên (không đăng nhập)</option>
               </select>
             </Field>

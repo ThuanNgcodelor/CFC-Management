@@ -13,6 +13,7 @@ import ServiceWorkerNavigateListener from './components/ServiceWorkerNavigateLis
 import Cookies from 'js-cookie';
 import { authApi } from './api/authApi';
 import { getRoleLandingPath } from './utils/roleNavigation';
+import { LOGIN_ROLES, canAccessHrPath } from './utils/hrPermissions';
 import { ocrLoginPath, ocrLoginTarget } from './utils/hrOcrCapture';
 
 const HrOverview = lazy(() => import('./pages/hr/HrOverview'));
@@ -34,8 +35,6 @@ const HrRosterDetail = lazy(() => import('./pages/hr/HrRosterDetail'));
 const HrAudit = lazy(() => import('./pages/hr/HrAudit'));
 const HrTelegramEmployees = lazy(() => import('./pages/hr/HrTelegramEmployees'));
 const HrPayroll = lazy(() => import('./pages/hr/HrPayroll'));
-const HrDocumentTemplates = lazy(() => import('./pages/hr/HrDocumentTemplates'));
-const HrWordEditor = lazy(() => import('./pages/hr/HrWordEditor'));
 const HrAttendance = lazy(() => import('./pages/hr/HrAttendance'));
 const HrProductionAttendance = lazy(() => import('./pages/hr/HrProductionAttendance'));
 const HrNightRewards = lazy(() => import('./pages/hr/HrNightRewards'));
@@ -48,8 +47,6 @@ const SessionCheckScreen = ({ unavailable = false }) => (
     {unavailable && <button type="button" onClick={() => window.location.reload()}>Thử lại</button>}
   </div>
 );
-
-const LOGIN_ROLES = new Set(['ADMIN', 'MANAGER']);
 
 function hasManagementRole() {
   return LOGIN_ROLES.has(authApi.getRole());
@@ -118,8 +115,13 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
-// HR chỉ dành cho ADMIN/MANAGER; backend tiếp tục enforce cùng một quy tắc.
-const ManagerRoute = ({ children }) => <ProtectedRoute>{children}</ProtectedRoute>;
+const HrPageAccess = ({ children }) => {
+  const location = useLocation();
+  return canAccessHrPath(authApi.getRole(), location.pathname)
+    ? children : <Navigate to="/manager/hr" replace />;
+};
+
+const ManagerRoute = ({ children }) => <ProtectedRoute><HrPageAccess>{children}</HrPageAccess></ProtectedRoute>;
 
 const RoleHome = () => {
   return <Navigate to="/manager/hr" replace />;
@@ -189,8 +191,8 @@ function App() {
         <Route path="manager/hr/audit" element={<HrRoute><HrAudit /></HrRoute>} />
         <Route path="manager/hr/telegram" element={<HrRoute><HrTelegramEmployees /></HrRoute>} />
         <Route path="manager/hr/payroll" element={<HrRoute><HrPayroll /></HrRoute>} />
-        <Route path="manager/hr/document-templates" element={<HrRoute><HrDocumentTemplates /></HrRoute>} />
-        <Route path="manager/hr/word-editor/:id" element={<HrRoute><HrWordEditor /></HrRoute>} />
+        <Route path="manager/hr/document-templates" element={<Navigate to="/manager/hr" replace />} />
+        <Route path="manager/hr/word-editor/:id" element={<Navigate to="/manager/hr" replace />} />
         <Route path="manager/hr/attendance" element={<HrRoute><HrAttendance /></HrRoute>} />
         <Route path="manager/hr/attendance/production" element={<HrRoute><HrProductionAttendance /></HrRoute>} />
         <Route path="manager/hr/attendance/night-rewards" element={<HrRoute><HrNightRewards /></HrRoute>} />

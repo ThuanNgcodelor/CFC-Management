@@ -39,7 +39,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class HrNightRewardServiceTest {
     private static final String MONTH = "2026-08";
-    private static final HrImportActor ADMIN = new HrImportActor("admin@test.local", "Admin", "ADMIN");
 
     @Mock private HrNightRewardProgramRepository programRepository;
     @Mock private HrNightRewardMonthlyQualificationRepository qualificationRepository;
@@ -55,6 +54,7 @@ class HrNightRewardServiceTest {
     @InjectMocks private HrNightRewardService service;
 
     private final AtomicReference<HrNightRewardMonthlyQualification> finalized = new AtomicReference<>();
+    private List<HrNightRewardMonthlyQualification> priorQualifications = List.of();
 
     @BeforeEach
     void setUp() {
@@ -111,7 +111,7 @@ class HrNightRewardServiceTest {
         when(exceptionRepository.findByProgramIdAndEmployeeIdInAndAttendanceMonthOrderByCreatedAtDesc(
                 eq("program"), any(), eq(MONTH))).thenReturn(List.of());
         when(qualificationRepository.findCurrentForEmployees(eq("program"), any(), eq(HrNightRewardMonthlyStatus.STALE)))
-                .thenAnswer(invocation -> finalized.get() == null ? List.of() : List.of(finalized.get()));
+                .thenAnswer(invocation -> finalized.get() == null ? priorQualifications : List.of(finalized.get()));
         when(qualificationRepository.findFirstByProgramIdAndEmployeeIdAndAttendanceMonthOrderByRevisionDesc(
                 "program", "employee", MONTH))
                 .thenAnswer(invocation -> Optional.ofNullable(finalized.get()));
@@ -119,8 +119,10 @@ class HrNightRewardServiceTest {
                 "program", "employee", HrNightRewardEntitlementStatus.DRAFT)).thenReturn(List.of());
     }
 
-    @Test
-    void finalizesConfirmedEmployeesWhenPendingFileHasDifferentEmployees() {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"ADMIN", "HR_STAFF"})
+    void finalizesConfirmedEmployeesWhenPendingFileHasDifferentEmployees(String role) {
+        HrImportActor actor = new HrImportActor("USER:test", "Người chốt", role);
         when(attendanceShiftRepository.findActiveEmployeeCodesByImportIdsAndPolicyGroup(
                 List.of("pending"), HrAttendancePolicyGroup.PRODUCTION_WORKER)).thenReturn(List.of("00186"));
         when(qualificationRepository.save(any())).thenAnswer(invocation -> {
@@ -139,7 +141,7 @@ class HrNightRewardServiceTest {
             assertThat(value.progress().periodicQualifiedMonths()).isZero();
         });
 
-        var result = service.finalizeMonth(MONTH, new HrNightRewardDtos.FinalizeMonthRequest("Đối soát tháng 8"), ADMIN);
+        var result = service.finalizeMonth(MONTH, new HrNightRewardDtos.FinalizeMonthRequest("Đối soát tháng 8"), actor);
         assertThat(result.createdQualifications()).isEqualTo(1);
         assertThat(service.preview(MONTH).employees()).singleElement().satisfies(value -> {
             assertThat(value.finalizedStatus()).isEqualTo(HrNightRewardMonthlyStatus.QUALIFIED);
@@ -147,7 +149,7 @@ class HrNightRewardServiceTest {
             assertThat(value.progress().loyaltyQualifiedMonths()).isEqualTo(1);
         });
 
-        var repeated = service.finalizeMonth(MONTH, new HrNightRewardDtos.FinalizeMonthRequest("Đối soát lại"), ADMIN);
+        var repeated = service.finalizeMonth(MONTH, new HrNightRewardDtos.FinalizeMonthRequest("Đối soát lại"), actor);
         assertThat(repeated.createdQualifications()).isZero();
         assertThat(repeated.unchangedQualifications()).isEqualTo(1);
         assertThat(service.preview(MONTH).employees()).singleElement().satisfies(value -> {
@@ -157,9 +159,33 @@ class HrNightRewardServiceTest {
 
         when(qualificationRepository.findByProgramIdAndAttendanceMonthOrderByEmployeeCodeAscRevisionDesc("program", MONTH))
                 .thenAnswer(invocation -> List.of(finalized.get()));
-        var reopened = service.reopenMonth(MONTH, new HrNightRewardDtos.ReopenMonthRequest("Cần tính lại"), ADMIN);
+        var reopened = service.reopenMonth(MONTH, new HrNightRewardDtos.ReopenMonthRequest("Cần tính lại"), actor);
         assertThat(reopened.staleQualifications()).isEqualTo(1);
         assertThat(finalized.get().getStatus()).isEqualTo(HrNightRewardMonthlyStatus.STALE);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({"9,NOT_QUALIFIED", "10,QUALIFIED"})
+    void appliesTenShiftThresholdWithoutLosingEarlierQualifiedMonths(int count, HrNightRewardMonthlyStatus expected) {
+        var shifts = attendanceShiftRepository.findActiveByAttendanceMonthAndImportStatus(
+                MONTH, HrAttendanceImportStatus.CONFIRMED);
+        when(attendanceShiftRepository.findActiveByAttendanceMonthAndImportStatus(
+                MONTH, HrAttendanceImportStatus.CONFIRMED)).thenReturn(shifts.subList(0, count));
+        HrNightRewardMonthlyQualification qualified = new HrNightRewardMonthlyQualification();
+        qualified.setEmployeeId("employee");
+        qualified.setAttendanceMonth("2026-06");
+        qualified.setStatus(HrNightRewardMonthlyStatus.QUALIFIED);
+        HrNightRewardMonthlyQualification failed = new HrNightRewardMonthlyQualification();
+        failed.setEmployeeId("employee");
+        failed.setAttendanceMonth("2026-07");
+        failed.setStatus(HrNightRewardMonthlyStatus.NOT_QUALIFIED);
+        priorQualifications = List.of(qualified, failed);
+        assertThat(service.preview(MONTH).employees()).singleElement().satisfies(value -> {
+            assertThat(value.actualNightShiftCount()).isEqualTo(count);
+            assertThat(value.calculatedStatus()).isEqualTo(expected);
+            assertThat(value.progress().periodicQualifiedMonths()).isEqualTo(1);
+            assertThat(value.progress().loyaltyQualifiedMonths()).isEqualTo(1);
+        });
     }
 
     @Test

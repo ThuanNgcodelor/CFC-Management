@@ -162,6 +162,7 @@ export default function AdminUsers() {
                   className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="MANAGER">Quản lý nhân sự</option>
+                  <option value="HR_STAFF">Nhân viên nhân sự</option>
                   <option value="ADMIN">Quản trị viên</option>
                 </select>
               </div>
@@ -195,7 +196,7 @@ export default function AdminUsers() {
             </div>
 
             <div className="rounded-md border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-              Chỉ tạo tài khoản MANAGER hoặc ADMIN. Mật khẩu được mã hóa một chiều; sau khi tạo sẽ không thể xem lại, chỉ có thể đặt mật khẩu mới.
+              Có thể tạo tài khoản MANAGER, HR_STAFF hoặc ADMIN. Mật khẩu được mã hóa một chiều; sau khi tạo sẽ không thể xem lại, chỉ có thể đặt mật khẩu mới.
             </div>
 
             <div className="flex justify-end">
