@@ -84,6 +84,7 @@ public class SecurityConfig {
                                                 // the attendance/reward modules only. Keep these before the fallback.
                                                 .requestMatchers(HttpMethod.GET,
                                                                 "/api/v1/hr/overview",
+                                                                "/api/v1/hr/reports/**",
                                                                 "/api/v1/hr/employees", "/api/v1/hr/employees/**",
                                                                 "/api/v1/hr/catalogs/*",
                                                                 "/api/v1/hr/employee-documents/**",

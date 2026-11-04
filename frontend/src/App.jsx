@@ -17,6 +17,7 @@ import { LOGIN_ROLES, canAccessHrPath } from './utils/hrPermissions';
 import { ocrLoginPath, ocrLoginTarget } from './utils/hrOcrCapture';
 
 const HrOverview = lazy(() => import('./pages/hr/HrOverview'));
+const HrReports = lazy(() => import('./pages/hr/HrReports'));
 const HrEmployees = lazy(() => import('./pages/hr/HrEmployees'));
 const HrEmployeeDetail = lazy(() => import('./pages/hr/HrEmployeeDetail'));
 const HrEmployeeForm = lazy(() => import('./pages/hr/HrEmployeeForm'));
@@ -172,6 +173,7 @@ function App() {
 
         {/* Phân hệ HR dành cho ADMIN và MANAGER. */}
         <Route path="manager/hr" element={<HrRoute><HrOverview /></HrRoute>} />
+        <Route path="manager/hr/reports" element={<HrRoute><HrReports /></HrRoute>} />
         <Route path="manager/hr/employees" element={<HrRoute><HrEmployees /></HrRoute>} />
         <Route path="manager/hr/employees/new" element={<HrRoute><HrEmployeeForm /></HrRoute>} />
         <Route path="manager/hr/employees/:id" element={<HrRoute><HrEmployeeDetail /></HrRoute>} />

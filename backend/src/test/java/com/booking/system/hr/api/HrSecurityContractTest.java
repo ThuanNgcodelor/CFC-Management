@@ -143,6 +143,18 @@ class HrSecurityContractTest {
     }
 
     @Test
+    void hrStaffHasReadOnlyAccessToWorkforceReports() throws Exception {
+        stubToken("hr-report-staff", user("report-staff@example.test", RoleEnum.HR_STAFF));
+
+        mockMvc.perform(get("/api/v1/hr/reports/headcount")
+                        .header("Authorization", "Bearer hr-report-staff"))
+                .andExpect(status().isOk());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/hr/reports/headcount")
+                        .header("Authorization", "Bearer hr-report-staff"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void hrStaffLosesAccessImmediatelyWhenDisabledOrDowngraded() throws Exception {
         User staff = user("changed@example.test", RoleEnum.HR_STAFF);
         stubToken("changed-staff", staff);

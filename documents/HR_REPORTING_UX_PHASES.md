@@ -15,9 +15,9 @@ Tài liệu kế hoạch quy định yêu cầu và những điểm còn cần c
 | 2 | Giữ bộ lọc và ngữ cảnh quay lại ở các màn HR chính | Phase 0; dùng các đường dẫn Phase 1 nếu liên quan | Hoàn tất local |
 | 3 | Tìm/lọc/sort Tăng–Giảm và nhập nhanh số chứng từ | Phase 2 có helper điều hướng | Hoàn tất local |
 | 4 | Xử lý hồ sơ dừng tiếp nhận và lỗi chặn xóa | Phase 0, 2, 3; người dùng đã chốt vòng đời | Hoàn tất local |
-| 5 | Hai báo cáo quân số/nghỉ việc, Excel và phân quyền | Phase 0, 2, 3; cần chốt quy tắc báo cáo | Hoãn theo yêu cầu người dùng; chưa triển khai |
+| 5 | Hai báo cáo quân số/nghỉ việc, Excel và phân quyền | Phase 0, 2, 3; quy tắc đã được người dùng chốt | Đang triển khai local; backend/UI có bản đầu, còn nghiệm thu drill-down và dữ liệu thật |
 | 6 | Giữ trạng thái trên các màn HR còn lại | Phase 2; Phase 3 cho các luồng liên quan | Hoàn tất local; Phase 5 báo cáo hoãn |
-| 7 | Nghiệm thu tổng thể, tài liệu và demo | Các phase trong phạm vi bàn giao đã hoàn tất | Nghiệm thu kỹ thuật local; video/demo nghiệp vụ và deploy chưa làm; Phase 5 bị hoãn |
+| 7 | Nghiệm thu tổng thể, tài liệu và demo | Các phase trong phạm vi bàn giao đã hoàn tất | Chưa nghiệm thu tổng thể; chưa demo nghiệp vụ/deploy |
 
 Thứ tự ưu tiên: **0 → 1 → 2 → 3 → 4 → 5 → 6 → 7**. Nếu Phase 4 chưa chốt vòng đời, có thể tiếp tục Phase 5 và 6 ở những phần độc lập. Nếu quy tắc báo cáo chưa chốt, tiếp tục Phase 6. Không biến một câu hỏi nghiệp vụ chưa có đáp án thành lý do dừng toàn bộ công việc.
 
@@ -122,37 +122,45 @@ Không có phase lương, cổng sức khỏe, ONLYOFFICE hoặc Booking. Không
 
 ## 7. Phase 5 — Báo cáo quân số và nghỉ việc
 
+### Quy tắc người dùng đã chốt ngày 04/11/2026
+
+- Mốc cuối kỳ theo trạng thái hiệu lực ngày cuối kỳ; đầu kỳ là trạng thái trước ngày đầu kỳ.
+- Nghỉ rồi tái tuyển được tính theo cả lượt nghỉ và số người riêng.
+- Tình trạng hợp đồng xét theo hợp đồng có hiệu lực tại ngày báo cáo.
+- Lịch sử đổi nhóm chưa được lưu nên tạm dùng nhóm hiện tại; giao diện phải nói rõ đây không phải nhóm lịch sử.
+- Không đưa lương vào báo cáo.
+
 **Mục tiêu:** chỉ số có thể truy vết tới danh sách nguồn, lọc theo hai tiêu chí độc lập và xuất Excel đúng phạm vi.
 
 ### 5A. Quy tắc và chất lượng dữ liệu lịch sử
 
-- [ ] P5.1 Chốt mốc đầu/cuối kỳ, ngày hiệu lực nghỉ, cách đếm người/lượt với nghỉ rồi tái tuyển.
-- [ ] P5.2 Chốt điều kiện hợp đồng chính thức, thời điểm phân loại hợp đồng và phòng/nhóm; không coi Văn phòng đồng nghĩa Chính thức.
-- [ ] P5.3 Đánh giá lịch sử baseline, điều chỉnh, chuyển đơn vị, đổi nhóm/hợp đồng. Xác định kỳ có/không có dữ liệu và dữ liệu chưa xác định.
-- [ ] P5.4 Nếu thiếu lịch sử cần cho báo cáo, lập phương án bổ sung hoặc giới hạn có thể giải thích được; không suy ngược từ thông tin hiện tại.
+- [x] P5.1 Chốt mốc đầu/cuối kỳ, ngày hiệu lực nghỉ, cách đếm người/lượt với nghỉ rồi tái tuyển.
+- [x] P5.2 Chốt phân loại nhóm và hợp đồng độc lập; hợp đồng xét theo hiệu lực ngày báo cáo.
+- [x] P5.3 Xác định baseline, movement điều chỉnh/thay thế và giới hạn nhóm hiện tại; kỳ trước baseline báo không có dữ liệu.
+- [x] P5.4 Ghi rõ giới hạn lịch sử nhóm; không suy ngược nhóm cũ từ thông tin hiện tại.
 
 **Cổng trước 5B:** định nghĩa chỉ số được chốt và có fixture chứng minh đối chiếu đúng; khoảng dữ liệu không đủ phải hiển thị giới hạn rõ ràng.
 
 ### 5B. API, đối chiếu và quyền đọc
 
-- [ ] P5.5 Tái sử dụng phép chiếu quân số hiện hữu; tạo aggregate theo kỳ và drill-down dùng cùng điều kiện, truy vấn theo lô.
-- [ ] P5.6 Chỉ lấy ảnh hưởng đã xác nhận, giải quyết bản thay thế/điều chỉnh; phân biệt nghỉ trong kỳ và hiện đang nghỉ.
-- [ ] P5.7 Đối chiếu quân số với Tăng/Giảm/tái tuyển; lát cắt đơn vị/hợp đồng phải xử lý dịch chuyển phù hợp, không áp công thức toàn công ty một cách giản lược.
-- [ ] P5.8 API list phân trang, size giới hạn; API aggregate giới hạn kỳ; không cache dữ liệu biến động đang xử lý.
-- [ ] P5.9 Cấp ADMIN/MANAGER/HR_STAFF quyền đọc/xuất đúng endpoint, không mở quyền ghi; trả bằng chứng chỉ đọc tối thiểu khi vai trò không được vào module nguồn.
+- [x] P5.5 Dùng phép chiếu roster hiện có cho đầu/cuối kỳ; aggregate tối đa 12 tháng và lọc hợp đồng theo truy vấn hàng loạt.
+- [x] P5.6 Chỉ lấy movement đã xác nhận, loại movement bị thay thế kể cả khi bản thay thế sang kỳ khác; nghỉ/tái tuyển tính theo lượt và người.
+- [ ] P5.7 Đã có số tăng/giảm, chuyển đến/đi theo đơn vị; còn cần đối chiếu các lát cắt hợp đồng và đơn vị với fixture nghiệp vụ trước khi hoàn tất.
+- [ ] P5.8 API danh sách phân trang (size tối đa 100), aggregate một năm; không thêm cache. Còn cần giới hạn truy vấn timeline movement ở DB thay vì nạp toàn timeline để hậu xử lý.
+- [x] P5.9 GET `/api/v1/hr/reports/**` được mở cho HR_STAFF cùng ADMIN/MANAGER; các phương thức ghi vẫn theo fallback quản lý. Kiểm thử phân quyền tích hợp vẫn cần chạy.
 
 ### 5C. Màn báo cáo và xuất Excel
 
-- [ ] P5.10 Thêm mục Báo cáo nhân sự và hai tab Biến động quân số/Danh sách nghỉ việc, dùng server state theo quy định dự án.
-- [ ] P5.11 Bộ lọc kỳ, nhóm, hợp đồng, đơn vị và lý do khi phù hợp; biểu đồ năm, bảng theo tháng, số người/lượt ghi rõ đơn vị.
-- [ ] P5.12 Bấm chỉ số ra danh sách đúng filter, mở nguồn được phép rồi quay lại đúng ngữ cảnh Phase 2.
-- [ ] P5.13 Xuất toàn bộ dữ liệu đã lọc, không chỉ trang hiện tại; phạm vi kỳ có giới hạn, ghi nguồn/kỳ/thời điểm xuất; dùng cùng bộ điều kiện với UI.
-- [ ] P5.14 Responsive, loading/error/empty, hủy yêu cầu cũ; đo API/query/render/bundle. Không đưa thư viện Excel nặng vào initial load.
-- [ ] P5.15 Nếu Phase 4 đã triển khai, báo cáo phân biệt Dừng tiếp nhận với Giảm; nếu chưa, ghi đúng giới hạn và bổ sung kiểm tra tương thích khi Phase 4 được bàn giao.
+- [x] P5.10 Có mục Báo cáo nhân sự với hai tab; dùng URL state và hủy request cũ bằng `AbortController` (repository chưa cài TanStack Query).
+- [x] P5.11 Có lọc năm/tháng/nhóm/hợp đồng/đơn vị/lý do, biểu đồ quân số cuối kỳ và bảng tách người/lượt.
+- [x] P5.12 Bấm tăng/giảm/chuyển đến/chuyển đi mở danh sách nguồn theo đúng tháng và bộ lọc; số lượt và số người nghỉ mở các chế độ danh sách tương ứng; mở hồ sơ giữ URL quay lại.
+- [x] P5.13 Excel lấy toàn bộ trang theo bộ lọc UI và ghi kỳ, thời điểm xuất; chưa có test đối chiếu workbook với tập dữ liệu nghiệp vụ.
+- [ ] P5.14 Responsive cơ bản, loading/error/empty và hủy request đã có; cần Playwright màn nhỏ và đo truy vấn/render trước khi nghiệm thu.
+- [x] P5.15 Chỉ movement Tăng/Giảm/Tái tuyển đã xác nhận vào báo cáo; hồ sơ Dừng tiếp nhận không được xem là nghỉ việc.
 
 **Kiểm thử trọng tâm:** ngày biên tháng/năm; nháp/hủy không vào số chính thức; điều chỉnh không đếm chồng; nghỉ/tái tuyển; chuyển đơn vị; hợp đồng đổi sau kỳ; thiếu baseline; tổng khớp drill-down và Excel; 401/403 và quyền đọc HR_STAFF.
 
-**Cổng hoàn tất:** kiểm thử đối chiếu pass, Excel và màn hình khớp filter; người có quyền xem/xuất được nhưng không được cấp thêm quyền quản lý.
+**Trạng thái:** bản đầu đã có trong working tree, chưa nghiệm thu Phase 5. Còn thiếu đối chiếu workbook bằng fixture, kiểm thử giao diện với backend/dữ liệu đại diện và tối ưu truy vấn timeline lớn.
 
 ## 8. Phase 6 — Giữ trạng thái trên các màn HR còn lại
 
@@ -168,7 +176,7 @@ Không có phase lương, cổng sức khỏe, ONLYOFFICE hoặc Booking. Không
 
 ## 9. Phase 7 — Nghiệm thu, tài liệu và demo
 
-- [x] P7.1 Đối chiếu yêu cầu đã chốt và đánh dấu Phase 5 hoãn; các giới hạn còn thiếu được ghi rõ.
+- [x] P7.1 Đối chiếu yêu cầu đã chốt, ghi trạng thái Phase 5 đang có bản đầu và liệt kê cổng nghiệm thu còn mở.
 - [x] P7.2 Frontend build/lint/unit tests và backend test mục tiêu chạy ở bản mã cuối.
 - [x] P7.3 Ghi rõ backend suite mục tiêu không thay cho toàn bộ suite; V30 chỉ xác minh qua H2, chưa chạy MySQL thật.
 - [x] P7.4 Nghiệm thu MCP với fixture giả lập; có kiểm tra 30 tình huống Phase 0–3 và ảnh hồ sơ Phase 4 ở desktop/mobile, không dùng fixture làm số liệu thật.
@@ -196,11 +204,21 @@ Không đưa dữ liệu nhận dạng, lý do sự việc của người thật
 
 ## 11. Bàn giao local Phase 0–4, 6 và nghiệm thu — 04/11/2026
 
-Đã thực hiện trong working tree, **chưa deploy**. Migration V30 mới được tạo, chỉ được kiểm tra qua H2; chưa chạy trên MySQL production. Không có thao tác ghi vào dữ liệu nhân sự thật. Phase 5 hoãn theo yêu cầu để chốt định nghĩa báo cáo sau.
+Các thay đổi trong tài liệu này đã được triển khai cục bộ, **chưa deploy**. Migration V30 được kiểm tra qua H2; chưa chạy trên MySQL production. Các báo cáo chỉ đọc dữ liệu và chưa được đối chiếu trên DB sản xuất. Phase 5 có bản đầu; chưa nghiệm thu hết các cổng đã liệt kê.
 
 Playwright MCP kiểm tra 30 kịch bản Phase 0–3 bằng API fixture giả lập; ảnh chụp detail Phase 4 dùng hồ sơ mô phỏng có 1 ứng viên nguồn, 2 biến động, trong đó 1 Tăng chờ: [desktop](../.playwright-mcp/page-2026-11-04T06-23-13-321Z.png), [mobile 390px](../.playwright-mcp/page-2026-11-04T06-23-29-511Z.png). Màn hình mobile không tràn ngang. Ảnh chụp không phản ánh dữ liệu production. Backend mục tiêu: 16 test pass; frontend build/unit tests pass, lint 0 lỗi và 10 cảnh báo có sẵn. Không khẳng định đã nghiệm thu toàn bộ hệ thống HR hoặc triển khai production.
 
-### Kết quả chức năng
+### Kết quả Phase 5 ngày 04/11/2026
+
+- Đã thêm `/manager/hr/reports` với hai tab, biểu đồ quân số cuối kỳ, danh sách nghỉ việc, bộ lọc và URL state; drill-down tăng/giảm/chuyển, phân biệt số lượt và số người nghỉ.
+- API GET báo cáo và xuất Excel cho ADMIN/MANAGER/HR_STAFF. Kiểm thử ma trận hiện tại xác nhận HR_STAFF đọc được đường dẫn báo cáo và POST bị từ chối.
+- `JAVA_HOME=/home/kali/.local/share/jdk-21 ./mvnw -o -Dtest=HrReportServiceTest,HrSecurityContractTest test`: **13 test pass**. Service test kiểm tra baseline thiếu, movement bị thay thế và drill-down; security contract hiện 11 test pass.
+- `npm run build`: pass; chunk mới `HrReports` khoảng 11 kB. Cảnh báo chunk Excel 863 kB đã có từ trước.
+- `npm run lint`: 0 lỗi, 10 cảnh báo hiện hữu; không phát sinh cảnh báo mới từ màn báo cáo.
+- Toàn bộ backend suite: **246 test, 3 failure, 2 error, 2 skipped**. Ba failure là kỳ vọng cũ số migration (29/28 nhưng hiện là 30/29); hai error do thiếu fixture `../CongXn.xlsx`. Không có failure trong `HrReportServiceTest` hoặc security contract; các mục được ghi tại `TECH_DEBT.md` 17b/17h.
+- Chưa chạy Playwright cho màn báo cáo, chưa đối chiếu workbook với dữ liệu nghiệp vụ và chưa kiểm tra MySQL. Query projection vẫn tải timeline confirmed rộng; theo dõi tại `TECH_DEBT.md` mục 17g.
+
+### Kết quả chức năng Phase 0–4, 6
 
 - Tổng quan lấy số `IN_PROBATION` từ repository ứng viên, giữ các trường đếm employee cũ. Có kiểm thử 7/0; số 7 quan sát lúc khảo sát không được viết cố định vào ứng dụng. HR_STAFF thấy số và không có liên kết vào Thử việc ngoài quyền.
 - Thẻ chỉ số dẫn đến danh sách đúng trạng thái; Chờ tiếp nhận có liên kết riêng. Danh sách nhân sự có đường tìm ở tất cả trạng thái/đơn vị; LĐ phổ thông ghi rõ giới hạn nhóm. Ứng viên đã chuyển hồ sơ mở được đúng employee liên kết. Thông báo xác nhận Tăng giải thích người đó đã sang Đang làm việc.
@@ -226,4 +244,4 @@ Baseline frontend đã chạy trước sửa: build/lint pass, 10 cảnh báo; p
 
 Fixture trình duyệt và cách chạy: [scripts/verification/README.md](../scripts/verification/README.md). Request API được chặn và trả dữ liệu giả lập; không dùng kết quả đó để khẳng định số liệu production hoặc đã kiểm thử UI với backend thật. Backend dùng JDK 21 tại máy phát triển và Maven offline, H2 cho integration test.
 
-Không có schema/data migration để rollback. Khi đưa lên môi trường chạy cần phát hành frontend/backend cùng thay đổi DTO overview và endpoint lọc; chưa có xác nhận build/deploy Docker trong phạm vi lần này. Các câu về Dừng tiếp nhận (P4) và thời điểm/phân loại lịch sử báo cáo (P5) vẫn cần chốt theo cổng đã ghi.
+Phase 5 không thêm migration/schema. Khi đưa lên môi trường chạy cần phát hành frontend/backend cùng endpoint báo cáo; chưa có xác nhận build/deploy Docker. Quy tắc báo cáo đã được chốt nhưng cần người dùng kiểm tra trên dữ liệu thật trước khi dùng làm số liệu nộp chính thức.

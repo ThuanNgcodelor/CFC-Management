@@ -118,6 +118,18 @@ public class HrRosterProjectionService {
         return projectedItems(periodStart, null, confirmedProjectionMovements());
     }
 
+    public Map<LocalDate, List<ProjectedRosterItem>> projectedItemsForPeriods(List<LocalDate> periodStarts) {
+        Optional<HrMonthlyRoster> baseline = baselineRoster();
+        if (baseline.isEmpty() || periodStarts == null || periodStarts.isEmpty()) return Map.of();
+        List<HrEmployeeMovement> timeline = confirmedProjectionMovements();
+        Map<LocalDate, List<ProjectedRosterItem>> projections = new LinkedHashMap<>();
+        for (LocalDate periodStart : periodStarts) {
+            LocalDate period = requirePeriodStart(periodStart);
+            projections.put(period, projectedItems(period, null, timeline, baseline.get()));
+        }
+        return Map.copyOf(projections);
+    }
+
     public HrMovementImpactPreviewResponse previewMovement(HrEmployeeMovement draftMovement) {
         if (draftMovement == null || draftMovement.getEffectiveDate() == null) {
             throw HrApiException.badRequest("MOVEMENT_PREVIEW_INVALID", "Biến động nháp không hợp lệ để xem trước.");
@@ -208,16 +220,24 @@ public class HrRosterProjectionService {
             HrEmployeeMovement candidate,
             List<HrEmployeeMovement> confirmedTimeline
     ) {
-        LocalDate normalizedPeriod = requirePeriodStart(periodStart);
         Optional<HrMonthlyRoster> baseline = baselineRoster();
-        if (baseline.isEmpty()
-                || normalizedPeriod.isBefore(baseline.get().getPeriodStart())) {
+        return baseline.isEmpty() ? List.of() : projectedItems(periodStart, candidate, confirmedTimeline, baseline.get());
+    }
+
+    private List<ProjectedRosterItem> projectedItems(
+            LocalDate periodStart,
+            HrEmployeeMovement candidate,
+            List<HrEmployeeMovement> confirmedTimeline,
+            HrMonthlyRoster baseline
+    ) {
+        LocalDate normalizedPeriod = requirePeriodStart(periodStart);
+        if (normalizedPeriod.isBefore(baseline.getPeriodStart())) {
             return List.of();
         }
 
         LinkedHashMap<String, RosterItemDraft> drafts = new LinkedHashMap<>();
         for (HrMonthlyRosterItem item : rosterItemRepository
-                .findAllByRoster_IdOrderByDisplayOrder(baseline.get().getId())) {
+                .findAllByRoster_IdOrderByDisplayOrder(baseline.getId())) {
             drafts.put(item.getEmployee().getId(), RosterItemDraft.fromBaseline(item));
         }
 

@@ -22,13 +22,15 @@ Không có xác nhận deploy production trong tài liệu này. Các con số n
 
 Kế hoạch ngày 04/11/2026: [hoàn thiện Tổng quan, tra cứu, điều hướng và hai báo cáo nhân sự](HR_REPORTING_UX_PLAN.md). **Phase 0–3 đã triển khai local**: Tổng quan đếm riêng ứng viên `IN_PROBATION`, Tổng hồ sơ vẫn chỉ đếm employee; các nhãn Chờ tiếp nhận/Chờ xác nhận/Đã nghỉ việc phân biệt đúng ngữ cảnh. Thẻ thử việc chỉ dẫn vào phân hệ khi vai trò được phép.
 
-Phase 4 bổ sung trạng thái employee `INTAKE_STOPPED` (“Dừng tiếp nhận”) cho hồ sơ `DRAFT` không tiếp tục tuyển. Hồ sơ vẫn thuộc tổng nhân sự nhưng không được tính đang làm/đã nghỉ. ADMIN/MANAGER có thể dừng và khôi phục; dừng sẽ hủy các Tăng `DRAFT` trong cùng transaction, giữ nguyên liên kết và audit, khôi phục chỉ đưa hồ sơ về `DRAFT`. Chẩn đoán tham chiếu là API chỉ đọc và giới hạn theo role quản lý. Phase 5 báo cáo quân số/nghỉ việc đang hoãn theo yêu cầu người dùng để chốt định nghĩa sau.
+Phase 4 bổ sung trạng thái employee `INTAKE_STOPPED` (“Dừng tiếp nhận”) cho hồ sơ `DRAFT` không tiếp tục tuyển. Hồ sơ vẫn thuộc tổng nhân sự nhưng không được tính đang làm/đã nghỉ. ADMIN/MANAGER có thể dừng và khôi phục; dừng sẽ hủy các Tăng `DRAFT` trong cùng transaction, giữ nguyên liên kết và audit, khôi phục chỉ đưa hồ sơ về `DRAFT`. Chẩn đoán tham chiếu là API chỉ đọc và giới hạn theo role quản lý.
+
+Phase 5 có bản đầu ở `/manager/hr/reports`: biểu đồ/bảng quân số theo tháng, danh sách nghỉ việc, lọc theo năm/tháng/nhóm/hợp đồng/đơn vị/lý do, drill-down movement và xuất Excel. Quy tắc đã chốt: số cuối kỳ theo hiệu lực ngày cuối kỳ, người nghỉ và lượt nghỉ tách riêng, hợp đồng xét tại ngày báo cáo; nhóm dùng nhóm hiện tại vì chưa có lịch sử snapshot. HR_STAFF chỉ có GET đọc/xuất. Còn đối chiếu fixture, test quyền API và test giao diện; truy vấn projection còn nạp timeline movement lớn. Chưa deploy. Chi tiết: [Phase 5](HR_REPORTING_UX_PHASES.md#7-phase-5--báo-cáo-quân-số-và-nghỉ-việc).
 
 Phase 6 lưu trạng thái lọc/kỳ/phân trang lên URL ở Chấm công hành chính, Thưởng ca đêm, Nhập dữ liệu, Nâng lương, Danh mục, Nhật ký, Chấm công sản xuất và Telegram. File upload, form và preview không đưa lên URL. Đã build/lint local; chưa kiểm tra mọi hành trình từng màn với API thật.
 
 Nhân sự, Thử việc, LĐ phổ thông, Danh sách tháng và Tăng/Giảm giữ điều kiện đã áp dụng trên URL, nguồn quay lại nội bộ và vị trí cuộn trong phiên. Tăng/Giảm lọc/sort tại DB trước phân trang, tách người xử lý/thời điểm xử lý và loại bản điều chỉnh. Bộ nhập chứng từ chỉ gợi ý đuôi cho Tăng, người dùng sửa được mọi phần; số lưu là chuỗi đầy đủ, không tự cấp số và không sửa cơ chế sinh số hợp đồng. Excel Tăng dùng số chứng từ của biến động khi có, giữ nguồn số hợp đồng làm fallback cho lịch sử thiếu số chứng từ.
 
-Checklist, bằng chứng và giới hạn local: [các phase triển khai HR và báo cáo](HR_REPORTING_UX_PHASES.md). Phase 0–4 và 6 đã triển khai local; Phase 5 (hai báo cáo và quyền đọc/xuất mới) hoãn theo yêu cầu để chốt quy tắc sau. Không có xác nhận deploy.
+Checklist, bằng chứng và giới hạn local: [các phase triển khai HR và báo cáo](HR_REPORTING_UX_PHASES.md). Phase 0–4 và 6 đã triển khai local; Phase 5 có bản đầu nhưng còn hạng mục nghiệm thu. Không có xác nhận deploy.
 
 ## 2. Kiến trúc hiện hành
 

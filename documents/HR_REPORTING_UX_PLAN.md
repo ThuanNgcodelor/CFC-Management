@@ -242,6 +242,13 @@ Các cột đề xuất: mã nhân sự, họ tên, nhóm nhân sự tại thờ
 - Hồ sơ chưa xác định nhóm/hợp đồng phải được trình bày thành **Chưa xác định**, không ngầm gán Văn phòng hay Chính thức.
 - Nếu schema chưa lưu được phân loại tại quá khứ, nêu giới hạn và phương án bổ sung trước khi cam kết báo cáo lịch sử chính xác; không suy ngược bằng thông tin hiện tại.
 
+### 7.5 Quy tắc đã chốt và trạng thái triển khai
+
+- Người dùng chốt ngày 04/11/2026: quân số theo trạng thái hiệu lực cuối kỳ; nghỉ/tái tuyển đếm cả lượt và người riêng; hợp đồng xét theo hiệu lực ngày báo cáo; nhóm dùng nhóm hiện tại và phải ghi rõ giới hạn lịch sử. Không đưa lương vào phạm vi.
+- Bản đầu đã có ở `/manager/hr/reports`: bảng/biểu đồ quân số, danh sách nghỉ việc, bộ lọc nhóm và hợp đồng độc lập, đơn vị/lý do, phân trang, xuất Excel; HR_STAFF được đọc/xuất qua API GET.
+- Đang dùng nhóm hiện tại vì hệ thống chưa snapshot lịch sử đổi nhóm. “Chưa ghi nhận HĐLĐ hiệu lực” cũng không khẳng định người đó chưa từng ký; dữ liệu hợp đồng lịch sử có thể chưa đầy đủ.
+- Chưa nghiệm thu: đối chiếu Excel và API với fixture nghiệp vụ, kiểm thử ma trận quyền và giao diện qua Playwright/backend thật. Truy vấn projection hiện vẫn nạp timeline movement lớn, cần tối ưu theo khoảng ngày trước khi ký nghiệm thu dữ liệu lớn.
+
 ## 8. Phân quyền và kỹ thuật
 
 | Vai trò | Tổng quan/Nhân sự | Báo cáo mới | Tăng/Giảm và Thử việc |

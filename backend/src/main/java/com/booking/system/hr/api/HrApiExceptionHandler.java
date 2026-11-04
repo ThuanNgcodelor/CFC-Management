@@ -34,7 +34,8 @@ import java.util.Set;
         HrNightRewardController.class,
         HrAttendanceSandboxController.class,
         HrEmployeeProfileController.class,
-        HrSalaryRaiseController.class
+        HrSalaryRaiseController.class,
+        HrReportController.class
 })
 public class HrApiExceptionHandler {
 

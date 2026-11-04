@@ -13,5 +13,6 @@ export function canAccessHrPath(role, pathname) {
   if (role !== 'HR_STAFF') return false;
   return /^\/manager\/hr\/?$/.test(pathname)
     || /^\/manager\/hr\/employees(?:\/(?!new(?:\/|$))[^/]+)?\/?$/.test(pathname)
+    || /^\/manager\/hr\/reports\/?$/.test(pathname)
     || /^\/manager\/hr\/attendance(?:\/(?:production|night-rewards|sandbox))?\/?$/.test(pathname);
 }

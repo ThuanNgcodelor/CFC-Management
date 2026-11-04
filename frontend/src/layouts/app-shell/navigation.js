@@ -1,5 +1,6 @@
 import {
   ArrowUpDown,
+  ChartNoAxesCombined,
   Clock3,
   ContactRound,
   FileCheck2,
@@ -37,6 +38,7 @@ export function buildNavigation({ isAdmin, isHrUser = false, role = isAdmin ? 'A
     { name: 'Tăng / Giảm', path: '/manager/hr/movements', icon: ArrowUpDown },
     { name: 'Nâng lương', path: '/manager/hr/salary-raises', icon: BadgeDollarSign },
     { name: 'Danh sách tháng', path: '/manager/hr/rosters', icon: TableProperties },
+    { name: 'Báo cáo nhân sự', path: '/manager/hr/reports', icon: ChartNoAxesCombined },
     { name: 'Gửi phiếu lương', path: '/manager/hr/payroll', icon: Send },
     { name: 'Chấm công', path: '/manager/hr/attendance', icon: Clock3 },
     { name: 'Thưởng ca đêm', path: '/manager/hr/attendance/night-rewards', icon: Trophy },

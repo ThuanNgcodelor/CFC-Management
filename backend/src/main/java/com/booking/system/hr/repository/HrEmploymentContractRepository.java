@@ -24,6 +24,19 @@ public interface HrEmploymentContractRepository extends HrRepository<HrEmploymen
 
     long countByEmployee_Id(String employeeId);
 
+    @EntityGraph(attributePaths = "employee")
+    @Query("""
+            select contract from HrEmploymentContract contract
+            where contract.employee.id in :employeeIds
+              and contract.status = :status
+              and contract.effectiveFrom <= :effectiveFrom
+            """)
+    List<HrEmploymentContract> findForReport(
+            @Param("employeeIds") Collection<String> employeeIds,
+            @Param("status") HrEmploymentContractStatus status,
+            @Param("effectiveFrom") java.time.LocalDate effectiveFrom
+    );
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @EntityGraph(attributePaths = {
             "employee",
