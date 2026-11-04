@@ -8,6 +8,7 @@ import { HrDrawer, HrEmpty, HrError, HrLoading, HrPageHeader, HrPageShell, HrPag
 import { hrTelegramApi } from '../../api/hrTelegramApi';
 import { normalizePage } from '../../api/hrApiUtils';
 import { apiErrorMessage, formatHrDateTime } from '../../utils/hr';
+import { useHrListState } from '../../hooks/useHrListState';
 
 const STATUS_LABELS = {
   STARTED: 'Đã bấm Start',
@@ -22,15 +23,15 @@ const STATUS_LABELS = {
 };
 
 function statusLabel(status) { return STATUS_LABELS[status] || status || 'Chưa đăng ký'; }
+const TELEGRAM_LIST_DEFAULTS = { page: 0, status: 'VERIFIED', viewMode: 'employees', keyword: '' };
+const TELEGRAM_LIST_ALLOWED = { status: ['ALL', ...Object.keys(STATUS_LABELS)], viewMode: ['employees', 'registrations'] };
 
 export default function HrTelegramEmployees() {
+  const { values: listState, setValues: setListState, setPage } = useHrListState(TELEGRAM_LIST_DEFAULTS, TELEGRAM_LIST_ALLOWED);
   const [settings, setSettings] = useState(null);
   const [form, setForm] = useState({ botUsername: '', enabled: false });
   const [summary, setSummary] = useState(null);
-  const [page, setPage] = useState(0);
-  const [status, setStatus] = useState('VERIFIED');
-  const [viewMode, setViewMode] = useState('employees');
-  const [keyword, setKeyword] = useState('');
+  const { page, status, viewMode, keyword } = listState;
   const [registrations, setRegistrations] = useState(normalizePage(null));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,8 +48,8 @@ export default function HrTelegramEmployees() {
       hrTelegramApi.getSettings(),
       hrTelegramApi.getSummary(),
       viewMode === 'employees'
-        ? hrTelegramApi.getEmployeeStatuses({ page, size: 20, status: status || undefined, keyword: keyword.trim() || undefined })
-        : hrTelegramApi.getRegistrations({ page, size: 20, status: status || undefined, keyword: keyword.trim() || undefined }),
+        ? hrTelegramApi.getEmployeeStatuses({ page, size: 20, status: status === 'ALL' ? undefined : status, keyword: keyword.trim() || undefined })
+        : hrTelegramApi.getRegistrations({ page, size: 20, status: status === 'ALL' ? undefined : status, keyword: keyword.trim() || undefined }),
     ]);
     setSettings(nextSettings);
     setForm({ botUsername: nextSettings.botUsername || '', enabled: Boolean(nextSettings.enabled) });
@@ -72,9 +73,7 @@ export default function HrTelegramEmployees() {
   }, [settings?.botUsername]);
 
   const selectStatus = (nextStatus, nextView = viewMode) => {
-    setViewMode(nextView);
-    setStatus(nextStatus);
-    setPage(0);
+    setListState({ viewMode: nextView, status: nextStatus, page: 0 });
   };
 
   const saveSettings = async (event) => {
@@ -173,8 +172,8 @@ export default function HrTelegramEmployees() {
       ].map(([cardStatus, label, value, cardView]) => <button type="button" key={label} onClick={() => selectStatus(cardStatus, cardView)} className={`rounded-xl border p-4 text-left shadow-sm transition hover:border-emerald-300 hover:shadow ${status === cardStatus && viewMode === cardView ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500' : 'border-gray-200 bg-white'}`}><p className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</p><p className="mt-1 text-2xl font-bold text-gray-900">{value ?? '—'}</p><p className="mt-1 text-xs text-gray-500">Bấm để xem danh sách</p></button>)}</div>
 
       <section className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-100 p-5"><div><h2 className="font-semibold text-gray-900">Quản lý tài khoản nhận lương</h2><p className="mt-1 text-sm text-gray-500">Xác minh đăng ký mới, kiểm tra người đang liên kết hoặc tra cứu lịch sử.</p></div><div className="mt-4 flex flex-wrap gap-2"><Button type="button" size="sm" variant={viewMode === 'registrations' && status === 'PENDING_REVIEW' ? 'primary' : 'secondary'} onClick={() => selectStatus('PENDING_REVIEW', 'registrations')}><Clock3 className="h-4 w-4" />Cần xác minh ({summary?.pendingReview ?? 0})</Button><Button type="button" size="sm" variant={viewMode === 'employees' && status === 'VERIFIED' ? 'primary' : 'secondary'} onClick={() => selectStatus('VERIFIED', 'employees')}><Users className="h-4 w-4" />Đang liên kết ({summary?.verified ?? 0})</Button><Button type="button" size="sm" variant={viewMode === 'registrations' && status === '' ? 'primary' : 'secondary'} onClick={() => selectStatus('', 'registrations')}><Clock3 className="h-4 w-4" />Lịch sử ({summary?.total ?? 0})</Button></div></div>
-        <div className="flex flex-col gap-3 border-b border-gray-100 bg-gray-50/60 p-4 lg:flex-row lg:items-center"><div className="relative min-w-0 flex-1"><input value={keyword} onChange={(event) => setKeyword(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { setPage(0); setReloadKey((value) => value + 1); } }} placeholder="Tìm mã nhân viên, họ tên hoặc số điện thoại" className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" /></div><select value={status} onChange={(event) => { setStatus(event.target.value); setPage(0); }} className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm"><option value="">Tất cả trạng thái</option>{Object.entries(STATUS_LABELS).filter(([value]) => viewMode === 'employees' || !['NOT_REGISTERED', 'REVOKED'].includes(value)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><Button type="button" size="sm" variant="secondary" onClick={() => hrTelegramApi.exportRegistrations(viewMode === 'employees' ? undefined : status || undefined)}><Download className="h-4 w-4" />Xuất Excel</Button></div>
+        <div className="border-b border-gray-100 p-5"><div><h2 className="font-semibold text-gray-900">Quản lý tài khoản nhận lương</h2><p className="mt-1 text-sm text-gray-500">Xác minh đăng ký mới, kiểm tra người đang liên kết hoặc tra cứu lịch sử.</p></div><div className="mt-4 flex flex-wrap gap-2"><Button type="button" size="sm" variant={viewMode === 'registrations' && status === 'PENDING_REVIEW' ? 'primary' : 'secondary'} onClick={() => selectStatus('PENDING_REVIEW', 'registrations')}><Clock3 className="h-4 w-4" />Cần xác minh ({summary?.pendingReview ?? 0})</Button><Button type="button" size="sm" variant={viewMode === 'employees' && status === 'VERIFIED' ? 'primary' : 'secondary'} onClick={() => selectStatus('VERIFIED', 'employees')}><Users className="h-4 w-4" />Đang liên kết ({summary?.verified ?? 0})</Button><Button type="button" size="sm" variant={viewMode === 'registrations' && status === 'ALL' ? 'primary' : 'secondary'} onClick={() => selectStatus('ALL', 'registrations')}><Clock3 className="h-4 w-4" />Lịch sử ({summary?.total ?? 0})</Button></div></div>
+        <div className="flex flex-col gap-3 border-b border-gray-100 bg-gray-50/60 p-4 lg:flex-row lg:items-center"><div className="relative min-w-0 flex-1"><input value={keyword} onChange={(event) => setListState({ keyword: event.target.value }, { resetPage: false })} onKeyDown={(event) => { if (event.key === 'Enter') { setPage(0); setReloadKey((value) => value + 1); } }} placeholder="Tìm mã nhân viên, họ tên hoặc số điện thoại" className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" /></div><select value={status === 'ALL' ? '' : status} onChange={(event) => setListState({ status: event.target.value || 'ALL', page: 0 })} className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm"><option value="">Tất cả trạng thái</option>{Object.entries(STATUS_LABELS).filter(([value]) => viewMode === 'employees' || !['NOT_REGISTERED', 'REVOKED'].includes(value)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><Button type="button" size="sm" variant="secondary" onClick={() => hrTelegramApi.exportRegistrations(viewMode === 'employees' || status === 'ALL' ? undefined : status)}><Download className="h-4 w-4" />Xuất Excel</Button></div>
         <div className="max-h-[640px] overflow-auto">
           <table className="min-w-[1040px] w-full text-left text-sm">
             <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500 shadow-[0_1px_0_0_#e5e7eb]"><tr><th className="px-5 py-3">Nhân viên</th><th className="px-4 py-3">Liên hệ</th><th className="px-4 py-3">Telegram</th><th className="px-4 py-3">Trạng thái</th><th className="px-4 py-3">Thời gian xử lý</th><th className="px-5 py-3 text-right">Thao tác</th></tr></thead>
@@ -188,7 +187,7 @@ export default function HrTelegramEmployees() {
             </tr>)}</tbody>
           </table>
         </div>
-        {!loading && registrations.content.length === 0 && <div className="p-8"><HrEmpty title={status ? `Không có hồ sơ ${statusLabel(status).toLowerCase()}` : viewMode === 'employees' ? 'Chưa có nhân viên đang làm việc' : 'Chưa có lượt đăng ký'} description={status ? 'Hãy chọn “Tất cả trạng thái” để xem các hồ sơ khác.' : viewMode === 'employees' ? 'Danh sách sẽ hiển thị nhân viên có trạng thái Telegram.' : 'Khi nhân viên hoàn tất Start, chia sẻ số điện thoại và nhập mã, hồ sơ sẽ xuất hiện ở đây.'} /></div>}
+        {!loading && registrations.content.length === 0 && <div className="p-8"><HrEmpty title={status !== 'ALL' ? `Không có hồ sơ ${statusLabel(status).toLowerCase()}` : viewMode === 'employees' ? 'Chưa có nhân viên đang làm việc' : 'Chưa có lượt đăng ký'} description={status !== 'ALL' ? 'Hãy chọn “Tất cả trạng thái” để xem các hồ sơ khác.' : viewMode === 'employees' ? 'Danh sách sẽ hiển thị nhân viên có trạng thái Telegram.' : 'Khi nhân viên hoàn tất Start, chia sẻ số điện thoại và nhập mã, hồ sơ sẽ xuất hiện ở đây.'} /></div>}
         <HrPagination page={registrations.number} totalPages={registrations.totalPages} totalElements={registrations.totalElements} onPageChange={setPage} />
       </section>
 

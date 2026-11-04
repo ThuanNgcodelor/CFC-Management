@@ -1,7 +1,8 @@
 import { authApi } from '../../api/authApi';
 import { canEditPersonnel } from '../../utils/hrPermissions';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useHrListState, useHrNavigation, useHrPageBounds } from '../../hooks/useHrListState';
+import { useHrListScroll } from '../../hooks/useHrListScroll';
 import { Eye, Filter, PencilLine, Plus, Search, UserRound } from 'lucide-react';
 import SEOHead from '../../components/SEOHead';
 import { Button } from '../../components/ui/Button';
@@ -19,7 +20,7 @@ const INITIAL_FILTERS = {
   workingConditionId: '',
   sort: 'employeeCode,asc',
 };
-const EMPLOYEE_STATUSES = new Set(['DRAFT', 'ACTIVE', 'INACTIVE']);
+const EMPLOYEE_STATUSES = new Set(['DRAFT', 'ACTIVE', 'INACTIVE', 'INTAKE_STOPPED']);
 const EMPLOYEE_SORTS = new Set([
   'employeeCode,asc',
   'employeeCode,desc',
@@ -28,41 +29,8 @@ const EMPLOYEE_SORTS = new Set([
   'hireDate,desc',
 ]);
 const PAGE_SIZE = 20;
-
-function searchValue(searchParams, key) {
-  return searchParams.get(key)?.trim() || '';
-}
-
-function parseEmployeeSearchState(searchParams) {
-  const requestedPage = Number(searchParams.get('page'));
-  const requestedStatus = searchValue(searchParams, 'status').toUpperCase();
-  const requestedSort = searchValue(searchParams, 'sort');
-
-  return {
-    page: Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 0,
-    filters: {
-      keyword: searchValue(searchParams, 'keyword'),
-      status: EMPLOYEE_STATUSES.has(requestedStatus) ? requestedStatus : '',
-      departmentId: searchValue(searchParams, 'departmentId'),
-      positionId: searchValue(searchParams, 'positionId'),
-      workingConditionId: searchValue(searchParams, 'workingConditionId'),
-      sort: EMPLOYEE_SORTS.has(requestedSort) ? requestedSort : INITIAL_FILTERS.sort,
-    },
-  };
-}
-
-function buildEmployeeSearchParams(page, filters) {
-  const params = new URLSearchParams();
-  const keyword = filters.keyword.trim();
-  if (keyword) params.set('keyword', keyword);
-  if (filters.status) params.set('status', filters.status);
-  if (filters.departmentId) params.set('departmentId', filters.departmentId);
-  if (filters.positionId) params.set('positionId', filters.positionId);
-  if (filters.workingConditionId) params.set('workingConditionId', filters.workingConditionId);
-  if (filters.sort && filters.sort !== INITIAL_FILTERS.sort) params.set('sort', filters.sort);
-  if (page > 0) params.set('page', String(page));
-  return params;
-}
+const LIST_DEFAULTS = { ...INITIAL_FILTERS, page: 0 };
+const LIST_ALLOWED = { status: ['', ...EMPLOYEE_STATUSES], sort: [...EMPLOYEE_SORTS] };
 
 function buildBackendQuery(page, filters) {
   return {
@@ -87,13 +55,13 @@ function EmployeeAvatar({ employee }) {
 
 export default function HrEmployees() {
   const canEdit = canEditPersonnel(authApi.getRole());
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const searchParamsKey = searchParams.toString();
-  const { page, filters } = useMemo(
-    () => parseEmployeeSearchState(new URLSearchParams(searchParamsKey)),
-    [searchParamsKey],
-  );
+  const { open: navigate } = useHrNavigation();
+  const { values, setValues, setPage: updatePage } = useHrListState(LIST_DEFAULTS, LIST_ALLOWED);
+  const { page } = values;
+  const filters = useMemo(() => {
+    const { page: _page, ...rest } = values;
+    return rest;
+  }, [values]);
   const [draftFilters, setDraftFilters] = useState(filters);
   const [result, setResult] = useState(normalizePage(null));
   const [catalogs, setCatalogs] = useState({ departments: [], positions: [], conditions: [] });
@@ -162,29 +130,25 @@ export default function HrEmployees() {
 
   const applyFilters = (event) => {
     event.preventDefault();
-    setSearchParams(buildEmployeeSearchParams(0, {
-      ...draftFilters,
-      keyword: draftFilters.keyword.trim(),
-    }));
+    setValues({ ...draftFilters, keyword: draftFilters.keyword.trim() });
   };
 
   const clearFilters = () => {
     setDraftFilters(INITIAL_FILTERS);
-    setSearchParams(buildEmployeeSearchParams(0, INITIAL_FILTERS));
+    setValues(INITIAL_FILTERS);
   };
 
   const updateDraft = (field, value) => setDraftFilters((current) => ({ ...current, [field]: value }));
-  const updatePage = (nextPage) => {
-    setSearchParams(buildEmployeeSearchParams(nextPage, filters));
-  };
+  useHrListScroll(loading);
+  useHrPageBounds(result, loading, page, updatePage);
 
   return (
     <HrPageShell>
       <SEOHead title="CFC Base | Danh sách nhân sự" url="https://cfcbooking.io.vn/manager/hr/employees" />
       <HrPageHeader
         title="Danh sách nhân sự"
-        description="Tra cứu hồ sơ theo từng trang. Dữ liệu nhạy cảm xem ở trang chi tiết; hồ sơ nháp có thể chỉnh sửa trực tiếp."
-        actions={canEdit && <Button type="button" onClick={() => navigate('/manager/hr/employees/new')}><Plus className="mr-1.5 h-4 w-4" />Thêm hồ sơ nháp</Button>}
+        description="Tra cứu hồ sơ theo từng trang. Hồ sơ vừa đổi trạng thái hoặc đơn vị có thể không còn khớp bộ lọc; chọn Tìm ở tất cả trạng thái và đơn vị để tìm lại."
+        actions={canEdit && <Button type="button" onClick={() => navigate('/manager/hr/employees/new')}><Plus className="mr-1.5 h-4 w-4" />Thêm hồ sơ nhân sự</Button>}
       />
 
       <form onSubmit={applyFilters} className="mb-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -200,9 +164,10 @@ export default function HrEmployees() {
           </label>
           <select value={draftFilters.status} onChange={(event) => updateDraft('status', event.target.value)} className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm outline-none focus:border-emerald-500">
             <option value="">Tất cả trạng thái</option>
-            <option value="DRAFT">Hồ sơ nháp</option>
+            <option value="DRAFT">Chờ tiếp nhận</option>
             <option value="ACTIVE">Đang làm</option>
             <option value="INACTIVE">Đã nghỉ</option>
+            <option value="INTAKE_STOPPED">Dừng tiếp nhận</option>
           </select>
           <select value={draftFilters.departmentId} onChange={(event) => updateDraft('departmentId', event.target.value)} className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm outline-none focus:border-emerald-500">
             <option value="">Tất cả phòng ban</option>
@@ -238,6 +203,10 @@ export default function HrEmployees() {
         </div>
       )}
 
+      {hasFilters && <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-gray-600">
+        <span>Danh sách đang áp dụng bộ lọc.</span>
+        <Button type="button" variant="secondary" size="sm" onClick={() => setValues({ ...INITIAL_FILTERS, keyword: filters.keyword })}>Tìm ở tất cả trạng thái và đơn vị</Button>
+      </div>}
       {error && <div className="mb-4"><HrError message={error} onRetry={() => setReloadKey((value) => value + 1)} /></div>}
 
       <div className="hr-responsive-table hr-responsive-table--standard cfc-scrollbar overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -313,7 +282,7 @@ export default function HrEmployees() {
             <div className="mt-3 flex gap-2">
               {canEdit && (employee.employmentStatus || employee.status) === 'DRAFT' && (
                 <Button type="button" size="sm" onClick={() => navigate(`/manager/hr/employees/${employee.id}/edit`)}>
-                  <PencilLine className="mr-1.5 h-4 w-4" />Sửa nháp
+                  <PencilLine className="mr-1.5 h-4 w-4" />Sửa hồ sơ
                 </Button>
               )}
               <Button type="button" size="sm" variant="secondary" onClick={() => navigate(`/manager/hr/employees/${employee.id}`)}>
@@ -322,7 +291,7 @@ export default function HrEmployees() {
             </div>
           </div>
         ))}
-        {!loading && result.content.length === 0 && <HrEmpty title="Không có nhân sự phù hợp" description="Hãy thay đổi bộ lọc hoặc thêm hồ sơ nháp mới." />}
+        {!loading && result.content.length === 0 && <HrEmpty title="Không có nhân sự phù hợp" description="Hãy thay đổi bộ lọc hoặc thêm hồ sơ chờ tiếp nhận mới." />}
       </div>
 
       <div className="mt-4">

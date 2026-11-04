@@ -143,7 +143,13 @@ export default function HrNightRewards() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeView = searchParams.get('view') === 'person' ? 'person' : 'month';
   const selectedEmployeeCode = searchParams.get('employee') || '';
-  const [month, setMonth] = useState(() => localStorage.getItem('hr-night-reward-month') || currentMonth());
+  const month = searchParams.get('month') || localStorage.getItem('hr-night-reward-month') || currentMonth();
+  const setMonth = (nextMonth) => setSearchParams((current) => {
+    const next = new URLSearchParams(current);
+    if (nextMonth) next.set('month', nextMonth);
+    else next.delete('month');
+    return next;
+  });
   const [data, setData] = useState(null);
   const [exceptions, setExceptions] = useState([]);
   const [loading, setLoading] = useState(true);

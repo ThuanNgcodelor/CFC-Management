@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import { useHrNavigation } from '../../hooks/useHrListState';
+import { useHrMovementList } from '../../hooks/useHrMovementList';
+import { HrMovementFilters, HrMovementSortHeading } from '../../components/hr/HrMovementFilters';
+import { HrMovementDocumentNumber } from '../../components/hr/HrMovementDocumentNumber';
 import toast from 'react-hot-toast';
-import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, ArrowUpDown, CheckCircle2, CheckSquare, FilePenLine, Plus, Search, Square, Trash2, UserPlus, XCircle } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, CheckCircle2, CheckSquare, FilePenLine, Plus, Search, Square, Trash2, UserPlus, XCircle } from 'lucide-react';
 import SEOHead from '../../components/SEOHead';
 import { Button } from '../../components/ui/Button';
 import { HrDrawer, HrEmpty, HrError, HrPageHeader, HrPageShell, HrPagination, HrStatusBadge } from '../../components/hr/HrUi';
 import { hrActivityApi } from '../../api/hrActivityApi';
 import { hrEmployeeApi } from '../../api/hrEmployeeApi';
 import { normalizePage } from '../../api/hrApiUtils';
-import { apiErrorMessage, employmentStatusLabel, formatHrDate, formatHrDateTime, formatPeriod, movementLabel, nonEmpty } from '../../utils/hr';
+import { apiErrorMessage, employmentStatusLabel, formatHrDate, formatHrDateTime, formatPeriod, movementLabel, movementStatusLabel, nonEmpty } from '../../utils/hr';
 
 function newIdempotencyKey() {
   return globalThis.crypto?.randomUUID?.() || `movement-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -49,25 +53,23 @@ function employeeInitials(name) {
 function MovementTypeBadge({ type }) {
   const rehire = type === 'REHIRE';
   const increase = type === 'INCREASE' || rehire;
+  const decrease = type === 'DECREASE';
   return (
     <span className={`inline-flex min-w-max items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold ${increase
       ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-      : 'border-red-200 bg-red-50 text-red-700'}`}
+      : decrease ? 'border-red-200 bg-red-50 text-red-700' : 'border-gray-200 bg-gray-50 text-gray-700'}`}
     >
-      {increase ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
-      {rehire ? 'Tái tuyển' : increase ? 'Tăng' : 'Giảm'}
+      {increase ? <ArrowUp className="h-3.5 w-3.5" /> : decrease ? <ArrowDown className="h-3.5 w-3.5" /> : null}
+      {movementLabel(type)}
     </span>
   );
 }
 
 export default function HrMovements() {
-  const navigate = useNavigate();
+  const { open: navigate } = useHrNavigation('/manager/hr/movements');
   const [searchParams, setSearchParams] = useSearchParams();
-  const [page, setPage] = useState(0);
-  const [result, setResult] = useState(normalizePage(null));
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [reloadKey, setReloadKey] = useState(0);
+  const { page, setPage, result, loading, error, reloadKey, setReloadKey,
+    filters, setFilters, sortConfig, toggleSort } = useHrMovementList();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [employeeKeyword, setEmployeeKeyword] = useState('');
@@ -98,6 +100,7 @@ export default function HrMovements() {
     setSearching(true);
     hrEmployeeApi.getEmployee(prefillEmployeeId, { signal: controller.signal })
       .then((employee) => {
+        if (controller.signal.aborted) return;
         const selected = {
           id: employee.id,
           employeeCode: employee.personal?.employeeCode,
@@ -109,11 +112,13 @@ export default function HrMovements() {
         };
         setSelectedEmployee(selected);
         setEmployeeKeyword(`${selected.employeeCode || ''} ${selected.fullName || ''}`.trim());
-        const next = new URLSearchParams(searchParams);
-        next.delete('create');
-        next.delete('employeeId');
-        next.delete('effectiveDate');
-        setSearchParams(next, { replace: true });
+        setSearchParams((current) => {
+          const next = new URLSearchParams(current);
+          next.delete('create');
+          next.delete('employeeId');
+          next.delete('effectiveDate');
+          return next;
+        }, { replace: true });
       })
       .catch((requestError) => {
         if (!controller.signal.aborted) {
@@ -126,67 +131,9 @@ export default function HrMovements() {
     return () => controller.abort();
   }, [prefillEffectiveDate, prefillEmployeeId, searchParams, setSearchParams]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError('');
-    hrActivityApi.getMovements({ page, size: 20 }, { signal: controller.signal })
-      .then((data) => setResult(normalizePage(data)))
-      .catch((requestError) => { if (!controller.signal.aborted) setError(apiErrorMessage(requestError, 'Không thể tải lịch sử tăng/giảm.')); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
-  }, [page, reloadKey]);
-
-  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
   const [selectedIds, setSelectedIds] = useState(new Set());
-
-  useEffect(() => {
-    setSelectedIds(new Set());
-  }, [page, reloadKey]);
-
-  const toggleSort = (key) => {
-    setSortConfig((current) => ({
-      key,
-      direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc',
-    }));
-  };
-
-  const sortedContent = useMemo(() => {
-    if (!result.content) return [];
-    const items = [...result.content];
-    if (!sortConfig.key) return items;
-    return items.sort((a, b) => {
-      let aVal = '';
-      let bVal = '';
-      switch (sortConfig.key) {
-        case 'employee':
-          aVal = `${a.employeeCode || ''} ${a.employeeName || a.fullName || ''}`.toLowerCase();
-          bVal = `${b.employeeCode || ''} ${b.employeeName || b.fullName || ''}`.toLowerCase();
-          break;
-        case 'type':
-          aVal = a.movementType || a.type || '';
-          bVal = b.movementType || b.type || '';
-          break;
-        case 'effectiveDate':
-          aVal = a.effectiveDate || '';
-          bVal = b.effectiveDate || '';
-          break;
-        case 'status':
-          aVal = a.status || '';
-          bVal = b.status || '';
-          break;
-        case 'createdAt':
-          aVal = a.confirmedAt || a.cancelledAt || a.createdAt || '';
-          bVal = b.confirmedAt || b.cancelledAt || b.createdAt || '';
-          break;
-        default:
-          return 0;
-      }
-      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [result.content, sortConfig]);
+  useEffect(() => setSelectedIds(new Set()), [filters, reloadKey]);
+  const sortedContent = result.content;
 
   const draftItemsOnPage = useMemo(() => {
     return sortedContent.filter((item) => item.status === 'DRAFT');
@@ -217,7 +164,7 @@ export default function HrMovements() {
     setBusy('bulk-confirm');
     try {
       await hrActivityApi.bulkConfirmMovements(Array.from(selectedIds));
-      toast.success(`Đã xác nhận thành công ${selectedIds.size} biến động nhân sự!`);
+      toast.success(`Đã xác nhận ${selectedIds.size} biến động. Hồ sơ Tăng đã chuyển sang Đang làm việc; tìm lại trong Nhân sự → Tất cả trạng thái.`);
       setSelectedIds(new Set());
       setReloadKey((k) => k + 1);
     } catch (requestError) {
@@ -229,11 +176,11 @@ export default function HrMovements() {
 
   const handleBulkCancel = async () => {
     if (selectedIds.size === 0) return;
-    if (!window.confirm(`Hủy ${selectedIds.size} biến động nháp đã chọn?`)) return;
+    if (!window.confirm(`Hủy ${selectedIds.size} biến động chờ xác nhận đã chọn?`)) return;
     setBusy('bulk-cancel');
     try {
       await hrActivityApi.bulkCancelMovements(Array.from(selectedIds));
-      toast.success(`Đã hủy thành công ${selectedIds.size} biến động nháp!`);
+      toast.success(`Đã hủy thành công ${selectedIds.size} biến động chờ xác nhận!`);
       setSelectedIds(new Set());
       setReloadKey((k) => k + 1);
     } catch (requestError) {
@@ -257,7 +204,8 @@ export default function HrMovements() {
   };
 
   const changeMovementType = (movementType) => {
-    setForm((current) => ({ ...current, movementType, idempotencyKey: newIdempotencyKey() }));
+    if (form.decisionNumber && !window.confirm('Đổi loại sẽ xóa số chứng từ đang nhập để bạn điền lại. Chọn Hủy để giữ nguyên loại hiện tại.')) return;
+    setForm((current) => ({ ...current, movementType, decisionNumber: '', idempotencyKey: newIdempotencyKey() }));
     setSelectedEmployee(null);
     setEmployeeResults([]);
     setEmployeeSearchDone(false);
@@ -305,7 +253,7 @@ export default function HrMovements() {
         decisionDate: form.decisionDate || null,
         idempotencyKey: form.idempotencyKey,
       });
-      toast.success('Đã tạo biến động nháp. Hãy kiểm tra rồi xác nhận.');
+      toast.success('Đã tạo biến động chờ xác nhận. Hãy kiểm tra rồi xác nhận.');
       setShowForm(false);
       resetForm();
       setPage(0);
@@ -355,7 +303,7 @@ export default function HrMovements() {
         decisionDate: adjustmentForm.decisionDate || null,
         rowVersion: adjustmentTarget.rowVersion,
       });
-      toast.success('Đã tạo bản điều chỉnh nháp. Hãy xem trước ảnh hưởng rồi xác nhận.');
+      toast.success('Đã tạo bản điều chỉnh chờ xác nhận. Hãy xem trước ảnh hưởng rồi xác nhận.');
       closeAdjustment();
       setPage(0);
       setReloadKey((value) => value + 1);
@@ -368,8 +316,8 @@ export default function HrMovements() {
 
   const runMovementAction = async (item, action) => {
     const messages = {
-      cancel: 'Hủy biến động nháp này?',
-      delete: 'Xóa vĩnh viễn biến động nháp này?',
+      cancel: 'Hủy biến động chờ xác nhận này?',
+      delete: 'Xóa vĩnh viễn biến động chờ xác nhận này?',
     };
     if (action === 'confirm') {
       setBusy(`preview-${item.id}`);
@@ -389,7 +337,7 @@ export default function HrMovements() {
       if (action === 'confirm') await hrActivityApi.confirmMovement(item.id, item.rowVersion);
       if (action === 'cancel') await hrActivityApi.cancelMovement(item.id, item.rowVersion);
       if (action === 'delete') await hrActivityApi.deleteMovement(item.id, item.rowVersion);
-      toast.success(action === 'confirm' ? 'Đã xác nhận biến động' : action === 'cancel' ? 'Đã hủy biến động' : 'Đã xóa biến động nháp');
+      toast.success(action === 'confirm' ? 'Đã xác nhận biến động' : action === 'cancel' ? 'Đã hủy biến động' : 'Đã xóa biến động chờ xác nhận');
       setReloadKey((value) => value + 1);
     } catch (requestError) {
       toast.error(apiErrorMessage(requestError, 'Không thể xử lý biến động.'));
@@ -404,7 +352,9 @@ export default function HrMovements() {
     setBusy(`confirm-${item.id}`);
     try {
       await hrActivityApi.confirmMovement(item.id, item.rowVersion);
-      toast.success(`Đã xác nhận ${movementLabel(item.movementType)} và cập nhật danh sách tháng.`);
+      toast.success(item.movementType === 'INCREASE'
+        ? 'Đã xác nhận Tăng. Hồ sơ đã chuyển sang Đang làm việc; tìm lại trong Nhân sự → Tất cả trạng thái.'
+        : `Đã xác nhận ${movementLabel(item.movementType)} và cập nhật danh sách tháng.`);
       setConfirmPreview(null);
       setReloadKey((value) => value + 1);
     } catch (requestError) {
@@ -420,7 +370,7 @@ export default function HrMovements() {
         <div className="flex flex-wrap gap-1.5">
           <Button type="button" size="sm" disabled={Boolean(busy)} onClick={() => runMovementAction(item, 'confirm')}><CheckCircle2 className="mr-1 h-3.5 w-3.5" />Xác nhận</Button>
           <Button type="button" size="sm" variant="secondary" disabled={Boolean(busy)} onClick={() => runMovementAction(item, 'cancel')}><XCircle className="mr-1 h-3.5 w-3.5" />Hủy</Button>
-          <Button type="button" size="sm" variant="danger" disabled={Boolean(busy)} onClick={() => runMovementAction(item, 'delete')} aria-label="Xóa biến động nháp"><Trash2 className="h-3.5 w-3.5" /></Button>
+          <Button type="button" size="sm" variant="danger" disabled={Boolean(busy)} onClick={() => runMovementAction(item, 'delete')} aria-label="Xóa biến động chờ xác nhận"><Trash2 className="h-3.5 w-3.5" /></Button>
         </div>
       );
     }
@@ -450,10 +400,10 @@ export default function HrMovements() {
       <SEOHead title="CFC Base | Tăng giảm nhân sự" url="https://cfcbooking.io.vn/manager/hr/movements" />
       <HrPageHeader
         title="Tăng / Giảm nhân sự"
-        description="Tạo biến động nháp, kiểm tra và xác nhận. Ngày hiệu lực thuộc tháng nào thì danh sách tháng đó và các tháng sau tự cập nhật."
+        description="Tạo biến động chờ xác nhận, kiểm tra và xác nhận. Ngày hiệu lực thuộc tháng nào thì danh sách tháng đó và các tháng sau tự cập nhật."
         actions={(
           <>
-            <Button type="button" variant="secondary" onClick={() => navigate('/manager/hr/employees/new')}><UserPlus className="mr-1.5 h-4 w-4" />Tạo hồ sơ nháp</Button>
+            <Button type="button" variant="secondary" onClick={() => navigate('/manager/hr/employees/new')}><UserPlus className="mr-1.5 h-4 w-4" />Thêm hồ sơ nhân sự</Button>
             <Button type="button" onClick={() => setShowForm(true)}><Plus className="mr-1.5 h-4 w-4" />Tạo Tăng/Giảm</Button>
           </>
         )}
@@ -463,7 +413,7 @@ export default function HrMovements() {
         isOpen={showForm}
         onClose={closeForm}
         title="Biến động nhân sự mới"
-        description="Tăng dùng hồ sơ nháp; Giảm dùng hồ sơ đang làm việc. Ngày hiệu lực quyết định tháng được tính."
+        description="Tăng dùng hồ sơ chờ tiếp nhận; Giảm dùng hồ sơ đang làm việc. Ngày hiệu lực quyết định tháng được tính."
       >
         <form onSubmit={createMovement} className="flex min-h-full flex-col">
           <div className="flex-1 space-y-6 px-5 py-6 sm:px-7">
@@ -518,7 +468,7 @@ export default function HrMovements() {
                     value={employeeKeyword}
                     onChange={(event) => setEmployeeKeyword(event.target.value)}
                     className="min-h-11 w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 outline-none transition focus:border-[var(--cfc-cobalt)] focus:ring-2 focus:ring-blue-100"
-                    placeholder={form.movementType === 'INCREASE' ? 'Tìm trong hồ sơ nháp' : 'Tìm người đang làm việc'}
+                    placeholder={form.movementType === 'INCREASE' ? 'Tìm trong hồ sơ chờ tiếp nhận' : 'Tìm người đang làm việc'}
                   />
                 </div>
                 <Button type="button" variant="secondary" disabled={searching} onClick={searchEmployees}>Tìm</Button>
@@ -567,13 +517,13 @@ export default function HrMovements() {
             </label>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="text-sm font-semibold text-[var(--cfc-ink)]">Số quyết định<input value={form.decisionNumber} onChange={(event) => setForm((current) => ({ ...current, decisionNumber: event.target.value }))} className="mt-2 min-h-11 w-full rounded-lg border border-gray-300 px-3 font-normal outline-none transition focus:border-[var(--cfc-cobalt)] focus:ring-2 focus:ring-blue-100" maxLength="100" /></label>
+              <HrMovementDocumentNumber key={`${form.idempotencyKey}-${form.movementType}`} type={form.movementType} value={form.decisionNumber} onChange={(value) => setForm((current) => ({ ...current, decisionNumber: value }))} />
               <label className="text-sm font-semibold text-[var(--cfc-ink)]">Ngày ký quyết định<input type="date" value={form.decisionDate} onChange={(event) => setForm((current) => ({ ...current, decisionDate: event.target.value }))} className="mt-2 min-h-11 w-full rounded-lg border border-gray-300 px-3 font-normal outline-none transition focus:border-[var(--cfc-cobalt)] focus:ring-2 focus:ring-blue-100" /></label>
             </div>
           </div>
           <div className="sticky bottom-0 flex shrink-0 gap-3 border-t border-[var(--cfc-border)] bg-white px-5 py-4 sm:justify-end sm:px-7">
             <Button type="button" variant="secondary" className="flex-1 sm:flex-none" onClick={closeForm}>Hủy</Button>
-            <Button type="submit" className="flex-1 sm:flex-none" disabled={busy === 'create' || !selectedEmployee}>Lưu bản nháp</Button>
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={busy === 'create' || !selectedEmployee}>Lưu chờ xác nhận</Button>
           </div>
         </form>
       </HrDrawer>
@@ -613,9 +563,9 @@ export default function HrMovements() {
               </fieldset>
               <label className="block text-sm font-semibold text-[var(--cfc-ink)]">Ngày hiệu lực mới <span className="text-red-500">*</span><input type="date" required value={adjustmentForm.effectiveDate} onChange={(event) => setAdjustmentForm((current) => ({ ...current, effectiveDate: event.target.value }))} className="mt-2 min-h-11 w-full rounded-lg border border-gray-300 px-3 font-normal outline-none transition focus:border-[var(--cfc-cobalt)] focus:ring-2 focus:ring-blue-100" /></label>
               <label className="block text-sm font-semibold text-[var(--cfc-ink)]">Lý do điều chỉnh <span className="text-red-500">*</span><textarea rows="4" required value={adjustmentForm.reason} onChange={(event) => setAdjustmentForm((current) => ({ ...current, reason: event.target.value }))} className="mt-2 w-full resize-y rounded-lg border border-gray-300 px-3 py-2.5 font-normal outline-none transition focus:border-[var(--cfc-cobalt)] focus:ring-2 focus:ring-blue-100" maxLength="1000" placeholder="Ví dụ: Đơn vị báo muộn, điều chỉnh lại ngày nghỉ việc theo quyết định." /></label>
-              <div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-semibold text-[var(--cfc-ink)]">Số quyết định<input value={adjustmentForm.decisionNumber} onChange={(event) => setAdjustmentForm((current) => ({ ...current, decisionNumber: event.target.value }))} className="mt-2 min-h-11 w-full rounded-lg border border-gray-300 px-3 font-normal outline-none transition focus:border-[var(--cfc-cobalt)] focus:ring-2 focus:ring-blue-100" maxLength="100" /></label><label className="text-sm font-semibold text-[var(--cfc-ink)]">Ngày ký quyết định<input type="date" value={adjustmentForm.decisionDate} onChange={(event) => setAdjustmentForm((current) => ({ ...current, decisionDate: event.target.value }))} className="mt-2 min-h-11 w-full rounded-lg border border-gray-300 px-3 font-normal outline-none transition focus:border-[var(--cfc-cobalt)] focus:ring-2 focus:ring-blue-100" /></label></div>
+              <div className="grid gap-4 sm:grid-cols-2"><HrMovementDocumentNumber key={adjustmentForm.idempotencyKey} type={adjustmentForm.replacementMovementType} value={adjustmentForm.decisionNumber} onChange={(value) => setAdjustmentForm((current) => ({ ...current, decisionNumber: value }))} /><label className="text-sm font-semibold text-[var(--cfc-ink)]">Ngày ký quyết định<input type="date" value={adjustmentForm.decisionDate} onChange={(event) => setAdjustmentForm((current) => ({ ...current, decisionDate: event.target.value }))} className="mt-2 min-h-11 w-full rounded-lg border border-gray-300 px-3 font-normal outline-none transition focus:border-[var(--cfc-cobalt)] focus:ring-2 focus:ring-blue-100" /></label></div>
             </div>
-            <div className="sticky bottom-0 flex shrink-0 gap-3 border-t border-[var(--cfc-border)] bg-white px-5 py-4 sm:justify-end sm:px-7"><Button type="button" variant="secondary" className="flex-1 sm:flex-none" onClick={closeAdjustment}>Hủy</Button><Button type="submit" className="flex-1 sm:flex-none" disabled={Boolean(busy)}>Tạo bản điều chỉnh nháp</Button></div>
+            <div className="sticky bottom-0 flex shrink-0 gap-3 border-t border-[var(--cfc-border)] bg-white px-5 py-4 sm:justify-end sm:px-7"><Button type="button" variant="secondary" className="flex-1 sm:flex-none" onClick={closeAdjustment}>Hủy</Button><Button type="submit" className="flex-1 sm:flex-none" disabled={Boolean(busy)}>Tạo bản điều chỉnh chờ xác nhận</Button></div>
           </form>
         )}
       </HrDrawer>
@@ -644,7 +594,7 @@ export default function HrMovements() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-300 bg-emerald-50/90 p-3.5 shadow-sm">
           <div className="flex items-center gap-2">
             <CheckSquare className="h-5 w-5 text-emerald-700" />
-            <span className="font-semibold text-emerald-950">Đã chọn {selectedIds.size} biến động nháp</span>
+            <span className="font-semibold text-emerald-950">Đã chọn {selectedIds.size} biến động chờ xác nhận</span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -676,10 +626,11 @@ export default function HrMovements() {
         </div>
       )}
 
+      <HrMovementFilters filters={filters} onApply={setFilters} disabled={Boolean(busy)} />
       <div className="mb-3 flex items-end justify-between gap-4">
         <div>
           <h2 className="text-base font-semibold text-[var(--cfc-ink)]">Lịch sử biến động</h2>
-          <p className="mt-1 text-sm text-[var(--cfc-muted)]">Các bản nháp cần được xác nhận trước khi làm thay đổi quân số tháng. Bấm vào tiêu đề cột để sắp xếp.</p>
+          <p className="mt-1 text-sm text-[var(--cfc-muted)]">Các bản chờ xác nhận cần được xác nhận trước khi làm thay đổi quân số tháng. Bấm vào tiêu đề cột để sắp xếp.</p>
         </div>
         {!loading && <span className="shrink-0 text-sm font-medium text-[var(--cfc-muted)]">{result.totalElements} bản ghi</span>}
       </div>
@@ -693,54 +644,25 @@ export default function HrMovements() {
                     type="button"
                     onClick={toggleSelectAll}
                     className="rounded p-1 text-gray-500 hover:bg-gray-200 hover:text-emerald-700"
-                    title={isAllSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả bản nháp trên trang'}
+                    title={isAllSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả bản chờ xác nhận trên trang'}
                   >
                     {isAllSelected ? <CheckSquare className="h-4 w-4 text-emerald-700" /> : <Square className="h-4 w-4 text-gray-400" />}
                   </button>
                 )}
               </th>
-              <th className="cursor-pointer select-none px-5 py-4 transition hover:text-gray-900" onClick={() => toggleSort('employee')}>
-                <div className="flex items-center gap-1.5">
-                  Nhân sự
-                  <ArrowUpDown className={`h-3.5 w-3.5 ${sortConfig.key === 'employee' ? 'text-emerald-700' : 'text-gray-400'}`} />
-                  {sortConfig.key === 'employee' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                </div>
-              </th>
-              <th className="cursor-pointer select-none px-5 py-4 transition hover:text-gray-900" onClick={() => toggleSort('type')}>
-                <div className="flex items-center gap-1.5">
-                  Loại
-                  <ArrowUpDown className={`h-3.5 w-3.5 ${sortConfig.key === 'type' ? 'text-emerald-700' : 'text-gray-400'}`} />
-                  {sortConfig.key === 'type' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                </div>
-              </th>
-              <th className="cursor-pointer select-none px-5 py-4 transition hover:text-gray-900" onClick={() => toggleSort('effectiveDate')}>
-                <div className="flex items-center gap-1.5">
-                  Hiệu lực
-                  <ArrowUpDown className={`h-3.5 w-3.5 ${sortConfig.key === 'effectiveDate' ? 'text-emerald-700' : 'text-gray-400'}`} />
-                  {sortConfig.key === 'effectiveDate' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                </div>
-              </th>
+              <HrMovementSortHeading field="employeeCode" sort={sortConfig} onSort={toggleSort}>Nhân sự</HrMovementSortHeading>
+              <HrMovementSortHeading field="movementType" sort={sortConfig} onSort={toggleSort}>Loại</HrMovementSortHeading>
+              <HrMovementSortHeading field="effectiveDate" sort={sortConfig} onSort={toggleSort}>Hiệu lực</HrMovementSortHeading>
               <th className="px-5 py-4">Thay đổi</th>
-              <th className="cursor-pointer select-none px-5 py-4 transition hover:text-gray-900" onClick={() => toggleSort('status')}>
-                <div className="flex items-center gap-1.5">
-                  Trạng thái
-                  <ArrowUpDown className={`h-3.5 w-3.5 ${sortConfig.key === 'status' ? 'text-emerald-700' : 'text-gray-400'}`} />
-                  {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                </div>
-              </th>
-              <th className="cursor-pointer select-none px-5 py-4 transition hover:text-gray-900" onClick={() => toggleSort('createdAt')}>
-                <div className="flex items-center gap-1.5">
-                  Người xử lý
-                  <ArrowUpDown className={`h-3.5 w-3.5 ${sortConfig.key === 'createdAt' ? 'text-emerald-700' : 'text-gray-400'}`} />
-                  {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
-                </div>
-              </th>
+              <HrMovementSortHeading field="status" sort={sortConfig} onSort={toggleSort}>Trạng thái</HrMovementSortHeading>
+              <HrMovementSortHeading field="processedBy" sort={sortConfig} onSort={toggleSort}>Người xử lý</HrMovementSortHeading>
+              <HrMovementSortHeading field="processedAt" sort={sortConfig} onSort={toggleSort}>Thời điểm xử lý</HrMovementSortHeading>
               <th className="px-5 py-4">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan="8" className="px-5 py-12 text-center text-sm text-gray-500">Đang tải...</td></tr>
+              <tr><td colSpan="9" className="px-5 py-12 text-center text-sm text-gray-500">Đang tải...</td></tr>
             ) : sortedContent.map((item) => {
               const name = item.employeeName || item.fullName;
               const type = item.movementType || item.type;
@@ -763,7 +685,7 @@ export default function HrMovements() {
                     <div className="flex items-center gap-3">
                       <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${type === 'DECREASE' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{employeeInitials(name)}</span>
                       <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-[var(--cfc-ink)]">{name}</span>
+                        <button type="button" onClick={() => navigate(`/manager/hr/employees/${item.employeeId}`)} className="block text-left text-sm font-semibold text-[var(--cfc-ink)] hover:text-emerald-700 hover:underline">{name}</button>
                         <span className="mt-0.5 block text-xs text-[var(--cfc-muted)]">{item.employeeCode}</span>
                       </span>
                     </div>
@@ -777,16 +699,16 @@ export default function HrMovements() {
                     {item.reason && <p className="mt-2 max-w-sm text-xs leading-5 text-gray-500">{item.reason}</p>}
                     {item.decisionNumber && <p className="mt-1 text-xs text-gray-500">QĐ: {item.decisionNumber} · {formatHrDate(item.decisionDate)}</p>}
                   </td>
-                  <td className="whitespace-nowrap px-5 py-4"><HrStatusBadge status={item.status} /></td>
+                  <td className="whitespace-nowrap px-5 py-4"><HrStatusBadge status={item.status} label={movementStatusLabel(item.status)} /></td>
                   <td className="px-5 py-4">
                     <p className="max-w-[180px] truncate text-xs font-semibold text-gray-700">{displayActor(item.confirmedByActor || item.cancelledByActor || item.createdByActor)}</p>
-                    <p className="mt-1 whitespace-nowrap text-xs text-gray-400">{formatHrDateTime(item.confirmedAt || item.cancelledAt || item.createdAt)}</p>
                   </td>
+                  <td className="whitespace-nowrap px-5 py-4 text-xs text-gray-500">{formatHrDateTime(item.confirmedAt || item.cancelledAt || item.createdAt)}</td>
                   <td className="px-5 py-4"><ActionButtons item={item} /></td>
                 </tr>
               );
             })}
-            {!loading && sortedContent.length === 0 && <tr><td colSpan="8" className="p-5"><HrEmpty title="Chưa có biến động phù hợp" description="Tạo biến động mới để bắt đầu theo dõi tăng hoặc giảm nhân sự." /></td></tr>}
+            {!loading && sortedContent.length === 0 && <tr><td colSpan="9" className="p-5"><HrEmpty title="Chưa có biến động phù hợp" description="Tạo biến động mới để bắt đầu theo dõi tăng hoặc giảm nhân sự." /></td></tr>}
           </tbody>
         </table>
       </div>
@@ -816,7 +738,7 @@ export default function HrMovements() {
                     <p className="mt-0.5 text-xs text-[var(--cfc-muted)]">{item.employeeCode} · {formatHrDate(item.effectiveDate)}</p>
                   </div>
                 </div>
-                <HrStatusBadge status={item.status} />
+                <HrStatusBadge status={item.status} label={movementStatusLabel(item.status)} />
               </div>
               <div className="mt-4 flex items-center justify-between gap-3">
                 <MovementTypeBadge type={type} />
@@ -827,7 +749,8 @@ export default function HrMovements() {
               {item.supersededByAdjustment && <p className="mt-3 text-xs font-medium text-amber-700">Đã được thay thế bởi một bản điều chỉnh có lưu lịch sử.</p>}
               {item.reason && <p className="mt-3 text-sm leading-5 text-gray-600">{item.reason}</p>}
               {item.decisionNumber && <p className="mt-1 text-xs text-gray-500">QĐ: {item.decisionNumber} · {formatHrDate(item.decisionDate)}</p>}
-              <p className="mt-3 text-xs text-gray-400">{formatHrDateTime(item.confirmedAt || item.cancelledAt || item.createdAt)}</p>
+              <p className="mt-3 text-xs text-gray-500">Người xử lý: {displayActor(item.confirmedByActor || item.cancelledByActor || item.createdByActor)}</p>
+              <p className="mt-1 text-xs text-gray-400">Thời điểm: {formatHrDateTime(item.confirmedAt || item.cancelledAt || item.createdAt)}</p>
               <div className="mt-4 border-t border-gray-100 pt-3"><ActionButtons item={item} /></div>
             </article>
           );

@@ -3,7 +3,7 @@ import { HrEmpty, HrError, HrLoading, HrPagination, HrStatusBadge } from './HrUi
 import { useEmployeeProfilePage } from './useEmployeeProfilePage';
 import { formatHrDate, formatHrDateTime, movementLabel } from '../../utils/hr';
 
-const STATUS = { DRAFT: 'Bản nháp', CONFIRMED: 'Đã xác nhận', CANCELLED: 'Đã hủy' };
+const STATUS = { DRAFT: 'Chờ xác nhận', CONFIRMED: 'Đã xác nhận', CANCELLED: 'Đã hủy' };
 const ACTIONS = {
   HR_EMPLOYEE_CREATED: 'Tạo hồ sơ', HR_EMPLOYEE_UPDATED: 'Cập nhật hồ sơ',
   WORKFORCE_SNAPSHOT_PROFILE_UPDATED: 'Cập nhật hồ sơ từ file nhân sự',

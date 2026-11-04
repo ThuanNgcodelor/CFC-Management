@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHrListState, useHrNavigation, useHrPageBounds } from '../../hooks/useHrListState';
+import { useHrListScroll } from '../../hooks/useHrListScroll';
 import { Eye, HardHat, PencilLine, Plus, Search, TrendingUp } from 'lucide-react';
 import SEOHead from '../../components/SEOHead';
 import { Button } from '../../components/ui/Button';
@@ -21,6 +22,8 @@ import {
 } from '../../utils/hr';
 
 const PAGE_SIZE = 20;
+const LIST_DEFAULTS = { keyword: '', status: '', page: 0 };
+const LIST_ALLOWED = { status: ['', 'DRAFT', 'ACTIVE', 'INACTIVE'] };
 
 function movementPath(employee) {
   const params = new URLSearchParams({
@@ -46,11 +49,11 @@ function EmployeeIdentity({ employee }) {
 }
 
 export default function HrGeneralLabor() {
-  const navigate = useNavigate();
-  const [keyword, setKeyword] = useState('');
-  const [appliedKeyword, setAppliedKeyword] = useState('');
-  const [status, setStatus] = useState('');
-  const [page, setPage] = useState(0);
+  const { open: navigate } = useHrNavigation('/manager/hr/general-labor');
+  const { values, setValues, setPage } = useHrListState(LIST_DEFAULTS, LIST_ALLOWED);
+  const { keyword: appliedKeyword, status, page } = values;
+  const [keyword, setKeyword] = useState(appliedKeyword);
+  useEffect(() => setKeyword(appliedKeyword), [appliedKeyword]);
   const [result, setResult] = useState(normalizePage(null));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -82,23 +85,23 @@ export default function HrGeneralLabor() {
 
   const applySearch = (event) => {
     event.preventDefault();
-    setPage(0);
-    setAppliedKeyword(keyword.trim());
+    setValues({ keyword: keyword.trim() });
   };
 
   const clearFilters = () => {
     setKeyword('');
-    setAppliedKeyword('');
-    setStatus('');
-    setPage(0);
+    setValues(LIST_DEFAULTS);
   };
+
+  useHrListScroll(loading);
+  useHrPageBounds(result, loading, page, setPage);
 
   return (
     <HrPageShell>
       <SEOHead title="CFC Base | Lao động phổ thông" url="https://cfcbooking.io.vn/manager/hr/general-labor" />
       <HrPageHeader
         title="Lao động phổ thông"
-        description="Tạo thẳng hồ sơ nhân sự nháp kèm hợp đồng 1 năm hoặc không xác định thời hạn, sau đó thực hiện Tăng nhân sự để đưa vào danh sách chính thức."
+        description="Tạo thẳng hồ sơ nhân sự chờ tiếp nhận kèm hợp đồng 1 năm hoặc không xác định thời hạn, sau đó thực hiện Tăng nhân sự để đưa vào danh sách chính thức."
         actions={(
           <Button type="button" onClick={() => navigate('/manager/hr/general-labor/new')}>
             <Plus className="mr-1.5 h-4 w-4" />Thêm lao động phổ thông
@@ -106,6 +109,10 @@ export default function HrGeneralLabor() {
         )}
       />
 
+      <p className="mb-4 flex flex-wrap items-center gap-3 text-sm text-gray-600">
+        Chỉ hiển thị nhóm lao động phổ thông.
+        <Button type="button" variant="secondary" size="sm" onClick={() => navigate(`/manager/hr/employees?keyword=${encodeURIComponent(appliedKeyword)}`)}>Tìm trong toàn bộ nhân sự</Button>
+      </p>
       <form onSubmit={applySearch} className="mb-4 grid gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:grid-cols-[minmax(0,1fr)_220px_auto_auto]">
         <label className="relative">
           <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -118,11 +125,11 @@ export default function HrGeneralLabor() {
         </label>
         <select
           value={status}
-          onChange={(event) => { setStatus(event.target.value); setPage(0); }}
+          onChange={(event) => setValues({ status: event.target.value })}
           className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm outline-none focus:border-emerald-500"
         >
           <option value="">Tất cả trạng thái</option>
-          <option value="DRAFT">Hồ sơ nháp</option>
+          <option value="DRAFT">Chờ tiếp nhận</option>
           <option value="ACTIVE">Đang làm</option>
           <option value="INACTIVE">Đã nghỉ</option>
         </select>
@@ -162,7 +169,7 @@ export default function HrGeneralLabor() {
                     {employee.employmentStatus === 'DRAFT' && (
                       <>
                         <Button type="button" size="sm" variant="secondary" onClick={() => navigate(`/manager/hr/employees/${employee.id}/edit`)}>
-                          <PencilLine className="mr-1 h-4 w-4" />Sửa nháp
+                          <PencilLine className="mr-1 h-4 w-4" />Sửa hồ sơ
                         </Button>
                         <Button type="button" size="sm" onClick={() => navigate(movementPath(employee))}>
                           <TrendingUp className="mr-1 h-4 w-4" />Tạo tăng

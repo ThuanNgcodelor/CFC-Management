@@ -3,5 +3,6 @@ package com.booking.system.hr.enums;
 public enum HrEmploymentStatus {
     DRAFT,
     ACTIVE,
-    INACTIVE
+    INACTIVE,
+    INTAKE_STOPPED
 }

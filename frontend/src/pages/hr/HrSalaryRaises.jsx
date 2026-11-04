@@ -1,11 +1,18 @@
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import SEOHead from '../../components/SEOHead';
 import { HrSalaryRaiseImport } from '../../components/hr/HrSalaryRaiseImport';
 import { HrSalaryReviewTracker } from '../../components/hr/HrSalaryReviewTracker';
 import { HrPageHeader, HrPageShell } from '../../components/hr/HrUi';
 
 export default function HrSalaryRaises() {
-  const [tab, setTab] = useState('reviews');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab') === 'imports' ? 'imports' : 'reviews';
+  const setTab = (nextTab) => setSearchParams((current) => {
+    const next = new URLSearchParams(current);
+    if (nextTab === 'reviews') next.delete('tab');
+    else next.set('tab', nextTab);
+    return next;
+  }, { replace: true });
   return (
     <HrPageShell>
       <SEOHead

@@ -1,5 +1,6 @@
+import { useHrNavigation } from '../../hooks/useHrListState';
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Camera, HardHat, Save } from 'lucide-react';
 import SEOHead from '../../components/SEOHead';
@@ -85,7 +86,7 @@ function exportDataError(employee) {
 }
 
 export default function HrGeneralLaborOnboarding() {
-  const navigate = useNavigate();
+  const { back } = useHrNavigation('/manager/hr/general-labor');
   const [searchParams, setSearchParams] = useSearchParams();
   const captureId = isCaptureId(searchParams.get('capture')) ? searchParams.get('capture') : null;
   const [showCapture, setShowCapture] = useState(!!captureId);
@@ -233,7 +234,7 @@ export default function HrGeneralLaborOnboarding() {
         }
       }
 
-      navigate('/manager/hr/general-labor', { replace: true });
+      back({ replace: true });
     } catch (requestError) {
       const message = apiErrorMessage(requestError, 'Không thể tạo hồ sơ lao động phổ thông.');
       setError(message);
@@ -248,7 +249,7 @@ export default function HrGeneralLaborOnboarding() {
       <SEOHead title="CFC Base | Thêm lao động phổ thông" />
       <HrPageHeader
         title="Thêm lao động phổ thông"
-        description="Luồng trực tiếp: nhập hồ sơ, chọn hợp đồng 1 năm hoặc không xác định thời hạn, lưu bản nháp rồi tạo Tăng nhân sự."
+        description="Luồng trực tiếp: nhập hồ sơ, chọn hợp đồng 1 năm hoặc không xác định thời hạn, lưu hồ sơ chờ tiếp nhận rồi tạo Tăng nhân sự."
         actions={(
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -264,7 +265,7 @@ export default function HrGeneralLaborOnboarding() {
             <Button type="button" disabled={saving} onClick={() => setShowCapture(true)}>
               <Camera className="mr-1.5 h-4 w-4" />{captureId ? 'Mở phiên chụp điện thoại' : 'Chụp bằng điện thoại'}
             </Button>
-            <Button type="button" variant="secondary" onClick={() => navigate('/manager/hr/general-labor')}>
+            <Button type="button" variant="secondary" onClick={() => back()}>
               <ArrowLeft className="mr-1.5 h-4 w-4" />Quay lại
             </Button>
           </div>
@@ -358,7 +359,7 @@ export default function HrGeneralLaborOnboarding() {
           <ContractExportButton type="submit" name="submitIntent" value="export" disabled={saving} loading={saving} className="sm:mr-auto">
             {saving ? 'Đang lưu và xuất...' : 'Lưu và xuất hợp đồng'}
           </ContractExportButton>
-          <Button type="button" variant="secondary" disabled={saving} onClick={() => navigate('/manager/hr/general-labor')}>Hủy</Button>
+          <Button type="button" variant="secondary" disabled={saving} onClick={() => back()}>Hủy</Button>
           <Button type="submit" disabled={saving}><Save className="mr-1.5 h-4 w-4" />{saving ? 'Đang lưu...' : 'Lưu và tạo Tăng nhân sự'}</Button>
         </div>
       </form>

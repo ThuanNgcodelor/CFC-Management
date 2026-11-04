@@ -25,6 +25,8 @@ import com.booking.system.hr.repository.HrExcelImportBatchRepository;
 import com.booking.system.hr.repository.HrMonthlyRosterRepository;
 import com.booking.system.hr.repository.HrPositionRepository;
 import com.booking.system.hr.repository.HrWorkingConditionRepository;
+import com.booking.system.hr.repository.HrProbationCandidateRepository;
+import com.booking.system.hr.enums.HrProbationCandidateStatus;
 import com.booking.system.hr.service.HrManagementService;
 import com.booking.system.hr.service.HrEmploymentContractService;
 import jakarta.persistence.EntityManager;
@@ -34,6 +36,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.mockito.ArgumentMatchers;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
@@ -53,6 +57,22 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class HrManagementServiceTest {
 
+    @Test
+    void overviewCountsProbationSeparatelyFromEmployeeTotalAndReflectsChangedCount() {
+        when(importBatchRepository.findAll(ArgumentMatchers.any(Pageable.class))).thenReturn(org.springframework.data.domain.Page.empty());
+        when(rosterRepository.findAll(ArgumentMatchers.any(Pageable.class))).thenReturn(org.springframework.data.domain.Page.empty());
+        when(employeeRepository.count()).thenReturn(30L);
+        when(employeeRepository.countByEmploymentStatus(HrEmploymentStatus.ACTIVE)).thenReturn(20L);
+        when(employeeRepository.countByEmploymentStatus(HrEmploymentStatus.DRAFT)).thenReturn(2L);
+        when(employeeRepository.countByEmploymentStatus(HrEmploymentStatus.INACTIVE)).thenReturn(8L);
+        when(probationCandidateRepository.countByStatus(HrProbationCandidateStatus.IN_PROBATION)).thenReturn(7L, 0L);
+        var response = service.overview();
+        assertThat(response.totalEmployees()).isEqualTo(30);
+        assertThat(response.activeEmployees() + response.draftEmployees() + response.inactiveEmployees()).isEqualTo(30);
+        assertThat(response.probationEmployees()).isEqualTo(7);
+        assertThat(service.overview().probationEmployees()).isZero();
+    }
+
     @Mock private HrEmployeeRepository employeeRepository;
     @Mock private HrEmployeeEmploymentRepository employmentRepository;
     @Mock private HrEmployeeIdentityRepository identityRepository;
@@ -66,6 +86,7 @@ class HrManagementServiceTest {
     @Mock private HrAuditEventRepository auditRepository;
     @Mock private EntityManager entityManager;
     @Mock private HrEmploymentContractService employmentContractService;
+    @Mock private HrProbationCandidateRepository probationCandidateRepository;
 
     private HrManagementService service;
     private HrEmployee employee;
@@ -86,7 +107,8 @@ class HrManagementServiceTest {
                 auditRepository,
                 new HrImportJsonCodec(),
                 entityManager,
-                employmentContractService
+                employmentContractService,
+                probationCandidateRepository
         );
 
         employee = new HrEmployee();

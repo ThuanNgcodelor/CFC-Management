@@ -6,6 +6,8 @@ import com.booking.system.hr.api.dto.HrImportBatchResponse;
 import com.booking.system.hr.api.dto.HrLeaveEntitlementResponse;
 import com.booking.system.hr.api.dto.HrMovementImpactPreviewResponse;
 import com.booking.system.hr.api.dto.HrMovementResponse;
+import com.booking.system.hr.api.dto.HrMovementDtos;
+import com.booking.system.hr.service.HrMovementSearchQuery;
 import com.booking.system.hr.api.dto.HrPageResponse;
 import com.booking.system.hr.api.dto.HrRosterReconciliationResponse;
 import com.booking.system.hr.enums.HrMovementStatus;
@@ -64,6 +66,14 @@ public class HrActivityQueryService {
                 Sort.by(Sort.Order.desc("effectiveDate"), Sort.Order.desc("createdAt")));
         Page<com.booking.system.hr.entity.HrEmployeeMovement> movements = movementRepository.findActivityPage(pageable);
         return movementPage(movements);
+    }
+
+    public HrPageResponse<HrMovementResponse> movements(int page, int size, HrMovementDtos.SearchRequest request, String sort) {
+        HrMovementSearchQuery.validate(request);
+        return movementPage(movementRepository.searchActivity(
+                HrMovementSearchQuery.keyword(request.keyword()), request.type(), request.status(), request.workforceGroup(),
+                HrMovementSearchQuery.text(request.departmentId()), request.from(), request.to(),
+                HrMovementSearchQuery.recordType(request.recordType()), HrMovementSearchQuery.pageable(page, size, sort)));
     }
 
     public HrPageResponse<HrMovementResponse> employeeMovements(String employeeId, int page, int size) {

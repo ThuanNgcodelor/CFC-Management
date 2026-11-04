@@ -22,6 +22,8 @@ import com.booking.system.hr.enums.HrIdentityVerificationStatus;
 import com.booking.system.hr.enums.HrInsuranceStatus;
 import com.booking.system.hr.enums.HrOnboardingSource;
 import com.booking.system.hr.enums.HrWorkforceGroup;
+import com.booking.system.hr.enums.HrProbationCandidateStatus;
+import com.booking.system.hr.repository.HrProbationCandidateRepository;
 import com.booking.system.hr.importer.HrImportActor;
 import com.booking.system.hr.importer.HrImportJsonCodec;
 import com.booking.system.hr.repository.HrAuditEventRepository;
@@ -72,6 +74,7 @@ public class HrManagementService {
     private final HrImportJsonCodec jsonCodec;
     private final EntityManager entityManager;
     private final HrEmploymentContractService employmentContractService;
+    private final HrProbationCandidateRepository probationCandidateRepository;
 
     @Transactional(readOnly = true)
     public HrApiDtos.OverviewResponse overview() {
@@ -96,7 +99,9 @@ public class HrManagementService {
                         latestImport.getValidatedAt(), latestImport.getConfirmedAt()),
                 latestRoster == null ? null : new HrApiDtos.RosterSummary(
                         latestRoster.getId(), latestRoster.getPeriodStart(), latestRoster.getStatus(),
-                        latestRoster.getItemCount())
+                        latestRoster.getItemCount()),
+                probationCandidateRepository.countByStatus(HrProbationCandidateStatus.IN_PROBATION),
+                employeeRepository.countByEmploymentStatus(HrEmploymentStatus.INTAKE_STOPPED)
         );
     }
 

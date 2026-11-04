@@ -2,6 +2,7 @@ const STATUS_LABELS = {
   ACTIVE: 'Đang hoạt động',
   INACTIVE: 'Ngừng hoạt động',
   DRAFT: 'Bản nháp',
+  INTAKE_STOPPED: 'Dừng tiếp nhận',
   OPEN: 'Đang mở',
   CLOSED: 'Đã chốt',
   EXPORTED: 'Đã xuất',
@@ -69,9 +70,14 @@ export function employmentStatusLabel(status) {
   const labels = {
     ACTIVE: 'Đang làm việc',
     INACTIVE: 'Đã nghỉ việc',
-    DRAFT: 'Hồ sơ nháp',
+    DRAFT: 'Chờ tiếp nhận',
+    INTAKE_STOPPED: 'Dừng tiếp nhận',
   };
   return labels[status] || statusLabel(status);
+}
+
+export function movementStatusLabel(status) {
+  return status === 'DRAFT' ? 'Chờ xác nhận' : statusLabel(status);
 }
 
 export function movementLabel(type) {
@@ -80,7 +86,7 @@ export function movementLabel(type) {
 
 export function statusTone(status) {
   if (['ACTIVE', 'CONFIRMED', 'VALID', 'IMPORTED', 'VERIFIED', 'PASSED', 'CONVERTED', 'GENERATED', 'COMPLETED', 'QUALIFIED', 'QUALIFIED_EXCEPTION'].includes(status)) return 'green';
-  if (['WARNING', 'NEEDS_REVIEW', 'OPEN', 'PARSED', 'UPLOADED', 'PREVIEWED', 'PENDING', 'PENDING_REVIEW', 'STARTED', 'PHONE_RECEIVED', 'CODE_RECEIVED', 'CONTRACT_CREATED', 'IN_PROBATION', 'DEFERRED', 'NOT_QUALIFIED', 'STALE'].includes(status)) return 'amber';
+  if (['WARNING', 'NEEDS_REVIEW', 'OPEN', 'PARSED', 'UPLOADED', 'PREVIEWED', 'PENDING', 'PENDING_REVIEW', 'STARTED', 'PHONE_RECEIVED', 'CODE_RECEIVED', 'CONTRACT_CREATED', 'IN_PROBATION', 'INTAKE_STOPPED', 'DEFERRED', 'NOT_QUALIFIED', 'STALE'].includes(status)) return 'amber';
   if (['FAILED', 'INVALID', 'CANCELLED', 'REJECTED', 'REVOKED', 'BLOCKED', 'NOT_ELIGIBLE'].includes(status)) return 'red';
   if (['CLOSED', 'EXPORTED', 'VALIDATED', 'AUTO_FILLED', 'IN_REVIEW', 'APPROVED'].includes(status)) return 'blue';
   return 'gray';

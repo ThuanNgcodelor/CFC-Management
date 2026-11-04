@@ -3,6 +3,8 @@ package com.booking.system.hr;
 import com.booking.system.hr.repository.HrEmployeeMovementRepository;
 import com.booking.system.hr.repository.HrEmployeeRepository;
 import com.booking.system.hr.entity.HrEmployee;
+import com.booking.system.hr.entity.HrEmployeeMovement;
+import com.booking.system.hr.enums.HrMovementType;
 import com.booking.system.hr.entity.HrEmployeeEmployment;
 import com.booking.system.hr.enums.HrEmploymentStatus;
 import com.booking.system.hr.enums.HrRosterInclusionReason;
@@ -39,6 +41,35 @@ class HrExcelExportServiceTest {
             rosterProjectionService,
             salaryRaiseService
     );
+
+    @Test
+    void movementExportKeepsFullDocumentNumbersAndLegacyContractFallback() throws Exception {
+        HrEmployee employee = new HrEmployee();
+        employee.setEmployeeCode("DEMO001"); employee.setFullName("Nhân sự giả lập");
+        HrEmployeeEmployment employment = new HrEmployeeEmployment();
+        employment.setEmployee(employee); employment.setContractNumber("12/HĐLĐ-CŨ/2025");
+        employee.setEmployment(employment);
+        HrEmployeeMovement increase = new HrEmployeeMovement();
+        increase.setEmployee(employee); increase.setMovementType(HrMovementType.INCREASE);
+        increase.setEffectiveDate(LocalDate.of(2026, 9, 1));
+        increase.setDecisionNumber("51/HĐLĐ-DEMO/2027");
+        HrEmployeeMovement legacy = new HrEmployeeMovement();
+        legacy.setEmployee(employee); legacy.setMovementType(HrMovementType.INCREASE);
+        legacy.setEffectiveDate(LocalDate.of(2026, 9, 2));
+        HrEmployeeMovement decrease = new HrEmployeeMovement();
+        decrease.setEmployee(employee); decrease.setMovementType(HrMovementType.DECREASE);
+        decrease.setEffectiveDate(LocalDate.of(2026, 9, 3)); decrease.setDecisionNumber("88/QĐ-DEMO/2026");
+        when(movementRepository.findConfirmedForExport(org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(List.of(increase, legacy, decrease));
+        when(rosterProjectionService.projectedItems(LocalDate.of(2026, 9, 1))).thenReturn(List.of());
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(service.exportMonth(2026, 9).content()))) {
+            assertThat(workbook.getSheet("TĂNG").getRow(12).getCell(5).getStringCellValue()).isEqualTo("51/HĐLĐ-DEMO/2027");
+            assertThat(workbook.getSheet("TĂNG").getRow(13).getCell(5).getStringCellValue()).isEqualTo("12/HĐLĐ-CŨ/2025");
+            assertThat(workbook.getSheet("GIẢM").getRow(8).getCell(6).getStringCellValue()).isEqualTo("88/QĐ-DEMO/2026");
+        }
+    }
 
     @Test
     void exportMonthCreatesThreeSheets() throws Exception {

@@ -1,0 +1,309 @@
+- generic [ref=f7e3]:
+  - complementary [ref=f7e4]:
+    - generic [ref=f7e9]:
+      - generic [ref=f7e10]: CFC Base
+      - generic [ref=f7e11]: Operations
+    - navigation "Điều hướng chính" [ref=f7e12]:
+      - generic [ref=f7e13]:
+        - heading "Nhân sự" [level=2] [ref=f7e14]
+        - generic [ref=f7e15]:
+          - link "Tổng quan" [ref=f7e16] [cursor=pointer]:
+            - /url: /manager/hr
+          - link "Nhân sự" [ref=f7e23] [cursor=pointer]:
+            - /url: /manager/hr/employees
+          - link "Thử việc" [ref=f7e30] [cursor=pointer]:
+            - /url: /manager/hr/probation
+          - link "LĐ phổ thông" [ref=f7e35] [cursor=pointer]:
+            - /url: /manager/hr/general-labor
+          - link "Tăng / Giảm" [ref=f7e42] [cursor=pointer]:
+            - /url: /manager/hr/movements
+          - link "Nâng lương" [ref=f7e47] [cursor=pointer]:
+            - /url: /manager/hr/salary-raises
+          - link "Danh sách tháng" [ref=f7e52] [cursor=pointer]:
+            - /url: /manager/hr/rosters
+          - link "Gửi phiếu lương" [ref=f7e56] [cursor=pointer]:
+            - /url: /manager/hr/payroll
+          - link "Chấm công" [ref=f7e61] [cursor=pointer]:
+            - /url: /manager/hr/attendance
+          - link "Thưởng ca đêm" [ref=f7e66] [cursor=pointer]:
+            - /url: /manager/hr/attendance/night-rewards
+          - link "Danh mục" [ref=f7e74] [cursor=pointer]:
+            - /url: /manager/hr/catalogs
+      - generic [ref=f7e78]:
+        - heading "Quản trị hệ thống" [level=2] [ref=f7e79]
+        - generic [ref=f7e80]:
+          - link "Duyệt hồ sơ" [ref=f7e81] [cursor=pointer]:
+            - /url: /admin/profile-approvals
+          - link "Tài khoản" [ref=f7e87] [cursor=pointer]:
+            - /url: /admin/users
+    - button "Thu gọn thanh điều hướng" [ref=f7e95]:
+      - generic [ref=f7e98]: Thu gọn
+  - generic [ref=f7e99]:
+    - banner [ref=f7e100]:
+      - generic [ref=f7e101]:
+        - paragraph [ref=f7e102]: Hệ thống quản lý nhân sự
+        - paragraph [ref=f7e103]: Chi tiết nhân sự
+      - button "Mở menu tài khoản" [ref=f7e106]:
+        - img "Ảnh đại diện của Admin CFC" [ref=f7e123]
+        - generic [ref=f7e108]:
+          - generic [ref=f7e109]: Admin CFC
+          - generic [ref=f7e110]: Quản trị viên
+    - main [ref=f7e113]:
+      - generic [ref=f7e124]:
+        - generic [ref=f7e125]:
+          - generic:
+            - paragraph: Quản lý nhân sự
+            - heading "LÊ TUẤN KHANH" [level=1]
+            - paragraph: "Mã nhân sự: C758"
+          - generic [ref=f7e126]:
+            - button "Danh sách" [ref=f7e127]
+            - button "Hồ sơ đính kèm" [ref=f7e130]
+            - button "Xuất hợp đồng" [ref=f7e133]
+            - button "Chỉnh sửa thông tin" [ref=f7e139]
+            - button "Xóa bản nháp" [ref=f7e144]
+        - generic [ref=f7e148]:
+          - generic [ref=f7e149]: L
+          - generic [ref=f7e150]:
+            - generic [ref=f7e151]:
+              - paragraph [ref=f7e152]: LÊ TUẤN KHANH
+              - generic [ref=f7e153]: Hồ sơ nháp
+            - paragraph [ref=f7e154]: XN. Phân bón Hóa chất · Công nhân
+          - generic [ref=f7e155]: Hồ sơ nhân sự 360°
+        - generic "Các phần hồ sơ nhân sự" [ref=f7e159]:
+          - button "Thông tin chi tiết" [ref=f7e160]
+          - button "Hồ sơ & Giấy tờ đính kèm" [ref=f7e164]
+          - button "Hợp đồng" [ref=f7e167]
+          - button "Lịch sử" [ref=f7e168]
+        - generic [ref=f7e169]:
+          - paragraph [ref=f7e170]: Thông tin cần bổ sung
+          - paragraph [ref=f7e171]: Số điện thoại
+          - paragraph [ref=f7e172]: Đây là kiểm tra ô trống; HR vẫn cần đối chiếu giấy tờ trước khi xác nhận thông tin.
+        - generic [ref=f7e173]:
+          - generic [ref=f7e174]:
+            - heading "Thông tin chung" [level=2] [ref=f7e181]
+            - generic [ref=f7e182]:
+              - generic [ref=f7e183]:
+                - term [ref=f7e184]: Họ và tên
+                - definition [ref=f7e185]: LÊ TUẤN KHANH
+              - generic [ref=f7e186]:
+                - term [ref=f7e187]: Giới tính
+                - definition [ref=f7e188]: Nam
+              - generic [ref=f7e189]:
+                - term [ref=f7e190]: Ngày sinh
+                - definition [ref=f7e191]: 03/07/1977
+              - generic [ref=f7e192]:
+                - term [ref=f7e193]: Dân tộc
+                - definition [ref=f7e194]: Kinh
+              - generic [ref=f7e195]:
+                - term [ref=f7e196]: Tôn giáo
+                - definition [ref=f7e197]: —
+              - generic [ref=f7e198]:
+                - term [ref=f7e199]: Trình độ
+                - definition [ref=f7e200]: —
+              - generic [ref=f7e201]:
+                - term [ref=f7e202]: Chuyên ngành
+                - definition [ref=f7e203]: —
+              - generic [ref=f7e204]:
+                - term [ref=f7e205]: Nơi sinh trước sáp nhập
+                - definition [ref=f7e206]: Phường Ô Môn, Tp Cần Thơ
+              - generic [ref=f7e207]:
+                - term [ref=f7e208]: Nơi sinh hiện tại
+                - definition [ref=f7e209]: Phường Ô Môn, Tp Cần Thơ
+          - generic [ref=f7e210]:
+            - heading "Công việc" [level=2] [ref=f7e218]
+            - generic [ref=f7e219]:
+              - generic [ref=f7e220]:
+                - term [ref=f7e221]: Nhóm nhân sự
+                - definition [ref=f7e222]: Lao động phổ thông
+              - generic [ref=f7e223]:
+                - term [ref=f7e224]: Nguồn tiếp nhận
+                - definition [ref=f7e225]: DIRECT_GENERAL_LABOR
+              - generic [ref=f7e226]:
+                - term [ref=f7e227]: Phòng ban
+                - definition [ref=f7e228]: XN. Phân bón Hóa chất
+              - generic [ref=f7e229]:
+                - term [ref=f7e230]: Chức vụ
+                - definition [ref=f7e231]: Công nhân
+              - generic [ref=f7e232]:
+                - term [ref=f7e233]: Điều kiện lao động
+                - definition [ref=f7e234]: —
+              - generic [ref=f7e235]:
+                - term [ref=f7e236]: Ngày vào làm
+                - definition [ref=f7e237]: 01/09/2026
+              - generic [ref=f7e238]:
+                - term [ref=f7e239]: Mốc tính phép
+                - definition [ref=f7e240]: —
+              - generic [ref=f7e241]:
+                - term [ref=f7e242]: Ngày nghỉ việc
+                - definition [ref=f7e243]: —
+              - generic [ref=f7e244]:
+                - term [ref=f7e245]: Loại hợp đồng
+                - definition [ref=f7e246]: Hợp đồng xác định thời hạn 12 tháng
+              - generic [ref=f7e247]:
+                - term [ref=f7e248]: Số hợp đồng
+                - definition [ref=f7e249]: 71/HĐLĐ-PBHC/2026
+              - generic [ref=f7e250]:
+                - term [ref=f7e251]: Lương cơ bản
+                - definition [ref=f7e252]: 4.730.000 ₫
+              - generic [ref=f7e253]:
+                - term [ref=f7e254]: Phụ cấp
+                - definition [ref=f7e255]: —
+              - generic [ref=f7e256]:
+                - term [ref=f7e257]: Tổng lương hiện tại
+                - definition [ref=f7e258]: 4.730.000 ₫
+              - generic [ref=f7e259]:
+                - term [ref=f7e260]: Bậc / mã ngạch
+                - definition [ref=f7e261]: —
+              - generic [ref=f7e262]:
+                - term [ref=f7e263]: Chu kỳ xét nâng bậc
+                - definition [ref=f7e264]: —
+              - generic [ref=f7e265]:
+                - term [ref=f7e266]: Ngày nâng gần nhất
+                - definition [ref=f7e267]: —
+              - generic [ref=f7e268]:
+                - term [ref=f7e269]: Ngày tới hạn
+                - definition [ref=f7e270]: —
+              - generic [ref=f7e271]:
+                - term [ref=f7e272]: Mô tả công việc
+                - definition [ref=f7e273]: Công nhân vệ sinh, đóng date
+          - generic [ref=f7e274]:
+            - generic [ref=f7e280]:
+              - heading "Hợp đồng lao động chính thức" [level=2] [ref=f7e281]
+              - paragraph [ref=f7e282]: Mỗi lần xuất tạo một bản DOCX lưu vết riêng, không ghi đè bản đã sinh trước đó.
+            - generic [ref=f7e283]:
+              - generic [ref=f7e284]:
+                - term [ref=f7e285]: Loại hợp đồng
+                - definition [ref=f7e286]: Hợp đồng xác định thời hạn 12 tháng
+              - generic [ref=f7e287]:
+                - term [ref=f7e288]: Số hợp đồng
+                - definition [ref=f7e289]: 71/HĐLĐ-PBHC/2026
+              - generic [ref=f7e290]:
+                - term [ref=f7e291]: Ngày ký
+                - definition [ref=f7e292]: 01/09/2026
+              - generic [ref=f7e293]:
+                - term [ref=f7e294]: Hiệu lực từ
+                - definition [ref=f7e295]: 01/09/2026
+              - generic [ref=f7e296]:
+                - term [ref=f7e297]: Hiệu lực đến
+                - definition [ref=f7e298]: 01/09/2027
+              - generic [ref=f7e299]:
+                - term [ref=f7e300]: Trạng thái
+                - definition [ref=f7e301]:
+                  - generic [ref=f7e302]: Chờ tăng nhân sự
+          - generic [ref=f7e303]:
+            - generic [ref=f7e308]:
+              - heading "Ngày phép năm" [level=2] [ref=f7e309]
+              - paragraph [ref=f7e310]: Số cuối cùng sẽ được dùng cho export tháng và export năm.
+            - generic [ref=f7e311]:
+              - generic [ref=f7e312]:
+                - term [ref=f7e313]: Năm áp dụng
+                - definition [ref=f7e314]:
+                  - spinbutton [ref=f7e315]: "2026"
+              - generic [ref=f7e316]:
+                - term [ref=f7e317]: Điều kiện lao động
+                - definition [ref=f7e318]: —
+              - generic [ref=f7e319]:
+                - term [ref=f7e320]: Ngày phép nền
+                - definition [ref=f7e321]: "12"
+              - generic [ref=f7e322]:
+                - term [ref=f7e323]: Thâm niên cộng thêm
+                - definition [ref=f7e324]: "0"
+              - generic [ref=f7e325]:
+                - term [ref=f7e326]: Tự tính
+                - definition [ref=f7e327]: "12"
+              - generic [ref=f7e328]:
+                - term [ref=f7e329]: Số cuối cùng
+                - definition [ref=f7e330]: "12"
+              - generic [ref=f7e331]:
+                - term [ref=f7e332]: Chỉnh tay
+                - definition [ref=f7e333]: Không
+              - generic [ref=f7e334]:
+                - term [ref=f7e335]: Ghi chú
+                - definition [ref=f7e336]: —
+              - generic [ref=f7e338]:
+                - paragraph [ref=f7e339]: Hệ thống tự lấy ngày phép nền từ điều kiện lao động và cộng thâm niên mỗi 5 năm. Việc chỉnh tay được giới hạn theo quyền của tài khoản.
+                - button "Sửa ngày phép năm" [ref=f7e340]
+          - generic [ref=f7e341]:
+            - generic [ref=f7e353]:
+              - heading "Định danh" [level=2] [ref=f7e354]
+              - paragraph [ref=f7e355]: Hiển thị đầy đủ để Manager đối chiếu hồ sơ.
+            - generic [ref=f7e356]:
+              - generic [ref=f7e357]:
+                - term [ref=f7e358]: CMND cũ
+                - definition [ref=f7e359]: —
+              - generic [ref=f7e360]:
+                - term [ref=f7e361]: CCCD
+                - definition [ref=f7e362]: "092077001734"
+              - generic [ref=f7e363]:
+                - term [ref=f7e364]: Ngày cấp
+                - definition [ref=f7e365]: 10/05/2021
+              - generic [ref=f7e366]:
+                - term [ref=f7e367]: Nơi cấp
+                - definition [ref=f7e368]: Cục cảnh sát QLHC về TTXH
+          - generic [ref=f7e369]:
+            - generic [ref=f7e375]:
+              - heading "Bảo hiểm" [level=2] [ref=f7e376]
+              - paragraph [ref=f7e377]: Hiển thị đầy đủ để Manager đối chiếu hồ sơ.
+            - generic [ref=f7e378]:
+              - generic [ref=f7e379]:
+                - term [ref=f7e380]: Số BHXH
+                - definition [ref=f7e381]: —
+              - generic [ref=f7e382]:
+                - term [ref=f7e383]: Số BHYT
+                - definition [ref=f7e384]: —
+              - generic [ref=f7e385]:
+                - term [ref=f7e386]: Hiệu lực từ
+                - definition [ref=f7e387]: —
+              - generic [ref=f7e388]:
+                - term [ref=f7e389]: Hiệu lực đến
+                - definition [ref=f7e390]: —
+          - generic [ref=f7e391]:
+            - generic [ref=f7e398]:
+              - heading "Liên hệ" [level=2] [ref=f7e399]
+              - paragraph [ref=f7e400]: Hiển thị đầy đủ để Manager đối chiếu hồ sơ.
+            - generic [ref=f7e401]:
+              - generic [ref=f7e402]:
+                - term [ref=f7e403]: Điện thoại
+                - definition [ref=f7e404]: —
+              - generic [ref=f7e405]:
+                - term [ref=f7e406]: Email công việc
+                - definition [ref=f7e407]: —
+              - generic [ref=f7e408]:
+                - term [ref=f7e409]: Email cá nhân
+                - definition [ref=f7e410]: —
+              - generic [ref=f7e411]:
+                - term [ref=f7e412]: Địa chỉ thường trú
+                - definition [ref=f7e413]: Khu vực 3, phường Ô Môn, Tp Cần Thơ.
+              - generic [ref=f7e414]:
+                - term [ref=f7e415]: Địa chỉ hiện tại
+                - definition [ref=f7e416]: Ấp Thới Bình A, phường Ô Môn, Tp Cần Thơ.
+              - generic [ref=f7e417]:
+                - term [ref=f7e418]: Liên hệ khẩn cấp
+                - definition [ref=f7e419]: —
+              - generic [ref=f7e420]:
+                - term [ref=f7e421]: Quan hệ
+                - definition [ref=f7e422]: —
+              - generic [ref=f7e423]:
+                - term [ref=f7e424]: SĐT khẩn cấp
+                - definition [ref=f7e425]: —
+          - generic [ref=f7e426]:
+            - heading "Theo dõi thay đổi" [level=2] [ref=f7e434]
+            - generic [ref=f7e435]:
+              - generic [ref=f7e436]:
+                - term [ref=f7e437]: Phiên bản dữ liệu
+                - definition [ref=f7e438]: "4"
+              - generic [ref=f7e439]:
+                - term [ref=f7e440]: Cập nhật lúc
+                - definition [ref=f7e441]: 04:09 10/09/2026
+              - generic [ref=f7e442]:
+                - term [ref=f7e443]: Tạo lúc
+                - definition [ref=f7e444]: 04:01 10/09/2026
+              - generic [ref=f7e445]:
+                - term [ref=f7e446]: Hiệu lực trạng thái
+                - definition [ref=f7e447]: —
+      - generic [ref=f7e117]:
+        - img "CFC" [ref=f7e118]
+        - generic [ref=f7e119]:
+          - paragraph [ref=f7e120]: CÔNG TY CỔ PHẦN PHÂN BÓN & HÓA CHẤT CẦN THƠ
+          - paragraph [ref=f7e121]: © CFC · Hệ thống vận hành nội bộ
+          - paragraph [ref=f7e122]: Phát triển bởi Nguyễn Trung Thuận

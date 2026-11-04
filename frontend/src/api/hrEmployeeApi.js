@@ -40,6 +40,21 @@ export const hrEmployeeApi = {
     return unwrapApiData(response);
   },
 
+  getReferenceSummary: async (id, options = {}) => {
+    const response = await baseApi.get(`/hr/workforce/employees/${id}/reference-summary`, { signal: options.signal });
+    return unwrapApiData(response);
+  },
+
+  stopIntake: async (id, payload) => {
+    const response = await baseApi.post(`/hr/employees/${id}/intake/stop`, payload);
+    return unwrapApiData(response);
+  },
+
+  restoreIntake: async (id, payload) => {
+    const response = await baseApi.post(`/hr/employees/${id}/intake/restore`, payload);
+    return unwrapApiData(response);
+  },
+
   createEmployee: async (payload) => {
     const response = await baseApi.post('/hr/employees', payload);
     return unwrapApiData(response);

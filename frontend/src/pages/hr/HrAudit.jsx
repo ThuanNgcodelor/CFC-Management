@@ -4,6 +4,9 @@ import { HrEmpty, HrError, HrPageHeader, HrPageShell, HrPagination, HrReadOnlyNo
 import { hrActivityApi } from '../../api/hrActivityApi';
 import { normalizePage } from '../../api/hrApiUtils';
 import { apiErrorMessage, formatHrDateTime, nonEmpty } from '../../utils/hr';
+import { useHrListState } from '../../hooks/useHrListState';
+
+const AUDIT_LIST_DEFAULTS = { page: 0 };
 
 const FIELD_LABELS = {
   personal: 'Thông tin chung',
@@ -52,6 +55,9 @@ const ACTION_LABELS = {
   HR_MOVEMENT_CANCELLED: 'Hủy biến động nhân sự',
   HR_MOVEMENT_DRAFT_DELETED: 'Xóa biến động nháp',
   HR_EMPLOYEE_DRAFT_DELETED: 'Xóa hồ sơ nhân sự nháp',
+  HR_EMPLOYEE_INTAKE_STOPPED: 'Dừng tiếp nhận hồ sơ nhân sự',
+  HR_EMPLOYEE_INTAKE_RESTORED: 'Khôi phục tiếp nhận hồ sơ nhân sự',
+  HR_MOVEMENT_CANCELLED_BY_INTAKE_STOP: 'Hủy Tăng chờ do dừng tiếp nhận',
   HR_ROSTER_CREATED: 'Tạo danh sách tháng',
   HR_ROSTER_OPENED: 'Mở danh sách tháng',
   HR_ROSTER_CLOSED: 'Chốt danh sách tháng',
@@ -105,7 +111,8 @@ function changedFieldsLabel(value) {
 }
 
 export default function HrAudit() {
-  const [page, setPage] = useState(0);
+  const { values: listState, setPage } = useHrListState(AUDIT_LIST_DEFAULTS);
+  const { page } = listState;
   const [result, setResult] = useState(normalizePage(null));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

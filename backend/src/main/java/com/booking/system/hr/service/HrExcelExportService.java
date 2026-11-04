@@ -309,7 +309,8 @@ public class HrExcelExportService {
                 text(employee == null ? null : employee.getEmployeeCode()),
                 text(employee == null ? null : employee.getFullName()),
                 date(employee == null ? null : employee.getDateOfBirth()),
-                text(employment == null ? null : employment.getContractNumber()),
+                text(movement.getDecisionNumber() != null && !movement.getDecisionNumber().isBlank()
+                        ? movement.getDecisionNumber() : employment == null ? null : employment.getContractNumber()),
                 date(firstDate(movement.getDecisionDate(), movement.getEffectiveDate())),
                 text(catalogName(firstCatalog(movement.getToDepartment(), employment == null ? null : employment.getDepartment()))),
                 decimal(employment == null ? null : employment.getBaseSalary()),

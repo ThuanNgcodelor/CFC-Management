@@ -1,5 +1,7 @@
+import { useHrListState, useHrNavigation, useHrPageBounds } from '../../hooks/useHrListState';
+import { useHrListScroll } from '../../hooks/useHrListScroll';
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SEOHead from '../../components/SEOHead';
@@ -10,13 +12,15 @@ import { hrActivityApi } from '../../api/hrActivityApi';
 import { normalizePage } from '../../api/hrApiUtils';
 import { apiErrorMessage, employmentStatusLabel, formatHrDate, formatPeriod, nonEmpty } from '../../utils/hr';
 
+const LIST_DEFAULTS = { page: 0 };
+
 const INPUT_CLASS = 'h-10 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100';
 
 export default function HrRosterDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const { back } = useHrNavigation('/manager/hr/rosters');
   const location = useLocation();
-  const [page, setPage] = useState(0);
+  const { values: { page }, setPage } = useHrListState(LIST_DEFAULTS);
   const [result, setResult] = useState(normalizePage(null));
   const [roster, setRoster] = useState(() => location.state?.roster || null);
   const [loading, setLoading] = useState(true);
@@ -120,9 +124,12 @@ export default function HrRosterDetail() {
     ? leaveData?.calculatedDays
     : leaveForm.manualOverrideDays;
 
+  useHrListScroll(loading);
+  useHrPageBounds(result, loading, page, setPage);
+
   const actionButtons = roster ? (
-    <Button type="button" variant="secondary" onClick={() => navigate('/manager/hr/rosters')}><ArrowLeft className="mr-1.5 h-4 w-4" />Danh sách tháng</Button>
-  ) : <Button type="button" variant="secondary" onClick={() => navigate('/manager/hr/rosters')}><ArrowLeft className="mr-1.5 h-4 w-4" />Danh sách tháng</Button>;
+    <Button type="button" variant="secondary" onClick={() => back()}><ArrowLeft className="mr-1.5 h-4 w-4" />Danh sách tháng</Button>
+  ) : <Button type="button" variant="secondary" onClick={() => back()}><ArrowLeft className="mr-1.5 h-4 w-4" />Danh sách tháng</Button>;
 
   return (
       <HrPageShell>

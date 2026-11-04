@@ -1,0 +1,453 @@
+- generic [ref=f2e5]:
+  - complementary [ref=f2e6]:
+    - generic [ref=f2e11]:
+      - generic [ref=f2e12]: CFC Base
+      - generic [ref=f2e13]: Operations
+    - navigation "Điều hướng chính" [ref=f2e14]:
+      - generic [ref=f2e15]:
+        - heading "Nhân sự" [level=2] [ref=f2e16]
+        - generic [ref=f2e17]:
+          - link "Tổng quan" [ref=f2e18] [cursor=pointer]:
+            - /url: /manager/hr
+          - link "Nhân sự" [ref=f2e25] [cursor=pointer]:
+            - /url: /manager/hr/employees
+          - link "Thử việc" [ref=f2e31] [cursor=pointer]:
+            - /url: /manager/hr/probation
+          - link "LĐ phổ thông" [ref=f2e37] [cursor=pointer]:
+            - /url: /manager/hr/general-labor
+          - link "Tăng / Giảm" [ref=f2e44] [cursor=pointer]:
+            - /url: /manager/hr/movements
+          - link "Nâng lương" [ref=f2e49] [cursor=pointer]:
+            - /url: /manager/hr/salary-raises
+          - link "Danh sách tháng" [ref=f2e54] [cursor=pointer]:
+            - /url: /manager/hr/rosters
+          - link "Gửi phiếu lương" [ref=f2e58] [cursor=pointer]:
+            - /url: /manager/hr/payroll
+          - link "Chấm công" [ref=f2e63] [cursor=pointer]:
+            - /url: /manager/hr/attendance
+          - link "Thưởng ca đêm" [ref=f2e68] [cursor=pointer]:
+            - /url: /manager/hr/attendance/night-rewards
+          - link "Danh mục" [ref=f2e76] [cursor=pointer]:
+            - /url: /manager/hr/catalogs
+      - generic [ref=f2e80]:
+        - heading "Quản trị hệ thống" [level=2] [ref=f2e81]
+        - generic [ref=f2e82]:
+          - link "Duyệt hồ sơ" [ref=f2e83] [cursor=pointer]:
+            - /url: /admin/profile-approvals
+          - link "Tài khoản" [ref=f2e89] [cursor=pointer]:
+            - /url: /admin/users
+    - button "Thu gọn thanh điều hướng" [ref=f2e97]:
+      - generic [ref=f2e100]: Thu gọn
+  - generic [ref=f2e101]:
+    - banner [ref=f2e102]:
+      - generic [ref=f2e103]:
+        - paragraph [ref=f2e104]: Hệ thống quản lý nhân sự
+        - paragraph [ref=f2e105]: Thử việc
+      - button "Mở menu tài khoản" [ref=f2e108]:
+        - img "Ảnh đại diện của Admin CFC" [ref=f2e109]
+        - generic [ref=f2e110]:
+          - generic [ref=f2e111]: Admin CFC
+          - generic [ref=f2e112]: Quản trị viên
+    - main [ref=f2e115]:
+      - generic [ref=f2e117]:
+        - generic [ref=f2e118]:
+          - generic [ref=f2e119]:
+            - paragraph [ref=f2e120]: Quản lý nhân sự
+            - heading "Ứng viên thử việc" [level=1] [ref=f2e121]
+            - paragraph [ref=f2e122]: "Luồng văn phòng: tạo hợp đồng thử việc, bắt đầu thử việc, đánh giá đạt, chọn hợp đồng chính thức rồi chuyển thành hồ sơ nhân sự nháp chờ Tăng."
+          - generic [ref=f2e123]:
+            - button "Mẫu công việc" [ref=f2e124]
+            - button "Thêm ứng viên" [ref=f2e128]
+        - navigation "Khu vực thử việc" [ref=f2e132]:
+          - button "Ứng viên 14" [ref=f2e133]
+          - button "Mẫu công việc 9" [ref=f2e134]
+        - generic [ref=f2e135]:
+          - textbox [ref=f2e140]:
+            - /placeholder: Tìm mã hoặc tên ứng viên
+          - combobox [ref=f2e141]:
+            - option "Tất cả trạng thái"
+            - option "Bản nháp"
+            - option "Đã tạo HĐ"
+            - option "Đang thử việc" [selected]
+            - option "Đạt thử việc"
+            - option "Không đạt"
+            - option "Đã chuyển hồ sơ"
+          - combobox [ref=f2e142]:
+            - option "Tất cả phòng ban" [selected]
+            - option "Bộ phận kho"
+            - option "Bộ phận kho (BX)"
+            - option "Chăm sóc cây"
+            - option "Đội Bảo vệ"
+            - option "Đội Vận tải"
+            - option "Giám sát TTBG"
+            - option "Kế toán trưởng"
+            - option "Kho"
+            - option "Nhân viên thị trường"
+            - option "P. Kế hoạch vật tư"
+            - option "Phó tổng giám đốc"
+            - option "Phòng Giám sát"
+            - option "Phòng Kế hoạch Vật tư"
+            - option "Phòng Kế toán tài chính"
+            - option "Phòng Kinh doanh"
+            - option "Phòng Kỹ thuật"
+            - option "Phòng Kỹ thuật Cơ điện"
+            - option "Phòng QLCLSP"
+            - option "Phòng Tài chính Kế toán"
+            - option "Phòng TCHC"
+            - option "Phòng XNK"
+            - option "Thư ký"
+            - option "Tổng Giám đốc"
+            - option "VP XN. PB&HC"
+            - option "VP. XN PBHC"
+            - option "XN. PBHC"
+            - option "XN. Phân bón Hóa chất"
+            - option "Xưởng Cơ điện"
+          - combobox [ref=f2e143]:
+            - option "Sắp hết thử việc" [selected]
+            - option "Mới cập nhật"
+            - option "Tên A-Z"
+            - option "Mã tăng dần"
+          - button "Xóa lọc" [ref=f2e144]
+          - button "Áp dụng" [ref=f2e145]
+        - generic [ref=f2e149]:
+          - generic [ref=f2e150]:
+            - generic [ref=f2e151]:
+              - generic [ref=f2e152]:
+                - generic [ref=f2e153]: L
+                - generic [ref=f2e154]:
+                  - paragraph [ref=f2e155]: Lê Huy Hào
+                  - paragraph [ref=f2e156]: TV-260814031002
+              - generic [ref=f2e157]: Không đạt
+            - generic [ref=f2e158]:
+              - generic [ref=f2e159]:
+                - text: Phòng ban
+                - paragraph [ref=f2e160]: Phòng Kỹ thuật
+              - generic [ref=f2e161]:
+                - text: Chức vụ
+                - paragraph [ref=f2e162]: Nhân viên phòng kỹ thuật
+              - generic [ref=f2e163]:
+                - text: Thử việc
+                - paragraph [ref=f2e164]: 23/04/2026 → 22/06/2026
+              - generic [ref=f2e165]:
+                - text: Hợp đồng
+                - button "09/2026" [ref=f2e167]
+            - button "Sửa" [ref=f2e172]
+          - generic [ref=f2e176]:
+            - generic [ref=f2e177]:
+              - generic [ref=f2e178]:
+                - generic [ref=f2e179]: T
+                - generic [ref=f2e180]:
+                  - paragraph [ref=f2e181]: TRẦN VŨ DUY
+                  - paragraph [ref=f2e182]: TV-260910083740
+              - generic [ref=f2e183]: Đã chuyển hồ sơ
+            - generic [ref=f2e184]:
+              - generic [ref=f2e185]:
+                - text: Phòng ban
+                - paragraph [ref=f2e186]: Bộ phận kho
+              - generic [ref=f2e187]:
+                - text: Chức vụ
+                - paragraph [ref=f2e188]: Nhân viên kho
+              - generic [ref=f2e189]:
+                - text: Thử việc
+                - paragraph [ref=f2e190]: 04/05/2026 → 03/07/2026
+              - generic [ref=f2e191]:
+                - text: Hợp đồng
+                - button "12/2026" [ref=f2e193]
+            - button "Sửa" [ref=f2e198]
+          - generic [ref=f2e202]:
+            - generic [ref=f2e203]:
+              - generic [ref=f2e204]:
+                - generic [ref=f2e205]: "N"
+                - generic [ref=f2e206]:
+                  - paragraph [ref=f2e207]: Nguyễn Việt Khoa
+                  - paragraph [ref=f2e208]: TV-260814032152
+              - generic [ref=f2e209]: Đã chuyển hồ sơ
+            - generic [ref=f2e210]:
+              - generic [ref=f2e211]:
+                - text: Phòng ban
+                - paragraph [ref=f2e212]: Phòng XNK
+              - generic [ref=f2e213]:
+                - text: Chức vụ
+                - paragraph [ref=f2e214]: Nhân viên phòng XNK
+              - generic [ref=f2e215]:
+                - text: Thử việc
+                - paragraph [ref=f2e216]: 01/07/2026 → 03/08/2026
+              - generic [ref=f2e217]:
+                - text: Hợp đồng
+                - button "10/2026" [ref=f2e219]
+            - button "Sửa" [ref=f2e224]
+          - generic [ref=f2e228]:
+            - generic [ref=f2e229]:
+              - generic [ref=f2e230]:
+                - generic [ref=f2e231]: "N"
+                - generic [ref=f2e232]:
+                  - paragraph [ref=f2e233]: Nguyễn Trung Thuận
+                  - paragraph [ref=f2e234]: TV-260727064228
+              - generic [ref=f2e235]: Đã chuyển hồ sơ
+            - generic [ref=f2e236]:
+              - generic [ref=f2e237]:
+                - text: Phòng ban
+                - paragraph [ref=f2e238]: Phòng TCHC
+              - generic [ref=f2e239]:
+                - text: Chức vụ
+                - paragraph [ref=f2e240]: Nhân viên phòng TCHC
+              - generic [ref=f2e241]:
+                - text: Thử việc
+                - paragraph [ref=f2e242]: 22/06/2026 → 21/08/2026
+              - generic [ref=f2e243]:
+                - text: Hợp đồng
+                - button "07/2026" [ref=f2e245]
+            - button "Sửa" [ref=f2e250]
+          - generic [ref=f2e254]:
+            - generic [ref=f2e255]:
+              - generic [ref=f2e256]:
+                - generic [ref=f2e257]: "N"
+                - generic [ref=f2e258]:
+                  - paragraph [ref=f2e259]: Nguyễn Hoàng Duy
+                  - paragraph [ref=f2e260]: TV-260831082932
+              - generic [ref=f2e261]: Đã chuyển hồ sơ
+            - generic [ref=f2e262]:
+              - generic [ref=f2e263]:
+                - text: Phòng ban
+                - paragraph [ref=f2e264]: VP. XN PBHC
+              - generic [ref=f2e265]:
+                - text: Chức vụ
+                - paragraph [ref=f2e266]: Nhân viên XNPBHC
+              - generic [ref=f2e267]:
+                - text: Thử việc
+                - paragraph [ref=f2e268]: 24/06/2026 → 23/08/2026
+              - generic [ref=f2e269]:
+                - text: Hợp đồng
+                - button "11/2026" [ref=f2e271]
+            - button "Sửa" [ref=f2e276]
+          - generic [ref=f2e280]:
+            - generic [ref=f2e281]:
+              - generic [ref=f2e282]:
+                - generic [ref=f2e283]: T
+                - generic [ref=f2e284]:
+                  - paragraph [ref=f2e285]: TRẦN VĂN HIỀN
+                  - paragraph [ref=f2e286]: A445
+              - generic [ref=f2e287]: Đã chuyển hồ sơ
+            - generic [ref=f2e288]:
+              - generic [ref=f2e289]:
+                - text: Phòng ban
+                - paragraph [ref=f2e290]: Đội Vận tải
+              - generic [ref=f2e291]:
+                - text: Chức vụ
+                - paragraph [ref=f2e292]: —
+              - generic [ref=f2e293]:
+                - text: Thử việc
+                - paragraph [ref=f2e294]: 23/09/2026 → 23/09/2026
+              - generic [ref=f2e295]:
+                - text: Hợp đồng
+                - button "17/2026" [ref=f2e297]
+            - button "Sửa" [ref=f2e302]
+          - generic [ref=f2e306]:
+            - generic [ref=f2e307]:
+              - generic [ref=f2e308]:
+                - generic [ref=f2e309]: "N"
+                - generic [ref=f2e310]:
+                  - paragraph [ref=f2e311]: NGUYỄN VĂN TIẾN
+                  - paragraph [ref=f2e312]: TV-261009035735
+              - generic [ref=f2e313]: Đã chuyển hồ sơ
+            - generic [ref=f2e314]:
+              - generic [ref=f2e315]:
+                - text: Phòng ban
+                - paragraph [ref=f2e316]: Phòng Kinh doanh
+              - generic [ref=f2e317]:
+                - text: Chức vụ
+                - paragraph [ref=f2e318]: Nhân viên Kỹ thuật - Sale
+              - generic [ref=f2e319]:
+                - text: Thử việc
+                - paragraph [ref=f2e320]: 01/08/2026 → 30/09/2026
+              - generic [ref=f2e321]:
+                - text: Hợp đồng
+                - button "25/2026" [ref=f2e323]
+            - button "Sửa" [ref=f2e328]
+          - generic [ref=f2e332]:
+            - generic [ref=f2e333]:
+              - generic [ref=f2e334]:
+                - generic [ref=f2e335]: L
+                - generic [ref=f2e336]:
+                  - paragraph [ref=f2e337]: LÊ NGUYỄN NHẬT HUY
+                  - paragraph [ref=f2e338]: TV-260922074015
+              - generic [ref=f2e339]: Đang thử việc
+            - generic [ref=f2e340]:
+              - generic [ref=f2e341]:
+                - text: Phòng ban
+                - paragraph [ref=f2e342]: Phòng Kế hoạch Vật tư
+              - generic [ref=f2e343]:
+                - text: Chức vụ
+                - paragraph [ref=f2e344]: Phụ Trách Marketing
+              - generic [ref=f2e345]:
+                - text: Thử việc
+                - paragraph [ref=f2e346]: 21/09/2026 → 21/11/2026
+              - generic [ref=f2e347]:
+                - text: Hợp đồng
+                - button "19/2026" [ref=f2e349]
+            - generic [ref=f2e353]:
+              - button "Sửa" [ref=f2e354]
+              - button "Đạt" [ref=f2e358]
+              - button "Không đạt" [ref=f2e362]
+          - generic [ref=f2e367]:
+            - generic [ref=f2e368]:
+              - generic [ref=f2e369]:
+                - generic [ref=f2e370]: S
+                - generic [ref=f2e371]:
+                  - paragraph [ref=f2e372]: SƠN NGỌC KHA
+                  - paragraph [ref=f2e373]: TV-261001072121
+              - generic [ref=f2e374]: Đang thử việc
+            - generic [ref=f2e375]:
+              - generic [ref=f2e376]:
+                - text: Phòng ban
+                - paragraph [ref=f2e377]: Phòng Kinh doanh
+              - generic [ref=f2e378]:
+                - text: Chức vụ
+                - paragraph [ref=f2e379]: Nhân viên Kỹ thuật - Sale
+              - generic [ref=f2e380]:
+                - text: Thử việc
+                - paragraph [ref=f2e381]: 01/10/2026 → 30/11/2026
+              - generic [ref=f2e382]:
+                - text: Hợp đồng
+                - button "23/2026" [ref=f2e384]
+            - generic [ref=f2e388]:
+              - button "Sửa" [ref=f2e389]
+              - button "Đạt" [ref=f2e393]
+              - button "Không đạt" [ref=f2e397]
+          - generic [ref=f2e402]:
+            - generic [ref=f2e403]:
+              - generic [ref=f2e404]:
+                - generic [ref=f2e405]: T
+                - generic [ref=f2e406]:
+                  - paragraph [ref=f2e407]: THẠCH THỊ THU THẢO
+                  - paragraph [ref=f2e408]: TV-261001064813
+              - generic [ref=f2e409]: Đang thử việc
+            - generic [ref=f2e410]:
+              - generic [ref=f2e411]:
+                - text: Phòng ban
+                - paragraph [ref=f2e412]: Phòng Kinh doanh
+              - generic [ref=f2e413]:
+                - text: Chức vụ
+                - paragraph [ref=f2e414]: Nhân viên Kỹ thuật - Sale
+              - generic [ref=f2e415]:
+                - text: Thử việc
+                - paragraph [ref=f2e416]: 01/10/2026 → 30/11/2026
+              - generic [ref=f2e417]:
+                - text: Hợp đồng
+                - button "22/2026" [ref=f2e419]
+            - generic [ref=f2e423]:
+              - button "Sửa" [ref=f2e424]
+              - button "Đạt" [ref=f2e428]
+              - button "Không đạt" [ref=f2e432]
+          - generic [ref=f2e437]:
+            - generic [ref=f2e438]:
+              - generic [ref=f2e439]:
+                - generic [ref=f2e440]: "N"
+                - generic [ref=f2e441]:
+                  - paragraph [ref=f2e442]: NGUYỄN HOÀNG LONG
+                  - paragraph [ref=f2e443]: TV-261001082411
+              - generic [ref=f2e444]: Đang thử việc
+            - generic [ref=f2e445]:
+              - generic [ref=f2e446]:
+                - text: Phòng ban
+                - paragraph [ref=f2e447]: —
+              - generic [ref=f2e448]:
+                - text: Chức vụ
+                - paragraph [ref=f2e449]: Nhân viên kỹ thuật - Sale - Phân Bón Hữu Cơ
+              - generic [ref=f2e450]:
+                - text: Thử việc
+                - paragraph [ref=f2e451]: 01/10/2026 → 30/11/2026
+              - generic [ref=f2e452]:
+                - text: Hợp đồng
+                - button "24/2026" [ref=f2e454]
+            - generic [ref=f2e458]:
+              - button "Sửa" [ref=f2e459]
+              - button "Đạt" [ref=f2e463]
+              - button "Không đạt" [ref=f2e467]
+          - generic [ref=f2e472]:
+            - generic [ref=f2e473]:
+              - generic [ref=f2e474]:
+                - generic [ref=f2e475]: L
+                - generic [ref=f2e476]:
+                  - paragraph [ref=f2e477]: LÊ NGUYỄN PHƯƠNG TRINH
+                  - paragraph [ref=f2e478]: TV-261026072300
+              - generic [ref=f2e479]: Đang thử việc
+            - generic [ref=f2e480]:
+              - generic [ref=f2e481]:
+                - text: Phòng ban
+                - paragraph [ref=f2e482]: Bộ phận kho
+              - generic [ref=f2e483]:
+                - text: Chức vụ
+                - paragraph [ref=f2e484]: Nhân viên kho
+              - generic [ref=f2e485]:
+                - text: Thử việc
+                - paragraph [ref=f2e486]: 01/10/2026 → 30/11/2026
+              - generic [ref=f2e487]:
+                - text: Hợp đồng
+                - button "26/2026" [ref=f2e489]
+            - generic [ref=f2e493]:
+              - button "Sửa" [ref=f2e494]
+              - button "Đạt" [ref=f2e498]
+              - button "Không đạt" [ref=f2e502]
+          - generic [ref=f2e507]:
+            - generic [ref=f2e508]:
+              - generic [ref=f2e509]:
+                - generic [ref=f2e510]: D
+                - generic [ref=f2e511]:
+                  - paragraph [ref=f2e512]: DƯƠNG ĐÌNH TRÍ
+                  - paragraph [ref=f2e513]: TV-261001041433
+              - generic [ref=f2e514]: Đang thử việc
+            - generic [ref=f2e515]:
+              - generic [ref=f2e516]:
+                - text: Phòng ban
+                - paragraph [ref=f2e517]: Phòng Kinh doanh
+              - generic [ref=f2e518]:
+                - text: Chức vụ
+                - paragraph [ref=f2e519]: Nhân viên Kỹ thuật - Sale
+              - generic [ref=f2e520]:
+                - text: Thử việc
+                - paragraph [ref=f2e521]: 01/10/2026 → 30/11/2026
+              - generic [ref=f2e522]:
+                - text: Hợp đồng
+                - button "21/2026" [ref=f2e524]
+            - generic [ref=f2e528]:
+              - button "Sửa" [ref=f2e529]
+              - button "Đạt" [ref=f2e533]
+              - button "Không đạt" [ref=f2e537]
+          - generic [ref=f2e542]:
+            - generic [ref=f2e543]:
+              - generic [ref=f2e544]:
+                - generic [ref=f2e545]: "N"
+                - generic [ref=f2e546]:
+                  - paragraph [ref=f2e547]: NGUYỄN MINH THƯ
+                  - paragraph [ref=f2e548]: TV-261026075946
+              - generic [ref=f2e549]: Đang thử việc
+            - generic [ref=f2e550]:
+              - generic [ref=f2e551]:
+                - text: Phòng ban
+                - paragraph [ref=f2e552]: Phòng Kế hoạch Vật tư
+              - generic [ref=f2e553]:
+                - text: Chức vụ
+                - paragraph [ref=f2e554]: Nhân viên Sale Admin & XNK
+              - generic [ref=f2e555]:
+                - text: Thử việc
+                - paragraph [ref=f2e556]: 20/10/2026 → 19/12/2026
+              - generic [ref=f2e557]:
+                - text: Hợp đồng
+                - button "27/2026" [ref=f2e559]
+            - generic [ref=f2e563]:
+              - button "Sửa" [ref=f2e564]
+              - button "Đạt" [ref=f2e568]
+              - button "Không đạt" [ref=f2e572]
+        - generic [ref=f2e578]:
+          - generic [ref=f2e579]: 14 kết quả · Trang 1/1
+          - generic [ref=f2e580]:
+            - button "Trước" [disabled]
+            - button "Đến trang 1" [ref=f2e582]: "1"
+            - button "Sau" [disabled]
+      - generic [ref=f2e584]:
+        - img "CFC" [ref=f2e585]
+        - generic [ref=f2e586]:
+          - paragraph [ref=f2e587]: CÔNG TY CỔ PHẦN PHÂN BÓN & HÓA CHẤT CẦN THƠ
+          - paragraph [ref=f2e588]: © CFC · Hệ thống vận hành nội bộ
+          - paragraph [ref=f2e589]: Phát triển bởi Nguyễn Trung Thuận

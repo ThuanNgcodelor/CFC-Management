@@ -1,7 +1,9 @@
+import { useHrNavigation } from '../../hooks/useHrListState';
+import { useHrListScroll } from '../../hooks/useHrListScroll';
 import { authApi } from '../../api/authApi';
 import { canEditPersonnel } from '../../utils/hrPermissions';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft,
@@ -78,15 +80,23 @@ function DetailItem({ label, value, wide = false }) {
 export default function HrEmployeeDetail() {
   const canEdit = canEditPersonnel(authApi.getRole());
   const { id } = useParams();
-  const navigate = useNavigate();
+  const { open: navigate, back } = useHrNavigation();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = ['documents', 'contracts', 'history'].includes(searchParams.get('tab')) ? searchParams.get('tab') : 'info';
   const currentYear = new Date().getFullYear();
+  const selectTab = (tab) => setSearchParams((current) => {
+    const next = new URLSearchParams(current);
+    next.set('tab', tab);
+    return next;
+  }, { replace: true });
 
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+  const [referenceSummary, setReferenceSummary] = useState(null);
+  const [intakeStatusBusy, setIntakeStatusBusy] = useState(false);
+  useHrListScroll(loading);
   const [deleting, setDeleting] = useState(false);
   const [exportingContract, setExportingContract] = useState(false);
   const [documentCount, setDocumentCount] = useState(0);
@@ -107,6 +117,18 @@ export default function HrEmployeeDetail() {
       .catch(() => {});
     return () => { active = false; };
   }, [id, reloadKey]);
+
+  useEffect(() => {
+    if (!canEdit || employee?.employmentStatus !== 'DRAFT' || employee?.onboardingSource === 'PROBATION') {
+      setReferenceSummary(null);
+      return undefined;
+    }
+    const controller = new AbortController();
+    hrEmployeeApi.getReferenceSummary(id, { signal: controller.signal })
+      .then((summary) => { if (!controller.signal.aborted) setReferenceSummary(summary); })
+      .catch(() => { if (!controller.signal.aborted) setReferenceSummary(null); });
+    return () => controller.abort();
+  }, [canEdit, employee?.employmentStatus, employee?.onboardingSource, id, reloadKey]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -178,6 +200,11 @@ export default function HrEmployeeDetail() {
   const employmentStatus = employee.employmentStatus || personal.employmentStatus || employee.status;
   const currentContract = employee.currentContract;
   const canDeleteDraft = employmentStatus === 'DRAFT' && employee.onboardingSource !== 'PROBATION';
+  const canManageIntake = canEdit && employee.onboardingSource !== 'PROBATION';
+  const hasEmployeeReferences = Boolean(referenceSummary && (
+    referenceSummary.importedSource || referenceSummary.probationCandidates > 0
+    || referenceSummary.movements > 0 || referenceSummary.rosterSnapshots > 0 || referenceSummary.importRows > 0
+  ));
   const workforceLabel = employee.workforceGroup === 'OFFICE'
     ? 'Khối văn phòng'
     : employee.workforceGroup === 'GENERAL_LABOR'
@@ -206,17 +233,38 @@ export default function HrEmployeeDetail() {
   };
 
   const deleteDraft = async () => {
-    if (!window.confirm(`Xóa vĩnh viễn hồ sơ nháp ${personal.fullName}? Thao tác này không thể hoàn tác.`)) return;
+    if (!window.confirm(`Xóa vĩnh viễn hồ sơ chờ tiếp nhận ${personal.fullName}? Thao tác này không thể hoàn tác.`)) return;
     setDeleting(true);
     try {
       await hrEmployeeApi.deleteDraftEmployee(id, employee.rowVersion);
-      toast.success('Đã xóa hồ sơ nhân sự nháp.');
-      navigate('/manager/hr/employees', { replace: true });
+      toast.success('Đã xóa hồ sơ nhân sự chờ tiếp nhận.');
+      back({ replace: true });
     } catch (requestError) {
-      toast.error(apiErrorMessage(requestError, 'Không thể xóa hồ sơ nhân sự nháp.'));
+      toast.error(apiErrorMessage(requestError, 'Không thể xóa hồ sơ nhân sự chờ tiếp nhận.'));
       setReloadKey((value) => value + 1);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const changeIntakeStatus = async (action) => {
+    const stop = action === 'stop';
+    const pendingIncreases = referenceSummary?.pendingIncreaseMovements || 0;
+    if (stop && !window.confirm(`Dừng tiếp nhận hồ sơ này? ${pendingIncreases} biến động Tăng đang chờ sẽ tự hủy.`)) return;
+    const reason = window.prompt(stop ? 'Lý do dừng tiếp nhận (có thể để trống):' : 'Lý do khôi phục tiếp nhận (có thể để trống):');
+    if (reason === null) return;
+    setIntakeStatusBusy(true);
+    try {
+      const payload = { rowVersion: employee.rowVersion, reason: reason.trim() };
+      if (stop) await hrEmployeeApi.stopIntake(id, payload);
+      else await hrEmployeeApi.restoreIntake(id, payload);
+      toast.success(stop ? 'Đã dừng tiếp nhận; Tăng đang chờ đã được hủy.' : 'Đã khôi phục tiếp nhận hồ sơ.');
+      setReloadKey((value) => value + 1);
+    } catch (requestError) {
+      toast.error(apiErrorMessage(requestError, 'Không thể cập nhật trạng thái tiếp nhận.'));
+      setReloadKey((value) => value + 1);
+    } finally {
+      setIntakeStatusBusy(false);
     }
   };
 
@@ -264,11 +312,11 @@ export default function HrEmployeeDetail() {
         description={`Mã nhân sự: ${personal.employeeCode || employee.employeeCode || '—'}`}
         actions={(
           <>
-            <Button type="button" variant="secondary" onClick={() => navigate('/manager/hr/employees')}><ArrowLeft className="mr-1.5 h-4 w-4" />Danh sách</Button>
+            <Button type="button" variant="secondary" onClick={() => back()}><ArrowLeft className="mr-1.5 h-4 w-4" />Danh sách</Button>
             <Button
               type="button"
               variant={activeTab === 'documents' ? 'primary' : 'secondary'}
-              onClick={() => setSearchParams({ tab: 'documents' })}
+              onClick={() => selectTab('documents')}
             >
               <FolderOpen className="mr-1.5 h-4 w-4" />Hồ sơ đính kèm
               {documentCount > 0 && (
@@ -284,11 +332,34 @@ export default function HrEmployeeDetail() {
               <FilePenLine className="mr-1.5 h-4 w-4" />Chỉnh sửa thông tin
             </Button>}
             {canEdit && canDeleteDraft && (
-              <Button type="button" variant="danger" disabled={deleting} onClick={deleteDraft}><Trash2 className="mr-1.5 h-4 w-4" />Xóa bản nháp</Button>
+              <Button type="button" variant="danger" disabled={deleting || hasEmployeeReferences} onClick={deleteDraft}><Trash2 className="mr-1.5 h-4 w-4" />Xóa hồ sơ chờ tiếp nhận</Button>
+            )}
+            {canManageIntake && employmentStatus === 'DRAFT' && (
+              <Button type="button" variant="secondary" disabled={intakeStatusBusy} onClick={() => changeIntakeStatus('stop')}>Dừng tiếp nhận</Button>
+            )}
+            {canManageIntake && employmentStatus === 'INTAKE_STOPPED' && (
+              <Button type="button" variant="primary" disabled={intakeStatusBusy} onClick={() => changeIntakeStatus('restore')}>Khôi phục tiếp nhận</Button>
             )}
           </>
         )}
       />
+
+      {canEdit && canDeleteDraft && referenceSummary && (
+        <section className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950" aria-label="Liên kết hồ sơ chờ tiếp nhận">
+          <h2 className="font-semibold">Liên kết đang giữ hồ sơ</h2>
+          <p className="mt-1 text-amber-900">Thông tin này giúp xác định vì sao hồ sơ chưa thể xóa. Hồ sơ đã được import nguồn sẽ không được xóa bằng chức năng hồ sơ chờ tiếp nhận.</p>
+          <ul className="mt-3 grid gap-1 sm:grid-cols-2">
+            <li>Ứng viên nguồn: {referenceSummary.probationCandidates}</li>
+            <li>Biến động nhân sự: {referenceSummary.movements}</li>
+            <li>Tăng đang chờ xác nhận: {referenceSummary.pendingIncreaseMovements}</li>
+            <li>Danh sách tháng: {referenceSummary.rosterSnapshots}</li>
+            <li>Dòng dữ liệu import: {referenceSummary.importRows}</li>
+            <li>Nguồn tạo từ import: {referenceSummary.importedSource ? 'Có' : 'Không'}</li>
+          </ul>
+          <p className="mt-2 text-xs text-amber-900">Đây là chẩn đoán chỉ đọc; các liên kết nghiệp vụ cần được giữ nguyên.</p>
+          {hasEmployeeReferences && <p className="mt-2 font-medium text-amber-950">Hồ sơ có liên kết nên không thể xóa an toàn. Dùng “Dừng tiếp nhận” để giữ lại lịch sử và kết thúc xử lý.</p>}
+        </section>
+      )}
 
       <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-xl font-semibold text-emerald-700">
@@ -312,7 +383,7 @@ export default function HrEmployeeDetail() {
       <div className="mb-6 flex flex-wrap border-b border-gray-200 bg-white rounded-t-xl px-2 shadow-sm" aria-label="Các phần hồ sơ nhân sự">
         <button
           type="button"
-          onClick={() => setSearchParams({ tab: 'info' })}
+          onClick={() => selectTab('info')}
           className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition ${
             activeTab === 'info'
               ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50'
@@ -325,7 +396,7 @@ export default function HrEmployeeDetail() {
 
         <button
           type="button"
-          onClick={() => setSearchParams({ tab: 'documents' })}
+          onClick={() => selectTab('documents')}
           className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition ${
             activeTab === 'documents'
               ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50'
@@ -342,7 +413,7 @@ export default function HrEmployeeDetail() {
         </button>
         {[['contracts', 'Hợp đồng'], ['history', 'Lịch sử']].map(([tab, label]) => (
           <button key={tab} type="button" aria-current={activeTab === tab ? 'page' : undefined}
-            onClick={() => setSearchParams({ tab })}
+            onClick={() => selectTab(tab)}
             className={`border-b-2 px-5 py-3 text-sm font-semibold ${activeTab === tab ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
             {label}
           </button>

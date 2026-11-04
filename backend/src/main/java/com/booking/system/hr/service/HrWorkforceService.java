@@ -1,6 +1,7 @@
 package com.booking.system.hr.service;
 
 import com.booking.system.hr.api.HrApiException;
+import com.booking.system.hr.dto.HrApiDtos;
 import com.booking.system.hr.api.dto.HrMovementAdjustmentRequest;
 import com.booking.system.hr.api.dto.HrMovementCreateRequest;
 import com.booking.system.hr.api.dto.HrMovementResponse;
@@ -76,6 +77,64 @@ public class HrWorkforceService {
     private final HrEmploymentContractService employmentContractService;
 
     @Transactional
+    public void stopEmployeeIntake(String employeeId, long rowVersion, String reason, HrImportActor actor) {
+        HrEmployee employee = lockedEmployee(employeeId);
+        if (employee.getEmploymentStatus() != HrEmploymentStatus.DRAFT) {
+            throw HrApiException.conflict("EMPLOYEE_INTAKE_STATUS_INVALID", "Chỉ hồ sơ chờ tiếp nhận mới có thể dừng tiếp nhận.");
+        }
+        requireVersion(employee.getRowVersion(), rowVersion, "Hồ sơ đã được cập nhật ở nơi khác.");
+        List<HrEmployeeMovement> pendingIncreases = movementRepository.findByEmployeeAndStatusAndTypeForUpdate(
+                employeeId, HrMovementStatus.DRAFT, HrMovementType.INCREASE);
+        LocalDateTime now = nowUtc();
+        for (HrEmployeeMovement movement : pendingIncreases) {
+            movement.setStatus(HrMovementStatus.CANCELLED);
+            movement.setCancelledAt(now);
+            movement.setCancelledByActor(displayActor(actor));
+            touch(movement, actor);
+            audit(actor, "HR_MOVEMENT_CANCELLED_BY_INTAKE_STOP", "HR_EMPLOYEE_MOVEMENT", movement.getId(),
+                    List.of("status", "cancelledAt"), Map.of("employeeId", employeeId));
+        }
+        if (!pendingIncreases.isEmpty()) movementRepository.saveAll(pendingIncreases);
+        employee.setEmploymentStatus(HrEmploymentStatus.INTAKE_STOPPED);
+        touch(employee, actor);
+        audit(actor, "HR_EMPLOYEE_INTAKE_STOPPED", "HR_EMPLOYEE", employeeId,
+                List.of("employmentStatus"),
+                Map.of("cancelledPendingIncreaseCount", pendingIncreases.size(), "reason", Objects.toString(trimToNull(reason), "")));
+        entityManager.flush();
+    }
+
+    @Transactional
+    public void restoreEmployeeIntake(String employeeId, long rowVersion, String reason, HrImportActor actor) {
+        HrEmployee employee = lockedEmployee(employeeId);
+        if (employee.getEmploymentStatus() != HrEmploymentStatus.INTAKE_STOPPED) {
+            throw HrApiException.conflict("EMPLOYEE_INTAKE_STATUS_INVALID", "Chỉ hồ sơ đã dừng tiếp nhận mới có thể khôi phục.");
+        }
+        requireVersion(employee.getRowVersion(), rowVersion, "Hồ sơ đã được cập nhật ở nơi khác.");
+        employee.setEmploymentStatus(HrEmploymentStatus.DRAFT);
+        touch(employee, actor);
+        audit(actor, "HR_EMPLOYEE_INTAKE_RESTORED", "HR_EMPLOYEE", employeeId,
+                List.of("employmentStatus"),
+                Map.of("reason", Objects.toString(trimToNull(reason), "")));
+        entityManager.flush();
+    }
+
+    @Transactional(readOnly = true)
+    public HrApiDtos.EmployeeReferenceSummary employeeReferenceSummary(String employeeId) {
+        HrEmployee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> HrApiException.notFound("EMPLOYEE_NOT_FOUND", "Không tìm thấy hồ sơ nhân sự."));
+        return new HrApiDtos.EmployeeReferenceSummary(
+                employee.getEmploymentStatus().name(),
+                employee.getSourceImportBatch() != null,
+                probationCandidateRepository.countByConvertedEmployee_Id(employeeId),
+                movementRepository.countByEmployee_Id(employeeId),
+                movementRepository.countByEmployee_IdAndStatusAndMovementType(
+                        employeeId, HrMovementStatus.DRAFT, HrMovementType.INCREASE),
+                rosterItemRepository.countByEmployee_Id(employeeId),
+                importRowRepository.countByEmployee_Id(employeeId)
+        );
+    }
+
+    @Transactional
     public HrMovementResponse createMovement(HrMovementCreateRequest request, HrImportActor actor) {
         requireSupportedMovementType(request.movementType());
         String idempotencyKey = requiredText(request.idempotencyKey(), "Khóa chống trùng là bắt buộc.");
@@ -94,7 +153,7 @@ public class HrWorkforceService {
 
         if (movementRepository.existsByEmployee_IdAndStatus(employee.getId(), HrMovementStatus.DRAFT)) {
             throw HrApiException.conflict("EMPLOYEE_HAS_DRAFT_MOVEMENT",
-                    "Nhân sự đang có một biến động nháp chưa được xử lý.");
+                    "Nhân sự đang có một biến động chờ xác nhận chưa được xử lý.");
         }
         if (request.decisionDate() != null && request.decisionDate().isAfter(today())) {
             throw HrApiException.badRequest("DECISION_DATE_IN_FUTURE",
@@ -116,7 +175,7 @@ public class HrWorkforceService {
         if (request.movementType() == HrMovementType.INCREASE) {
             if (employee.getEmploymentStatus() != HrEmploymentStatus.DRAFT) {
                 throw HrApiException.conflict("INCREASE_REQUIRES_DRAFT_EMPLOYEE",
-                        "Tăng nhân sự chỉ áp dụng cho hồ sơ nhân sự nháp.");
+                        "Tăng nhân sự chỉ áp dụng cho hồ sơ nhân sự chờ tiếp nhận.");
             }
             employmentContractService.requireReadyForIncrease(employee, request.effectiveDate());
             movement.setFromEmployeeStatus(HrEmploymentStatus.DRAFT);
@@ -192,7 +251,7 @@ public class HrWorkforceService {
         HrEmployee employee = lockedEmployee(target.getEmployee().getId());
         if (movementRepository.existsByEmployee_IdAndStatus(employee.getId(), HrMovementStatus.DRAFT)) {
             throw HrApiException.conflict("EMPLOYEE_HAS_DRAFT_MOVEMENT",
-                    "Nhân sự đang có một biến động nháp chưa được xử lý.");
+                    "Nhân sự đang có một biến động chờ xác nhận chưa được xử lý.");
         }
         if (movementRepository.existsConfirmedManualMovementAtOrAfter(
                 employee.getId(), HrMovementStatus.CONFIRMED, HrMovementSourceKind.MANUAL,
@@ -229,13 +288,17 @@ public class HrWorkforceService {
 
     @Transactional
     public HrMovementResponse confirmMovement(String movementId, long rowVersion, HrImportActor actor) {
+        HrEmployeeMovement snapshot = movementRepository.findByIdForProjection(
+                        requiredText(movementId, "Mã biến động là bắt buộc."))
+                .orElseThrow(() -> HrApiException.notFound("MOVEMENT_NOT_FOUND", "Không tìm thấy biến động nhân sự."));
+        lockedEmployee(snapshot.getEmployee().getId());
         HrEmployeeMovement movement = lockedMovement(movementId);
         if (movement.getStatus() == HrMovementStatus.CONFIRMED) {
             return HrMovementResponse.from(movement);
         }
         if (movement.getStatus() != HrMovementStatus.DRAFT) {
             throw HrApiException.conflict("MOVEMENT_NOT_DRAFT",
-                    "Chỉ biến động nháp mới có thể được xác nhận.");
+                    "Chỉ biến động chờ xác nhận mới có thể được xác nhận.");
         }
         requireVersion(movement.getRowVersion(), rowVersion, "Biến động đã được cập nhật ở nơi khác.");
 
@@ -252,7 +315,9 @@ public class HrWorkforceService {
         }
         List<HrMovementResponse> responses = new ArrayList<>();
         for (String id : movementIds) {
-            HrEmployeeMovement movement = lockedMovement(id);
+            HrEmployeeMovement movement = movementRepository.findByIdForProjection(
+                            requiredText(id, "Mã biến động là bắt buộc."))
+                    .orElseThrow(() -> HrApiException.notFound("MOVEMENT_NOT_FOUND", "Không tìm thấy biến động nhân sự."));
             if (movement.getStatus() == HrMovementStatus.DRAFT) {
                 responses.add(confirmMovement(id, movement.getRowVersion(), actor));
             }
@@ -434,7 +499,7 @@ public class HrWorkforceService {
         HrEmployeeMovement movement = lockedMovement(movementId);
         if (movement.getStatus() != HrMovementStatus.DRAFT || movement.getImportBatch() != null) {
             throw HrApiException.conflict("MOVEMENT_DELETE_NOT_ALLOWED",
-                    "Chỉ biến động nháp nhập tay và chưa phát sinh liên kết mới được xóa.");
+                    "Chỉ biến động chờ xác nhận nhập tay và chưa phát sinh liên kết mới được xóa.");
         }
         requireVersion(movement.getRowVersion(), rowVersion, "Biến động đã được cập nhật ở nơi khác.");
         if (rosterItemRepository.countBySourceMovement_Id(movementId) > 0
@@ -453,7 +518,7 @@ public class HrWorkforceService {
         HrEmployee employee = lockedEmployee(employeeId);
         if (employee.getEmploymentStatus() != HrEmploymentStatus.DRAFT || employee.getSourceImportBatch() != null) {
             throw HrApiException.conflict("EMPLOYEE_DELETE_NOT_ALLOWED",
-                    "Chỉ hồ sơ nhân sự nháp tạo thủ công mới được xóa.");
+                    "Chỉ hồ sơ nhân sự chờ tiếp nhận tạo thủ công mới được xóa.");
         }
         requireVersion(employee.getRowVersion(), rowVersion, "Hồ sơ đã được cập nhật ở nơi khác.");
         if (movementRepository.countByEmployee_Id(employeeId) > 0

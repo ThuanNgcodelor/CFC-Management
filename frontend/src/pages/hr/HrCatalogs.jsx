@@ -8,6 +8,7 @@ import { HrEmpty, HrError, HrPageHeader, HrPageShell, HrPagination, HrStatusBadg
 import { hrCatalogApi } from '../../api/hrCatalogApi';
 import { normalizePage } from '../../api/hrApiUtils';
 import { apiErrorMessage, nonEmpty } from '../../utils/hr';
+import { useHrListState, useHrPageBounds } from '../../hooks/useHrListState';
 
 const TYPES = [
   { key: 'departments', label: 'Phòng ban' },
@@ -25,12 +26,12 @@ const EMPTY_FORM = {
   rowVersion: null,
 };
 const INPUT_CLASS = 'h-10 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100';
+const CATALOG_LIST_DEFAULTS = { type: 'departments', keyword: '', status: '', page: 0 };
+const CATALOG_LIST_ALLOWED = { type: TYPES.map(({ key }) => key), status: ['', 'ACTIVE', 'INACTIVE'] };
 
 export default function HrCatalogs() {
-  const [type, setType] = useState('departments');
-  const [keyword, setKeyword] = useState('');
-  const [status, setStatus] = useState('');
-  const [page, setPage] = useState(0);
+  const { values, setValues, setPage } = useHrListState(CATALOG_LIST_DEFAULTS, CATALOG_LIST_ALLOWED);
+  const { type, keyword, status, page } = values;
   const [result, setResult] = useState(normalizePage(null));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -78,11 +79,10 @@ export default function HrCatalogs() {
     return () => controller.abort();
   }, [reloadKey, type]);
 
+  useHrPageBounds(result, loading, page, setPage);
+
   const changeType = (nextType) => {
-    setType(nextType);
-    setPage(0);
-    setKeyword('');
-    setStatus('');
+    setValues({ type: nextType, keyword: '', status: '' });
   };
 
   const openCreate = () => {
@@ -174,9 +174,9 @@ export default function HrCatalogs() {
       <div className="mb-4 flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:flex-row">
         <label className="relative flex-1">
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <input value={keyword} onChange={(event) => { setKeyword(event.target.value); setPage(0); }} placeholder="Tìm theo mã hoặc tên" className="h-10 w-full rounded-lg border border-gray-200 pl-9 pr-3 text-sm outline-none focus:border-emerald-500" />
+          <input value={keyword} onChange={(event) => setValues({ keyword: event.target.value })} placeholder="Tìm theo mã hoặc tên" className="h-10 w-full rounded-lg border border-gray-200 pl-9 pr-3 text-sm outline-none focus:border-emerald-500" />
         </label>
-        <select value={status} onChange={(event) => { setStatus(event.target.value); setPage(0); }} className="h-10 rounded-lg border border-gray-200 px-3 text-sm outline-none focus:border-emerald-500">
+        <select value={status} onChange={(event) => setValues({ status: event.target.value })} className="h-10 rounded-lg border border-gray-200 px-3 text-sm outline-none focus:border-emerald-500">
           <option value="">Tất cả trạng thái</option>
           <option value="ACTIVE">Đang hoạt động</option>
           <option value="INACTIVE">Ngừng hoạt động</option>

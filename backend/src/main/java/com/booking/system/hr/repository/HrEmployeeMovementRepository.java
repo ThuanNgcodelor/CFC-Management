@@ -3,6 +3,7 @@ package com.booking.system.hr.repository;
 import com.booking.system.hr.entity.HrEmployeeMovement;
 import com.booking.system.hr.enums.HrMovementStatus;
 import com.booking.system.hr.enums.HrMovementType;
+import com.booking.system.hr.enums.HrWorkforceGroup;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +39,44 @@ public interface HrEmployeeMovementRepository extends HrRepository<HrEmployeeMov
     @Query("select movement from HrEmployeeMovement movement")
     Page<HrEmployeeMovement> findActivityPage(Pageable pageable);
 
+    @EntityGraph(attributePaths = {"employee", "employee.employment", "employee.identity", "employee.insurance", "employee.contact",
+            "fromDepartment", "toDepartment", "fromPosition", "toPosition",
+            "fromWorkingCondition", "toWorkingCondition", "correctionOfMovement"})
+    @Query("""
+            select movement from HrEmployeeMovement movement
+            join movement.employee employee
+            left join employee.employment employment
+            where (:keyword is null or lower(employee.employeeCode) like :keyword escape '!'
+                or lower(employee.fullName) like :keyword escape '!'
+                or lower(movement.decisionNumber) like :keyword escape '!')
+              and (:type is null or movement.movementType = :type)
+              and (:status is null or movement.status = :status)
+              and (:workforceGroup is null or employee.workforceGroup = :workforceGroup)
+              and (:departmentId is null or movement.fromDepartment.id = :departmentId
+                or movement.toDepartment.id = :departmentId
+                or (movement.fromDepartment is null and movement.toDepartment is null and employment.department.id = :departmentId))
+              and (:from is null or movement.effectiveDate >= :from)
+              and (:to is null or movement.effectiveDate <= :to)
+              and (:recordType = 'ALL'
+                or (:recordType = 'ORIGINAL' and movement.correctionOfMovement is null)
+                or (:recordType = 'ADJUSTMENT' and movement.correctionOfMovement is not null)
+                or (:recordType = 'SUPERSEDED' and exists (
+                    select replacement.id from HrEmployeeMovement replacement
+                    where replacement.correctionOfMovement = movement
+                      and replacement.status = com.booking.system.hr.enums.HrMovementStatus.CONFIRMED)))
+            """)
+    Page<HrEmployeeMovement> searchActivity(
+            @Param("keyword") String keyword,
+            @Param("type") HrMovementType type,
+            @Param("status") HrMovementStatus status,
+            @Param("workforceGroup") HrWorkforceGroup workforceGroup,
+            @Param("departmentId") String departmentId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to,
+            @Param("recordType") String recordType,
+            Pageable pageable
+    );
+
     @EntityGraph(attributePaths = {"employee", "employee.employment", "employee.employment.department",
             "employee.employment.position", "employee.employment.workingCondition", "employee.identity",
             "employee.insurance", "employee.contact", "fromDepartment", "toDepartment", "fromPosition", "toPosition",
@@ -60,6 +99,17 @@ public interface HrEmployeeMovementRepository extends HrRepository<HrEmployeeMov
     boolean existsByStatus(HrMovementStatus status);
 
     long countByEmployee_Id(String employeeId);
+
+    long countByEmployee_IdAndStatusAndMovementType(
+            String employeeId, HrMovementStatus status, HrMovementType movementType);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select movement from HrEmployeeMovement movement where movement.employee.id = :employeeId and movement.status = :status and movement.movementType = :movementType")
+    List<HrEmployeeMovement> findByEmployeeAndStatusAndTypeForUpdate(
+            @Param("employeeId") String employeeId,
+            @Param("status") HrMovementStatus status,
+            @Param("movementType") HrMovementType movementType
+    );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @EntityGraph(attributePaths = {

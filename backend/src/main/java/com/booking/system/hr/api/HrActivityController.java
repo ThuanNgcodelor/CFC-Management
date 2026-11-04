@@ -5,6 +5,7 @@ import com.booking.system.hr.api.dto.HrAuditEventResponse;
 import com.booking.system.hr.api.dto.HrLeaveEntitlementResponse;
 import com.booking.system.hr.api.dto.HrMovementImpactPreviewResponse;
 import com.booking.system.hr.api.dto.HrMovementResponse;
+import com.booking.system.hr.api.dto.HrMovementDtos;
 import com.booking.system.hr.api.dto.HrPageResponse;
 import com.booking.system.hr.api.dto.HrRosterItemResponse;
 import com.booking.system.hr.api.dto.HrRosterReconciliationResponse;
@@ -16,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,10 +37,12 @@ public class HrActivityController {
     @GetMapping("/movements")
     public ResponseEntity<ApiResponse<HrPageResponse<HrMovementResponse>>> movements(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @ModelAttribute HrMovementDtos.SearchRequest filters,
+            @RequestParam(defaultValue = "effectiveDate,desc") String sort
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                queryService.movements(page, size),
+                queryService.movements(page, size, filters, sort),
                 "Lấy lịch sử biến động nhân sự thành công"
         ));
     }

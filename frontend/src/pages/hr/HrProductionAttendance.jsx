@@ -15,6 +15,7 @@ import { HrAttendanceShiftDecisionDrawer } from '../../components/hr/HrAttendanc
 import { Button } from '../../components/ui/Button';
 import SEOHead from '../../components/SEOHead';
 import { apiErrorMessage, formatHrDate, formatHrDateTime } from '../../utils/hr';
+import { useHrListState } from '../../hooks/useHrListState';
 
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 const storedMonth = () => localStorage.getItem('hr-production-attendance-month') || currentMonth();
@@ -25,6 +26,7 @@ const views = [
   ['CONFIRMED', 'Đã xác nhận'], ['INCIDENT', 'Sự cố máy'], ['PRODUCTION_WORKER', 'Công nhân'],
   ['KCS', 'KCS'], ['ALL', 'Tất cả'],
 ];
+const PRODUCTION_VIEW_VALUES = views.map(([value]) => value);
 
 function money(value) {
   return `${Number(value || 0).toLocaleString('vi-VN')} đ`;
@@ -204,20 +206,25 @@ function IncidentDrawer({ open, activeImport, incidents, onClose, onRefresh }) {
 }
 
 export default function HrProductionAttendance() {
-  const [month, setMonth] = useState(storedMonth);
+  const listDefaults = useMemo(() => ({ month: storedMonth(), importId: '', employeePage: 0, employeeKeyword: '', view: 'NEEDS_REVIEW', employeeCode: '', page: 0 }), []);
+  const listAllowed = useMemo(() => ({ view: PRODUCTION_VIEW_VALUES }), []);
+  const { values: listState, setValues: setListState, setPage } = useHrListState(listDefaults, listAllowed);
+  const { month, importId: activeImportId, employeePage: employeeSummaryPage, employeeKeyword: employeeSummaryKeyword, view, employeeCode, page } = listState;
+  const listStateRef = useRef(listState);
+  listStateRef.current = listState;
+  const setImportId = useCallback((value) => setListState({ importId: typeof value === 'function' ? value(listStateRef.current.importId) : value }, { resetPage: false }), [setListState]);
+  const setMonth = useCallback((value) => setListState({ month: value, page: 0 }), [setListState]);
+  const setView = useCallback((value) => setListState({ view: value, page: 0 }), [setListState]);
+  const setEmployeeCode = useCallback((value) => setListState({ employeeCode: value, page: 0 }), [setListState]);
+  const setEmployeeSummaryPage = useCallback((value) => setListState({ employeePage: value }, { resetPage: false }), [setListState]);
+  const setEmployeeSummaryKeyword = useCallback((value) => setListState({ employeeKeyword: value, employeePage: 0 }, { resetPage: false }), [setListState]);
   const [imports, setImports] = useState([]);
-  const [activeImportId, setActiveImportId] = useState('');
   const [employeeSummaries, setEmployeeSummaries] = useState(emptyPage);
-  const [employeeSummaryPage, setEmployeeSummaryPage] = useState(0);
-  const [employeeSummaryKeyword, setEmployeeSummaryKeyword] = useState('');
   const [shifts, setShifts] = useState(emptyPage);
   const [summary, setSummary] = useState(null);
   const [policies, setPolicies] = useState([]);
   const [creditRules, setCreditRules] = useState([]);
   const [incidents, setIncidents] = useState([]);
-  const [view, setView] = useState('NEEDS_REVIEW');
-  const [employeeCode, setEmployeeCode] = useState('');
-  const [page, setPage] = useState(0);
   const [files, setFiles] = useState([]);
   const [selected, setSelected] = useState(new Set());
   const [decisionShift, setDecisionShift] = useState(null);
@@ -240,9 +247,9 @@ export default function HrProductionAttendance() {
     const importPage = await api.listImports({ page: 0, size: 100, month });
     const nextImports = importPage?.content || [];
     setImports(nextImports);
-    setActiveImportId((current) => nextImports.some((item) => item.id === current) ? current : nextImports[0]?.id || '');
+    setImportId((current) => nextImports.some((item) => item.id === current) ? current : nextImports[0]?.id || '');
     return nextImports;
-  }, [month]);
+  }, [month, setImportId]);
 
   const loadBase = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -285,7 +292,7 @@ export default function HrProductionAttendance() {
       if (seq === shiftsSeq.current) {
         if (requestError?.response?.status === 404) {
           setShifts(emptyPage);
-          setActiveImportId((cur) => (cur === targetId ? '' : cur));
+          setImportId((cur) => (cur === targetId ? '' : cur));
         } else {
           toast.error(apiErrorMessage(requestError, 'Không thể tải danh sách ca.'));
         }
@@ -295,7 +302,7 @@ export default function HrProductionAttendance() {
         setShiftsLoading(false);
       }
     }
-  }, [activeImportId, employeeCode, page, view]);
+  }, [activeImportId, employeeCode, page, setImportId, view]);
 
   const loadEmployeeSummaries = useCallback(async (overrideImportId) => {
     const targetId = overrideImportId !== undefined ? overrideImportId : activeImportId;
@@ -319,7 +326,7 @@ export default function HrProductionAttendance() {
       if (seq === summariesSeq.current) {
         if (requestError?.response?.status === 404) {
           setEmployeeSummaries(emptyPage);
-          setActiveImportId((cur) => (cur === targetId ? '' : cur));
+          setImportId((cur) => (cur === targetId ? '' : cur));
         } else {
           toast.error(apiErrorMessage(requestError, 'Không thể tải tổng quan theo nhân viên.'));
         }
@@ -329,7 +336,7 @@ export default function HrProductionAttendance() {
         setSummariesLoading(false);
       }
     }
-  }, [activeImportId, employeeSummaryKeyword, employeeSummaryPage]);
+  }, [activeImportId, employeeSummaryKeyword, employeeSummaryPage, setImportId]);
 
   useEffect(() => { loadBase(); }, [loadBase]);
   useEffect(() => { loadShifts(); }, [loadShifts]);
@@ -347,11 +354,11 @@ export default function HrProductionAttendance() {
           loadEmployeeSummaries(activeImportId);
         } else if (nextImports.length > 0) {
           const fallbackId = nextImports[0].id;
-          setActiveImportId(fallbackId);
+          setImportId(fallbackId);
           loadShifts(fallbackId);
           loadEmployeeSummaries(fallbackId);
         } else {
-          setActiveImportId('');
+          setImportId('');
           setShifts(emptyPage);
           setEmployeeSummaries(emptyPage);
         }
@@ -364,7 +371,7 @@ export default function HrProductionAttendance() {
       window.clearInterval(timer);
       document.removeEventListener('visibilitychange', refresh);
     };
-  }, [activeImportId, loadImports, loadShifts, loadEmployeeSummaries]);
+  }, [activeImportId, loadImports, loadShifts, loadEmployeeSummaries, setImportId]);
   useEffect(() => {
     if (!activeImport) return;
     const context = `${activeImportId}:${activeImport.status}`;
@@ -372,7 +379,7 @@ export default function HrProductionAttendance() {
     initializedImportContext.current = context;
     setView(activeImport.status === 'CONFIRMED' ? 'CONFIRMED' : activeImport.reviewShifts > 0 ? 'NEEDS_REVIEW' : 'AUTO_MATCHED');
     setEmployeeCode(''); setPage(0); setEmployeeSummaryPage(0); setSelected(new Set());
-  }, [activeImportId, activeImport, activeImport?.reviewShifts, activeImport?.status]);
+  }, [activeImportId, activeImport, activeImport?.reviewShifts, activeImport?.status, setEmployeeCode, setEmployeeSummaryPage, setPage, setView]);
 
   const mutate = async (action, success, fallback) => {
     setWorking(true);
@@ -430,7 +437,7 @@ export default function HrProductionAttendance() {
     if (item.id === activeImportId) {
       const next = imports.find((i) => i.id !== item.id);
       const nextId = next ? next.id : '';
-      setActiveImportId(nextId);
+      setImportId(nextId);
       if (!nextId) {
         setShifts(emptyPage);
         setEmployeeSummaries(emptyPage);
@@ -471,7 +478,7 @@ export default function HrProductionAttendance() {
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"><div className="flex items-start gap-3"><UploadCloud className="mt-0.5 h-5 w-5 text-blue-600" /><div><h2 className="font-semibold">Import Time Attendance</h2><p className="mt-1 text-xs text-gray-500">Có thể chọn nhiều file; mỗi file giữ nguyên G–J và đủ ngày.</p></div></div><input id="production-attendance-files" type="file" multiple accept=".xlsx,.xls,.xlsm" onChange={(event) => setFiles(Array.from(event.target.files || []))} className="mt-4 block w-full text-sm" /><Button type="button" className="mt-4 w-full" disabled={!files.length || working} onClick={upload}><FileSpreadsheet className="h-4 w-4" />{working ? 'Đang xử lý...' : `Import ${files.length || ''} file`}</Button></div>
     </section>
 
-    <section className="mt-5 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><h2 className="font-semibold">File đang xử lý</h2><p className="mt-1 text-xs text-gray-500">Chọn một file. File chờ xác nhận có thể xóa; file đã chốt có thể mở khóa để điều chỉnh.</p></div><span className="text-sm text-gray-500">{imports.length} file</span></div><div className="mt-4 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">{imports.map((item) => <ImportCard key={item.id} item={item} active={item.id === activeImportId} canReopen={canReopen} onSelect={() => { setActiveImportId(item.id); setPage(0); }} onConfirm={() => confirmImport(item)} onRecalculate={() => mutate(() => api.recalculate(item.id), 'Đã tính lại từ dấu chấm gốc.', 'Không thể tính lại file.')} onDelete={() => deleteImport(item)} onReopen={() => reopen(item)} />)}{!imports.length && <HrEmpty title="Chưa có file ca sản xuất" description="Chọn tháng và import file Time Attendance ở phía trên." />}</div></section>
+    <section className="mt-5 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><h2 className="font-semibold">File đang xử lý</h2><p className="mt-1 text-xs text-gray-500">Chọn một file. File chờ xác nhận có thể xóa; file đã chốt có thể mở khóa để điều chỉnh.</p></div><span className="text-sm text-gray-500">{imports.length} file</span></div><div className="mt-4 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">{imports.map((item) => <ImportCard key={item.id} item={item} active={item.id === activeImportId} canReopen={canReopen} onSelect={() => { setImportId(item.id); setPage(0); }} onConfirm={() => confirmImport(item)} onRecalculate={() => mutate(() => api.recalculate(item.id), 'Đã tính lại từ dấu chấm gốc.', 'Không thể tính lại file.')} onDelete={() => deleteImport(item)} onReopen={() => reopen(item)} />)}{!imports.length && <HrEmpty title="Chưa có file ca sản xuất" description="Chọn tháng và import file Time Attendance ở phía trên." />}</div></section>
 
     <WorkflowGuide item={activeImport} />
     <HrAttendanceEmployeeOverview result={employeeSummaries} keyword={employeeSummaryKeyword} onKeywordChange={(value) => { setEmployeeSummaryKeyword(value); setEmployeeSummaryPage(0); }} selectedCode={employeeCode} onPageChange={setEmployeeSummaryPage} loading={summariesLoading} onSelect={(item) => { setEmployeeCode(item.employeeCode); setView(item.reviewShifts > 0 ? 'NEEDS_REVIEW' : 'ALL'); setPage(0); }} />

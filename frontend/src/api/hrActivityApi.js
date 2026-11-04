@@ -41,7 +41,7 @@ async function downloadExport(path, params, fallbackFileName) {
 export const hrActivityApi = {
   getMovements: async (params, options = {}) => {
     const response = await baseApi.get('/hr/movements', {
-      params: boundedParams(params),
+      params: { ...params, size: Math.min(Number(params?.size) || 20, 50) },
       signal: options.signal,
     });
     return unwrapApiData(response);

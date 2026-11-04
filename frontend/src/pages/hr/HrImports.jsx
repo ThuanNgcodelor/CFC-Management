@@ -9,8 +9,10 @@ import { HrWorkforceSnapshotImport } from '../../components/hr/HrWorkforceSnapsh
 import { hrImportApi } from '../../api/hrImportApi';
 import { normalizePage } from '../../api/hrApiUtils';
 import { apiErrorMessage, formatHrDateTime, nonEmpty } from '../../utils/hr';
+import { useHrListState } from '../../hooks/useHrListState';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const IMPORT_LIST_DEFAULTS = { listPage: 0, importId: '', previewPage: 0 };
 
 function batchDate(batch) {
   return batch.confirmedAt || batch.validatedAt || batch.parsedAt || batch.createdAt;
@@ -51,12 +53,13 @@ function SummaryNumber({ label, value, tone = 'gray' }) {
 export default function HrImports() {
   const navigate = useNavigate();
   const inputRef = useRef(null);
+  const { values: listState, setValues: setListState } = useHrListState(IMPORT_LIST_DEFAULTS);
   const [file, setFile] = useState(null);
-  const [listPage, setListPage] = useState(0);
+  const listPage = listState.listPage;
   const [batches, setBatches] = useState(normalizePage(null));
-  const [selectedId, setSelectedId] = useState('');
+  const selectedId = listState.importId;
   const [preview, setPreview] = useState(null);
-  const [previewPage, setPreviewPage] = useState(0);
+  const previewPage = listState.previewPage;
   const [acceptWarnings, setAcceptWarnings] = useState(false);
   const [confirmationKey, setConfirmationKey] = useState('');
   const [loadingList, setLoadingList] = useState(true);
@@ -78,7 +81,7 @@ export default function HrImports() {
         const normalized = normalizePage(data);
         setBatches(normalized);
         if (!selectedId && normalized.content.length > 0) {
-          setSelectedId(normalized.content[0].batchId || normalized.content[0].id);
+          setListState({ importId: normalized.content[0].batchId || normalized.content[0].id }, { resetPage: false, replace: true });
         }
       })
       .catch((requestError) => {
@@ -87,7 +90,7 @@ export default function HrImports() {
       .finally(() => {
         if (!signal?.aborted) setLoadingList(false);
       });
-  }, [listPage, selectedId]);
+  }, [listPage, selectedId, setListState]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -124,9 +127,8 @@ export default function HrImports() {
   }, [batches.content, preview, selectedId]);
 
   const selectBatch = (batch) => {
-    setSelectedId(batch.batchId || batch.id);
+    setListState({ importId: batch.batchId || batch.id, previewPage: 0 }, { resetPage: false });
     setPreview(null);
-    setPreviewPage(0);
     setAcceptWarnings(false);
     setConfirmationKey('');
     setShowRecovery(false);
@@ -158,9 +160,8 @@ export default function HrImports() {
     try {
       const batch = await hrImportApi.uploadBaseline(file);
       const batchId = batch.batchId || batch.id;
-      setSelectedId(batchId);
+      setListState({ importId: batchId, previewPage: 0 }, { resetPage: false });
       setPreview(null);
-      setPreviewPage(0);
       setShowRecovery(false);
       setRecoveryBatchId('');
       setRecoveryTotalRows('');
@@ -278,7 +279,7 @@ export default function HrImports() {
             ))}
             {!loadingList && batches.content.length === 0 && <HrEmpty title="Chưa có lần nhập dữ liệu" />}
           </div>
-          <div className="mt-3"><HrPagination page={listPage} totalPages={batches.totalPages} totalElements={batches.totalElements} loading={loadingList} onPageChange={setListPage} /></div>
+          <div className="mt-3"><HrPagination page={listPage} totalPages={batches.totalPages} totalElements={batches.totalElements} loading={loadingList} onPageChange={(page) => setListState({ listPage: page }, { resetPage: false })} /></div>
         </aside>
 
         <section className="min-w-0 space-y-4">
@@ -396,7 +397,7 @@ export default function HrImports() {
                 </table>
               </div>
 
-              <HrPagination page={previewPage} totalPages={previewTotalPages} totalElements={previewTotalElements} loading={loadingPreview} onPageChange={setPreviewPage} />
+              <HrPagination page={previewPage} totalPages={previewTotalPages} totalElements={previewTotalElements} loading={loadingPreview} onPageChange={(page) => setListState({ previewPage: page }, { resetPage: false })} />
 
               {selectedBatch?.status === 'FAILED' && (
                 <div className="flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"><ShieldAlert className="h-5 w-5 shrink-0" /><p>Lần nhập thất bại và không thể xác nhận. Hãy sửa file đúng mẫu rồi tải lại.</p></div>

@@ -1,5 +1,6 @@
+import { useHrNavigation } from '../../hooks/useHrListState';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft,
@@ -173,7 +174,7 @@ function FormSection({ icon: Icon, step, title, description, children }) {
 }
 
 export default function HrProbationCandidateForm() {
-  const navigate = useNavigate();
+  const { back } = useHrNavigation(CANDIDATE_LIST_PATH);
   const { id } = useParams();
   const isEdit = Boolean(id);
   const [catalogs, setCatalogs] = useState({ departments: [], positions: [], conditions: [] });
@@ -251,7 +252,7 @@ export default function HrProbationCandidateForm() {
         await hrProbationApi.createCandidate(payload);
         toast.success('Đã thêm ứng viên thử việc');
       }
-      navigate(CANDIDATE_LIST_PATH);
+      back();
     } catch (requestError) {
       toast.error(apiErrorMessage(requestError, 'Không thể lưu ứng viên thử việc.'));
     } finally {
@@ -269,7 +270,7 @@ export default function HrProbationCandidateForm() {
         title={isEdit ? 'Chỉnh sửa ứng viên thử việc' : 'Thêm ứng viên thử việc'}
         description="Điền hồ sơ trên một trang riêng; chỉ lưu khi bấm nút lưu ở cuối trang."
         actions={(
-          <Button type="button" variant="secondary" onClick={() => navigate(CANDIDATE_LIST_PATH)} disabled={saving}>
+          <Button type="button" variant="secondary" onClick={() => back()} disabled={saving}>
             <ArrowLeft className="mr-1.5 h-4 w-4" />Quay lại danh sách
           </Button>
         )}
@@ -322,7 +323,7 @@ export default function HrProbationCandidateForm() {
           </FormSection>
 
           <div className="sticky bottom-3 z-10 flex flex-col-reverse gap-2 rounded-xl border border-gray-200 bg-white/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:justify-end">
-            <Button type="button" variant="secondary" onClick={() => navigate(CANDIDATE_LIST_PATH)} disabled={saving}>Hủy</Button>
+            <Button type="button" variant="secondary" onClick={() => back()} disabled={saving}>Hủy</Button>
             <Button type="submit" disabled={saving}><Save className="mr-1.5 h-4 w-4" />{saving ? 'Đang lưu...' : isEdit ? 'Lưu ứng viên' : 'Thêm ứng viên'}</Button>
           </div>
         </form>

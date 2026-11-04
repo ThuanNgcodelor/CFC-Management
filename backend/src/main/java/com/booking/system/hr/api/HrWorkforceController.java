@@ -12,6 +12,8 @@ import com.booking.system.hr.api.dto.HrRosterCreateRequest;
 import com.booking.system.hr.api.dto.HrRosterReopenRequest;
 import com.booking.system.hr.api.dto.HrRosterResponse;
 import com.booking.system.hr.api.dto.HrVersionRequest;
+import com.booking.system.hr.api.dto.HrWorkforceDtos;
+import com.booking.system.hr.dto.HrApiDtos;
 import com.booking.system.hr.service.HrLeaveEntitlementService;
 import com.booking.system.hr.service.HrWorkforceService;
 import jakarta.validation.Valid;
@@ -19,6 +21,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -131,6 +134,34 @@ public class HrWorkforceController {
         workforceService.deleteDraftEmployee(
                 employeeId, rowVersion, actorResolver.fromPrincipal(principal));
         return ResponseEntity.ok(ApiResponse.success(null, "Xóa hồ sơ nhân sự nháp thành công"));
+    }
+
+    @GetMapping("/workforce/employees/{employeeId}/reference-summary")
+    public ResponseEntity<ApiResponse<HrApiDtos.EmployeeReferenceSummary>> employeeReferenceSummary(
+            @PathVariable String employeeId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                workforceService.employeeReferenceSummary(employeeId), "Tải liên kết hồ sơ thành công"));
+    }
+
+    @PostMapping("/employees/{employeeId}/intake/stop")
+    public ResponseEntity<ApiResponse<Void>> stopEmployeeIntake(
+            @AuthenticationPrincipal User principal,
+            @PathVariable String employeeId,
+            @Valid @RequestBody HrWorkforceDtos.IntakeStatusRequest request
+    ) {
+        workforceService.stopEmployeeIntake(employeeId, request.rowVersion(), request.reason(), actorResolver.fromPrincipal(principal));
+        return ResponseEntity.ok(ApiResponse.success(null, "Đã dừng tiếp nhận hồ sơ nhân sự."));
+    }
+
+    @PostMapping("/employees/{employeeId}/intake/restore")
+    public ResponseEntity<ApiResponse<Void>> restoreEmployeeIntake(
+            @AuthenticationPrincipal User principal,
+            @PathVariable String employeeId,
+            @Valid @RequestBody HrWorkforceDtos.IntakeStatusRequest request
+    ) {
+        workforceService.restoreEmployeeIntake(employeeId, request.rowVersion(), request.reason(), actorResolver.fromPrincipal(principal));
+        return ResponseEntity.ok(ApiResponse.success(null, "Đã khôi phục tiếp nhận hồ sơ nhân sự."));
     }
 
     @PostMapping("/rosters")

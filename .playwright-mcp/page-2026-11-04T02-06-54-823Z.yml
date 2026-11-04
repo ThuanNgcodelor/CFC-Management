@@ -1,0 +1,58 @@
+- generic [ref=f5e3]:
+  - complementary [ref=f5e4]:
+    - generic [ref=f5e9]:
+      - generic [ref=f5e10]: CFC Base
+      - generic [ref=f5e11]: Operations
+    - navigation "Điều hướng chính" [ref=f5e12]:
+      - generic [ref=f5e13]:
+        - heading "Nhân sự" [level=2] [ref=f5e14]
+        - generic [ref=f5e15]:
+          - link "Tổng quan" [ref=f5e16] [cursor=pointer]:
+            - /url: /manager/hr
+          - link "Nhân sự" [ref=f5e23] [cursor=pointer]:
+            - /url: /manager/hr/employees
+          - link "Thử việc" [ref=f5e30] [cursor=pointer]:
+            - /url: /manager/hr/probation
+          - link "LĐ phổ thông" [ref=f5e35] [cursor=pointer]:
+            - /url: /manager/hr/general-labor
+          - link "Tăng / Giảm" [ref=f5e42] [cursor=pointer]:
+            - /url: /manager/hr/movements
+          - link "Nâng lương" [ref=f5e47] [cursor=pointer]:
+            - /url: /manager/hr/salary-raises
+          - link "Danh sách tháng" [ref=f5e52] [cursor=pointer]:
+            - /url: /manager/hr/rosters
+          - link "Gửi phiếu lương" [ref=f5e56] [cursor=pointer]:
+            - /url: /manager/hr/payroll
+          - link "Chấm công" [ref=f5e61] [cursor=pointer]:
+            - /url: /manager/hr/attendance
+          - link "Thưởng ca đêm" [ref=f5e66] [cursor=pointer]:
+            - /url: /manager/hr/attendance/night-rewards
+          - link "Danh mục" [ref=f5e74] [cursor=pointer]:
+            - /url: /manager/hr/catalogs
+      - generic [ref=f5e78]:
+        - heading "Quản trị hệ thống" [level=2] [ref=f5e79]
+        - generic [ref=f5e80]:
+          - link "Duyệt hồ sơ" [ref=f5e81] [cursor=pointer]:
+            - /url: /admin/profile-approvals
+          - link "Tài khoản" [ref=f5e87] [cursor=pointer]:
+            - /url: /admin/users
+    - button "Thu gọn thanh điều hướng" [ref=f5e95]:
+      - generic [ref=f5e98]: Thu gọn
+  - generic [ref=f5e99]:
+    - banner [ref=f5e100]:
+      - generic [ref=f5e101]:
+        - paragraph [ref=f5e102]: Hệ thống quản lý nhân sự
+        - paragraph [ref=f5e103]: Nhân sự
+      - button "Mở menu tài khoản" [ref=f5e106]:
+        - img "Ảnh đại diện của Admin CFC" [ref=f5e107]: AC
+        - generic [ref=f5e108]:
+          - generic [ref=f5e109]: Admin CFC
+          - generic [ref=f5e110]: Quản trị viên
+    - main [ref=f5e113]:
+      - generic [ref=f5e114]: Đang tải phân hệ nhân sự...
+      - generic [ref=f5e117]:
+        - img "CFC" [ref=f5e118]
+        - generic [ref=f5e119]:
+          - paragraph [ref=f5e120]: CÔNG TY CỔ PHẦN PHÂN BÓN & HÓA CHẤT CẦN THƠ
+          - paragraph [ref=f5e121]: © CFC · Hệ thống vận hành nội bộ
+          - paragraph [ref=f5e122]: Phát triển bởi Nguyễn Trung Thuận

@@ -15,12 +15,12 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 
 /**
  * Public API contracts for the isolated HR module. None of these records
@@ -29,6 +29,17 @@ import java.time.LocalDateTime;
 public final class HrApiDtos {
 
     private HrApiDtos() {
+    }
+
+    public record EmployeeReferenceSummary(
+            String employmentStatus,
+            boolean importedSource,
+            long probationCandidates,
+            long movements,
+            long pendingIncreaseMovements,
+            long rosterSnapshots,
+            long importRows
+    ) {
     }
 
     public record OverviewResponse(
@@ -40,7 +51,9 @@ public final class HrApiDtos {
             long positionCount,
             long workingConditionCount,
             ImportSummary latestImport,
-            RosterSummary latestRoster
+            RosterSummary latestRoster,
+            long probationEmployees,
+            long intakeStoppedEmployees
     ) {
     }
 

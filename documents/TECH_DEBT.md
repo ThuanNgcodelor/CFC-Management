@@ -32,6 +32,9 @@ Source: codebase audit on 2026-10-16. Read this file only when a task touches an
 
 | 17b | Two attendance tests depend on missing local `CongXn.xlsx`; full suite cannot pass on this checkout | `HrProductionAttendanceServiceTest`, `HrProductionShiftMatcherTest` | Supply a sanitized, versioned fixture or generate representative workbook data; do not commit real employee data |
 | 17c | Styled Excel library is loaded on demand but its `xlsx.min` chunk is still about 863 kB, above the 500 kB target | `utils/nightRewardReconcile.js` parse/export | Evaluate a smaller reader and a styled export path that preserves the current workbook formatting |
+| 17d | Master Context contains 8 relative links to documents absent from this checkout, found during the 2026-11-04 plan review | `documents/PROJECT_MASTER_CONTEXT.md`: older phase guides, Attendance plans/source docs, salary-raise plan and Telegram guide | Locate the canonical documents or correct/remove outdated links in a documentation maintenance task; new reporting-plan links were checked separately |
+| 17e | Pending employee records with draft movements cannot be deleted, and the generic reference error provides no resolution workflow | `HrWorkforceService.deleteDraftEmployee`, employee detail/delete UI | Add precise reference diagnostics and an approved stop-reception/archive workflow that preserves audit and confirmed history; planned in `HR_REPORTING_UX_PLAN.md`, not implemented |
+| 17f | Full backend suite has a reproducible unused Mockito stub in `previewLoadsQualificationAndEntitlementDetailsInBatches` | `HrNightRewardServiceTest.setUp`, entitlement repository stub at line 122 in the 04/11/2026 checkout | Scope the stub to tests that consume it; reproduced in isolation during HR UX Phase 0–3. Outside this change's business scope; full suite is not green even with the two attendance fixtures supplied. |
 
 ## Group 3: Needs an owner decision (do not change on your own)
 

@@ -17,6 +17,10 @@ public interface HrProbationCandidateRepository extends HrRepository<HrProbation
 
     boolean existsByConvertedEmployee_Id(String employeeId);
 
+    long countByConvertedEmployee_Id(String employeeId);
+
+    long countByStatus(HrProbationCandidateStatus status);
+
     @EntityGraph(attributePaths = {"department", "position", "workingCondition", "jobTemplate", "convertedEmployee"})
     @Query("""
             select candidate from HrProbationCandidate candidate

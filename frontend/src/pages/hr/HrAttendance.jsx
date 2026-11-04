@@ -10,6 +10,7 @@ import { HrError, HrPageHeader, HrPageShell, HrStatusBadge, HrLoading } from '..
 import { HrAttendanceTabs } from '../../components/hr/HrAttendanceTabs';
 import { Button } from '../../components/ui/Button';
 import SEOHead from '../../components/SEOHead';
+import { useHrListState } from '../../hooks/useHrListState';
 
 
 const initial = {
@@ -28,10 +29,17 @@ function monthToApi(value) { if (!value) return undefined; const [year, month] =
 registerLocale('vi', vi);
 function monthToDate(value) { if (!value) return null; const [year, month] = value.split('-').map(Number); return Number.isFinite(year) && Number.isFinite(month) ? new Date(year, month - 1, 1) : null; }
 function dateToMonth(date) { if (!date) return ''; return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; }
+const ATTENDANCE_FILTER_DEFAULTS = { monthFilter: '', summaryMonth: dateToMonth(new Date()), departmentFilter: '', employeeFilter: '' };
 function MonthPicker({ value, onChange, placeholder }) { return <DatePicker selected={monthToDate(value)} onChange={(date) => onChange(dateToMonth(date))} showMonthYearPicker showFullMonthYearPicker dateFormat="MM/yyyy" locale="vi" isClearable portalId="attendance-month-picker" popperClassName="cfc-month-picker-popper" popperPlacement="bottom-start" placeholderText={placeholder} className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />; }
 
 function HrAdministrativeAttendance() {
-  const [form, setForm] = useState(initial); const [imports, setImports] = useState({ content: [] }); const [selected, setSelected] = useState(null); const [preview, setPreview] = useState(null); const [files, setFiles] = useState([]); const [monthFilter, setMonthFilter] = useState(''); const [uploadMonth, setUploadMonth] = useState(''); const [summaryMonth, setSummaryMonth] = useState(dateToMonth(new Date())); const [summary, setSummary] = useState(null); const [summaryLoading, setSummaryLoading] = useState(false); const [departmentFilter, setDepartmentFilter] = useState(''); const [employeeFilter, setEmployeeFilter] = useState(''); const [departments, setDepartments] = useState([]); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState(false); const [error, setError] = useState('');
+  const { values: savedFilters, setValues: setSavedFilters } = useHrListState(ATTENDANCE_FILTER_DEFAULTS);
+  const { monthFilter, summaryMonth, departmentFilter, employeeFilter } = savedFilters;
+  const setMonthFilter = (value) => setSavedFilters({ monthFilter: value }, { resetPage: false });
+  const setSummaryMonth = (value) => setSavedFilters({ summaryMonth: value }, { resetPage: false });
+  const setDepartmentFilter = (value) => setSavedFilters({ departmentFilter: value }, { resetPage: false });
+  const setEmployeeFilter = (value) => setSavedFilters({ employeeFilter: value }, { resetPage: false });
+  const [form, setForm] = useState(initial); const [imports, setImports] = useState({ content: [] }); const [selected, setSelected] = useState(null); const [preview, setPreview] = useState(null); const [files, setFiles] = useState([]); const [uploadMonth, setUploadMonth] = useState(''); const [summary, setSummary] = useState(null); const [summaryLoading, setSummaryLoading] = useState(false); const [departments, setDepartments] = useState([]); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState(false); const [error, setError] = useState('');
   const reload = (filter = monthFilter) => { setLoading(true); setError(''); Promise.all([hrAttendanceApi.getSettings(), hrAttendanceApi.listImports({ page: 0, size: 20, month: monthToApi(filter) }), hrCatalogApi.getAllCatalogItems('departments', { status: 'ACTIVE', sort: 'name,asc' })]).then(([settings, result, departmentItems]) => { setForm(configToForm(settings)); setImports(result || { content: [] }); setDepartments(departmentItems || []); }).catch(() => setError('Không thể tải cấu hình hoặc lịch sử import chấm công.')).finally(() => setLoading(false)); };
   useEffect(() => { reload(); }, []);
   const save = async (event) => { event.preventDefault(); setSaving(true); try { const updated = await hrAttendanceApi.updateSettings(formToConfig(form)); setForm(configToForm(updated)); toast.success('Đã lưu cấu hình file chấm công.'); } catch (requestError) { toast.error(requestError?.response?.data?.message || 'Không thể lưu cấu hình.'); } finally { setSaving(false); } };

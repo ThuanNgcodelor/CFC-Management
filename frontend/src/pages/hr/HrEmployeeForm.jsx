@@ -1,3 +1,5 @@
+import { useHrNavigation } from '../../hooks/useHrListState';
+import { employeeAfterSavePath } from '../../utils/hrListState';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -119,6 +121,7 @@ const TEXTAREA_CLASS = 'min-h-24 w-full rounded-lg border border-gray-300 px-3 p
 export default function HrEmployeeForm() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { back, returnTo } = useHrNavigation();
   const isEdit = Boolean(id);
   const [form, setForm] = useState(EMPTY_FORM);
   const [rowVersion, setRowVersion] = useState(null);
@@ -245,8 +248,8 @@ export default function HrEmployeeForm() {
       const saved = isEdit
         ? await hrEmployeeApi.updateEmployee(id, payload)
         : await hrEmployeeApi.createEmployee(payload);
-      toast.success(isEdit ? 'Đã cập nhật hồ sơ nhân sự thành công' : 'Đã tạo hồ sơ nháp thành công');
-      navigate(`/manager/hr/employees/${saved?.id || id}`, { replace: true });
+      toast.success(isEdit ? 'Đã cập nhật hồ sơ nhân sự thành công' : 'Đã tạo hồ sơ chờ tiếp nhận thành công');
+      navigate(employeeAfterSavePath(saved?.id || id, returnTo), { replace: true });
     } catch (requestError) {
       const message = apiErrorMessage(requestError, isEdit ? 'Không thể cập nhật hồ sơ.' : 'Không thể tạo hồ sơ.');
       setError(message);
@@ -264,7 +267,7 @@ export default function HrEmployeeForm() {
       <SEOHead title={`CFC Base | ${isEdit ? 'Chỉnh sửa' : 'Thêm'} hồ sơ nhân sự`} />
       <HrPageHeader
         title={isEdit ? `Chỉnh sửa hồ sơ: ${form.personal.fullName || 'Nhân sự'}` : 'Thêm hồ sơ nhân sự'}
-        description={isEdit ? 'Cập nhật thông tin cá nhân, định danh CCCD, bảo hiểm, địa chỉ liên hệ và công việc của nhân sự.' : 'Hồ sơ mới luôn được lưu ở trạng thái Hồ sơ nháp. Việc đưa vào danh sách chính thức sẽ được xử lý qua nghiệp vụ Tăng/Giảm.'}
+        description={isEdit ? 'Cập nhật thông tin cá nhân, định danh CCCD, bảo hiểm, địa chỉ liên hệ và công việc của nhân sự.' : 'Hồ sơ mới luôn được lưu ở trạng thái Chờ tiếp nhận. Việc đưa vào danh sách chính thức sẽ được xử lý qua nghiệp vụ Tăng/Giảm.'}
         actions={(
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -276,7 +279,7 @@ export default function HrEmployeeForm() {
               <Camera className="mr-1.5 h-4 w-4 text-emerald-600" />
               Quét ảnh hồ sơ (AI OCR)
             </Button>
-            <Button type="button" variant="secondary" onClick={() => navigate(isEdit ? `/manager/hr/employees/${id}` : '/manager/hr/employees')}>
+            <Button type="button" variant="secondary" onClick={() => back()}>
               <ArrowLeft className="mr-1.5 h-4 w-4" />Quay lại
             </Button>
           </div>
@@ -360,7 +363,7 @@ export default function HrEmployeeForm() {
         </FormSection>
 
         <div className="sticky bottom-0 z-10 flex justify-end rounded-xl border border-gray-200 bg-white/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-lg backdrop-blur">
-          <Button type="submit" disabled={saving}><Save className="mr-1.5 h-4 w-4" />{saving ? 'Đang lưu...' : isEdit ? 'Lưu thay đổi' : 'Tạo hồ sơ nháp'}</Button>
+          <Button type="submit" disabled={saving}><Save className="mr-1.5 h-4 w-4" />{saving ? 'Đang lưu...' : isEdit ? 'Lưu thay đổi' : 'Thêm hồ sơ nhân sự'}</Button>
         </div>
       </form>
     </HrPageShell>

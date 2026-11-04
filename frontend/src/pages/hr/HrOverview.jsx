@@ -26,7 +26,9 @@ function overviewValue(data, ...paths) {
   return 0;
 }
 
-function StatCard({ label, value, icon: Icon, color }) {
+function StatCard({ label, value, icon: Icon, color, to }) {
+  const canOpen = to && canAccessHrPath(authApi.getRole(), to.split('?')[0]);
+  const Container = canOpen ? Link : 'div';
   const colors = {
     emerald: 'bg-emerald-50 text-emerald-700',
     blue: 'bg-blue-50 text-blue-700',
@@ -34,7 +36,7 @@ function StatCard({ label, value, icon: Icon, color }) {
     gray: 'bg-gray-100 text-gray-600',
   };
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <Container {...(canOpen ? { to } : {})} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-emerald-200 focus-visible:outline-emerald-600">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-gray-500">{label}</p>
@@ -42,7 +44,7 @@ function StatCard({ label, value, icon: Icon, color }) {
         </div>
         <div className={`rounded-lg p-3 ${colors[color]}`}><Icon className="h-5 w-5" /></div>
       </div>
-    </div>
+    </Container>
   );
 }
 
@@ -88,7 +90,7 @@ export default function HrOverview() {
       <SEOHead title="CFC Base | Tổng quan nhân sự" url="https://cfcbooking.io.vn/manager/hr" />
       <HrPageHeader
         title="Tổng quan nhân sự"
-        description="Theo dõi dữ liệu nhân sự độc lập, tình trạng hồ sơ và lần nhập dữ liệu ban đầu gần nhất."
+        description="Theo dõi hồ sơ nhân sự, người đang làm việc, đang thử việc và đã nghỉ việc."
       />
 
       {loading ? <HrLoading /> : error ? (
@@ -96,50 +98,21 @@ export default function HrOverview() {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard label="Tổng hồ sơ" value={overviewValue(data, 'totalEmployees', 'employeeCounts.total')} icon={ContactRound} color="blue" />
-            <StatCard label="Đang làm việc" value={overviewValue(data, 'activeEmployees', 'employeeCounts.active')} icon={UserCheck} color="emerald" />
-            <StatCard label="Bản nháp" value={overviewValue(data, 'draftEmployees', 'employeeCounts.draft')} icon={CircleDashed} color="amber" />
-            <StatCard label="Ngừng hoạt động" value={overviewValue(data, 'inactiveEmployees', 'employeeCounts.inactive')} icon={UserMinus} color="gray" />
+            <StatCard label="Tổng hồ sơ" value={overviewValue(data, 'totalEmployees', 'employeeCounts.total')} icon={ContactRound} color="blue" to="/manager/hr/employees" />
+            <StatCard label="Đang làm việc" value={overviewValue(data, 'activeEmployees', 'employeeCounts.active')} icon={UserCheck} color="emerald" to="/manager/hr/employees?status=ACTIVE" />
+            <StatCard label="Đang thử việc" value={overviewValue(data, 'probationEmployees')} icon={CircleDashed} color="amber" to="/manager/hr/probation?status=IN_PROBATION" />
+            <StatCard label="Đã nghỉ việc" value={overviewValue(data, 'inactiveEmployees', 'employeeCounts.inactive')} icon={UserMinus} color="gray" to="/manager/hr/employees?status=INACTIVE" />
           </div>
 
-          {/* <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm lg:col-span-2">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="font-semibold text-gray-900">Trạng thái dữ liệu</h2>
-                  <p className="mt-1 text-sm text-gray-500">Dữ liệu lấy trực tiếp từ phân hệ HR.</p>
-                </div>
-                <FileCheck2 className="h-5 w-5 text-gray-400" />
-              </div>
-              <dl className="mt-5 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">Import gần nhất</dt>
-                  <dd className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-800">
-                    {latestImport ? <HrStatusBadge status={latestImport.status} /> : <span>Chưa có batch import</span>}
-                  </dd>
-                  {latestImport && <p className="mt-2 text-xs text-gray-500">{formatHrDateTime(latestImport.confirmedAt || latestImport.validatedAt || latestImport.parsedAt)}</p>}
-                </div>
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">Danh sách tháng gần nhất</dt>
-                  <dd className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-800">
-                    <span className="font-medium">{currentRoster ? formatPeriod(currentRoster.periodStart) : 'Chưa có'}</span>
-                    {currentRoster?.status && <HrStatusBadge status={currentRoster.status} />}
-                  </dd>
-                  {currentRoster && <p className="mt-2 text-xs text-gray-500">{nonEmpty(currentRoster.itemCount)} nhân sự</p>}
-                </div>
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">Phòng ban</dt>
-                  <dd className="mt-2 text-2xl font-semibold text-gray-900">{overviewValue(data, 'departmentCount', 'catalogCounts.departments')}</dd>
-                </div>
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">Chức vụ</dt>
-                  <dd className="mt-2 text-2xl font-semibold text-gray-900">{overviewValue(data, 'positionCount', 'catalogCounts.positions')}</dd>
-                </div>
-              </dl>
-            </div>
-
-
-          </div> */}
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
+            <span>Tổng hồ sơ nhân sự không bao gồm ứng viên đang thử việc.</span>
+            <Link to="/manager/hr/employees?status=DRAFT" className="font-medium text-amber-700 underline underline-offset-4">
+              Chờ tiếp nhận: {overviewValue(data, 'draftEmployees', 'employeeCounts.draft')}
+            </Link>
+            <Link to="/manager/hr/employees?status=INTAKE_STOPPED" className="font-medium text-amber-700 underline underline-offset-4">
+              Dừng tiếp nhận: {overviewValue(data, 'intakeStoppedEmployees')}
+            </Link>
+          </div>
 
           <h2 className="mb-3 mt-8 text-lg font-semibold text-gray-900">Truy cập nhanh</h2>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

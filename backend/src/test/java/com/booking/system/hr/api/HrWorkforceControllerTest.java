@@ -4,6 +4,7 @@ import com.booking.system.entity.User;
 import com.booking.system.enums.RoleEnum;
 import com.booking.system.enums.UserStatus;
 import com.booking.system.hr.api.dto.HrMovementCreateRequest;
+import com.booking.system.hr.api.dto.HrWorkforceDtos;
 import com.booking.system.hr.enums.HrMovementType;
 import com.booking.system.hr.importer.HrImportActor;
 import com.booking.system.hr.service.HrLeaveEntitlementService;
@@ -66,6 +67,17 @@ class HrWorkforceControllerTest {
         ArgumentCaptor<HrImportActor> actor = ArgumentCaptor.forClass(HrImportActor.class);
         verify(workforceService).deleteDraftEmployee(eq("employee-id"), eq(4L), actor.capture());
         assertThat(actor.getValue().subject()).isEqualTo("USER:manager-id");
+        assertThat(actor.getValue().role()).isEqualTo("MANAGER");
+    }
+
+    @Test
+    void stopIntakeUsesAuthenticatedManagerAndVersionGuard() {
+        HrWorkforceDtos.IntakeStatusRequest request = new HrWorkforceDtos.IntakeStatusRequest(7, "Đã rà soát");
+
+        controller.stopEmployeeIntake(manager, "employee-id", request);
+
+        ArgumentCaptor<HrImportActor> actor = ArgumentCaptor.forClass(HrImportActor.class);
+        verify(workforceService).stopEmployeeIntake(eq("employee-id"), eq(7L), eq("Đã rà soát"), actor.capture());
         assertThat(actor.getValue().role()).isEqualTo("MANAGER");
     }
 }

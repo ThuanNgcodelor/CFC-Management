@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHrListState, useHrNavigation, useHrPageBounds } from '../../hooks/useHrListState';
+import { useHrListScroll } from '../../hooks/useHrListScroll';
 import toast from 'react-hot-toast';
 import { CalendarClock, ClipboardCheck, Download, Eye, RefreshCw, TableProperties, Users } from 'lucide-react';
 import SEOHead from '../../components/SEOHead';
@@ -16,14 +17,15 @@ function formatPeriodRange(periodStart) {
   return `01/${String(month).padStart(2, '0')}/${year} – ${String(lastDay).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
 }
 
+const LIST_DEFAULTS = { page: 0, year: new Date().getFullYear() };
+
 export default function HrRosters() {
-  const navigate = useNavigate();
-  const [page, setPage] = useState(0);
+  const { open: navigate } = useHrNavigation('/manager/hr/rosters');
+  const { values: { page, year: exportYear }, setValues, setPage } = useHrListState(LIST_DEFAULTS);
   const [result, setResult] = useState(normalizePage(null));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
-  const [exportYear, setExportYear] = useState(() => new Date().getFullYear());
   const [exporting, setExporting] = useState('');
   const [reconciliation, setReconciliation] = useState(null);
   const [reconciling, setReconciling] = useState(true);
@@ -132,6 +134,9 @@ export default function HrRosters() {
     }
   };
 
+  useHrListScroll(loading);
+  useHrPageBounds(result, loading, page, setPage);
+
   const openRosterDetail = (roster) => {
     navigate(`/manager/hr/rosters/${roster.id}`, { state: { roster } });
   };
@@ -151,7 +156,7 @@ export default function HrRosters() {
               min="2000"
               max="2100"
               value={exportYear}
-              onChange={(event) => setExportYear(Number(event.target.value))}
+              onChange={(event) => setValues({ year: Number(event.target.value) }, { resetPage: false, replace: true })}
               className="h-9 w-20 rounded-md border-0 bg-[var(--cfc-surface-muted)] px-2 text-sm font-semibold text-[var(--cfc-ink)] outline-none focus:ring-2 focus:ring-blue-100"
             />
             <Button type="button" size="sm" variant="secondary" disabled={exporting === 'year'} onClick={exportYearFile}>

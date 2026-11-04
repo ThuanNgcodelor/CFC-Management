@@ -1,5 +1,6 @@
+import { useHrNavigation } from '../../hooks/useHrListState';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ArrowLeft, BriefcaseBusiness, ClipboardList, FileBadge2, Save } from 'lucide-react';
 import SEOHead from '../../components/SEOHead';
@@ -128,7 +129,7 @@ function CatalogSelect({ value, onChange, items, placeholder = 'Chưa chọn' })
 }
 
 export default function HrProbationJobTemplateForm() {
-  const navigate = useNavigate();
+  const { back } = useHrNavigation(TEMPLATE_LIST_PATH);
   const { id } = useParams();
   const isEdit = Boolean(id);
   const [catalogs, setCatalogs] = useState({ departments: [], positions: [], conditions: [] });
@@ -184,7 +185,7 @@ export default function HrProbationJobTemplateForm() {
         await hrProbationApi.createJobTemplate(payload);
         toast.success('Đã thêm mẫu công việc thử việc');
       }
-      navigate(TEMPLATE_LIST_PATH);
+      back();
     } catch (requestError) {
       toast.error(apiErrorMessage(requestError, 'Không thể lưu mẫu công việc thử việc.'));
     } finally {
@@ -202,7 +203,7 @@ export default function HrProbationJobTemplateForm() {
         title={isEdit ? 'Chỉnh sửa mẫu công việc thử việc' : 'Thêm mẫu công việc thử việc'}
         description="Mẫu này dùng để tự điền nhanh phòng ban, chức vụ, lương và nội dung công việc khi thêm ứng viên thử việc."
         actions={(
-          <Button type="button" variant="secondary" onClick={() => navigate(TEMPLATE_LIST_PATH)}>
+          <Button type="button" variant="secondary" onClick={() => back()}>
             <ArrowLeft className="mr-1.5 h-4 w-4" />Quay lại danh sách mẫu
           </Button>
         )}
@@ -283,7 +284,7 @@ export default function HrProbationJobTemplateForm() {
           </FormSection>
 
           <div className="sticky bottom-3 z-10 flex flex-col-reverse gap-2 rounded-xl border border-gray-200 bg-white/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:justify-end">
-            <Button type="button" variant="secondary" onClick={() => navigate(TEMPLATE_LIST_PATH)} disabled={saving}>Hủy</Button>
+            <Button type="button" variant="secondary" onClick={() => back()} disabled={saving}>Hủy</Button>
             <Button type="submit" disabled={saving}>
               <Save className="mr-1.5 h-4 w-4" />{saving ? 'Đang lưu...' : 'Lưu mẫu công việc'}
             </Button>

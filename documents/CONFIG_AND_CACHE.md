@@ -39,6 +39,10 @@ Never cache: DRAFT imports/shifts, unconfirmed qualifications, notifications, bo
 | Largest chunk | `HrNightRewards` 914 kB (goal: under 500 kB) |
 | HTTP client | Axios in `baseApi.js`: adds Bearer token, refreshes on 401 and retries; no central 403 handling |
 | Lint | `oxlint`; baseline 0 errors, 10 warnings |
+| HR list navigation (04/11/2026) | Applied filters/sort/page/tab/period use URL query parameters; `returnTo` accepts internal `/manager/hr` paths only, maximum 8,192 characters. Invalid/external paths fall back to the module list. No uploaded files or form payloads are stored in the URL. |
+| HR scroll positions | `sessionStorage` key `hr-list-scroll-v1`, memory fallback; maximum 100 keys shared by history-entry and path positions, oldest discarded; restored after data loads, discarded with the browser session. Stores scroll offsets only, no server responses. |
+| Movement query page size | Default 20, maximum 50 enforced by backend; UI offers 20/50. Sort fields/directions and record type are whitelisted; stable `id` tie-break. No application cache added. |
+| Movement number suggestion | Tăng suggests `/HĐLĐ-PBHC/<current browser year>` when opening a new form; user enters the prefix and can edit the complete number, suffix/unit/year. Giảm starts blank; no automatic numbering, DB setting or environment variable. Saved historical numbers stay unchanged. |
 
 ## Local knowledge graph tooling
 
