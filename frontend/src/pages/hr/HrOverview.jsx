@@ -104,16 +104,6 @@ export default function HrOverview() {
             <StatCard label="Đã nghỉ việc" value={overviewValue(data, 'inactiveEmployees', 'employeeCounts.inactive')} icon={UserMinus} color="gray" to="/manager/hr/employees?status=INACTIVE" />
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
-            <span>Tổng hồ sơ nhân sự không bao gồm ứng viên đang thử việc.</span>
-            <Link to="/manager/hr/employees?status=DRAFT" className="font-medium text-amber-700 underline underline-offset-4">
-              Chờ tiếp nhận: {overviewValue(data, 'draftEmployees', 'employeeCounts.draft')}
-            </Link>
-            <Link to="/manager/hr/employees?status=INTAKE_STOPPED" className="font-medium text-amber-700 underline underline-offset-4">
-              Dừng tiếp nhận: {overviewValue(data, 'intakeStoppedEmployees')}
-            </Link>
-          </div>
-
           <h2 className="mb-3 mt-8 text-lg font-semibold text-gray-900">Truy cập nhanh</h2>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <QuickLink to="/manager/hr/employees" icon={ContactRound} title="Danh sách nhân sự" description="Tìm kiếm, lọc và xem hồ sơ theo từng trang." />
