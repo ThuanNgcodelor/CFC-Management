@@ -131,7 +131,7 @@ public class NetworkOperationsService {
     private String routerIp() { try { return URI.create(properties.routerBaseUrl()).getHost(); } catch (Exception e) { return ""; } }
     private org.springframework.http.client.ClientHttpRequestFactory requestFactory() { var factory=new org.springframework.http.client.JdkClientHttpRequestFactory(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build()); factory.setReadTimeout(Duration.ofSeconds(8)); return factory; }
     private String like(String value) { return value==null||value.isBlank()?"%%":"%"+value.trim()+"%"; }
-    private String clean(String value) { return value==null||value.isBlank()?null:value.trim(); }
+    private static String clean(String value) { return value==null||value.isBlank()?null:value.trim(); }
     private List<String> csv(String value) { return value==null?List.of():Arrays.asList(value.split(",")); }
     private static boolean validIpv4(String value) {
         if (value == null) return false;
