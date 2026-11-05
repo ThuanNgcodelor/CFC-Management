@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,7 +52,7 @@ public class InfrastructureService {
                             statement.setString(index + 1, deviceIds[index]);
                         }
                     },
-                    rs -> statuses.put(rs.getString("device_id"), mapStatus(rs)));
+                    (RowCallbackHandler) rs -> statuses.put(rs.getString("device_id"), mapStatus(rs)));
         }
         List<DeviceResponse> items = rows.stream().map(row -> row.toResponse(statuses.getOrDefault(row.id(), notConfigured()))).toList();
         return new PageResponse<>(items, safePage, safeSize, total);
