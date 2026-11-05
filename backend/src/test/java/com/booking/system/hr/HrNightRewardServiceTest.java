@@ -119,8 +119,6 @@ class HrNightRewardServiceTest {
         when(qualificationRepository.findByProgramIdAndEmployeeIdInAndAttendanceMonthOrderByEmployeeIdAscRevisionDesc(
                 eq("program"), any(), eq(MONTH)))
                 .thenAnswer(invocation -> finalized.get() == null ? List.of() : List.of(finalized.get()));
-        when(entitlementRepository.findByProgramIdAndEmployeeIdInAndStatus(
-                eq("program"), any(), eq(HrNightRewardEntitlementStatus.DRAFT))).thenReturn(List.of());
     }
 
     @org.junit.jupiter.params.ParameterizedTest

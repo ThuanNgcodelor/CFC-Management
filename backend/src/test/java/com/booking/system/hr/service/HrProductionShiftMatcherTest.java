@@ -3,6 +3,7 @@ package com.booking.system.hr.service;
 import com.booking.system.hr.enums.HrAttendancePolicyGroup;
 import com.booking.system.hr.enums.HrProductionAttendanceShiftStatus;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assumptions;
 
 import java.math.BigDecimal;
 import java.time.*;
@@ -19,6 +20,8 @@ class HrProductionShiftMatcherTest {
     @Test
     void rawTimeOnlyMatchingShowsWhyTheDay18OutageNeedsAManualAnchor() throws Exception {
         Path workbook = Path.of("..", "CongXn.xlsx");
+        Assumptions.assumeTrue(Files.isRegularFile(workbook),
+                "Local CongXn.xlsx fixture is unavailable; skip this fixture-specific evidence test.");
         var parsed = new com.booking.system.hr.importer.HrProductionAttendanceWorkbookParser()
                 .parse(Files.readAllBytes(workbook), "2026-08");
         List<HrProductionShiftMatcher.WorkDay> days = parsed.days().stream()

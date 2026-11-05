@@ -78,9 +78,9 @@ class HrPhase1MigrationTest {
     void trackedFlywayDefaultsRequireExplicitLegacyBaseline() throws IOException {
         Properties properties = new Properties();
         try (InputStream input = HrPhase1MigrationTest.class.getClassLoader()
-                .getResourceAsStream("application.properties")) {
+                .getResourceAsStream("application.properties.example")) {
             if (input == null) {
-                throw new IOException("Missing application.properties");
+                throw new IOException("Missing application.properties.example");
             }
             properties.load(input);
         }

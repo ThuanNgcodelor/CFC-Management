@@ -24,6 +24,7 @@ import com.booking.system.hr.service.HrNightRewardService;
 import com.booking.system.hr.service.HrProductionShiftMatcher;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assumptions;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -188,6 +189,10 @@ class HrProductionAttendanceServiceTest {
 
     @Test
     void importsRealWorkbookPersistsRawRowsAndCalculatesB124WithoutDroppingDays() throws Exception {
+        Path workbookPath = Path.of("..", "CongXn.xlsx");
+        Assumptions.assumeTrue(Files.isRegularFile(workbookPath),
+                "Local CongXn.xlsx fixture is unavailable; skip this fixture-specific integration test.");
+
         HrEmployee employee = new HrEmployee();
         employee.setEmployeeCode("B124");
         employee.setFullName("Đỗ Đình Cường");
@@ -208,7 +213,7 @@ class HrProductionAttendanceServiceTest {
                 new BigDecimal("1.5"), LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31),
                 "Ca ngày cố định 1,5 công, không tính theo tổng số phút"), ACTOR);
 
-        byte[] workbook = Files.readAllBytes(Path.of("..", "CongXn.xlsx"));
+        byte[] workbook = Files.readAllBytes(workbookPath);
         assertThat(policyRepository.findAllByOrderByPolicyGroupAscPriorityDescCodeAsc())
                 .extracting(value -> value.getCode() + ":" + value.getPolicyGroup() + ":" + value.isActive())
                 .contains("CN_DAY:PRODUCTION_WORKER:true", "CN_18_5:PRODUCTION_WORKER:true");
