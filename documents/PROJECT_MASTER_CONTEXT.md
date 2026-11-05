@@ -375,7 +375,7 @@ Quy trình Linux được chia thành:
 3. `backup-database.sh`/`restore-database.sh`: backup gzip có lock, giữ số bản cấu hình được, restore thủ công có kiểm soát.
 4. systemd timer chạy backup; các script Windows tương đương phục vụ môi trường Windows.
 
-Kế hoạch CI/CD đã bắt đầu ở [DEPLOYMENT_CICD_PLAN.md](DEPLOYMENT_CICD_PLAN.md). Chặng 1 thêm GitHub Actions CI để lint/build frontend và test backend khi push/mở PR; workflow này không có quyền deploy hay truy cập server. Các chặng tiếp theo cần gia cố rollback/health-check cho script Linux, sau đó mới cài self-hosted runner riêng trên Fedora và bật deploy có xác nhận. Chưa cài runner, chưa deploy tự động và chưa chạy thử trên production.
+Kế hoạch CI/CD ở [DEPLOYMENT_CICD_PLAN.md](DEPLOYMENT_CICD_PLAN.md). Chặng 1 GitHub Actions CI đã xanh. Chặng 2 đã gia cố script local: giữ JAR trước, ghi commit/thời gian release, giữ Tunnel chạy khi restart backend và rollback JAR nếu health-check/verify thất bại. Chỉ kiểm tra cú pháp Bash; chưa chạy build/deploy hoặc rollback trên Fedora/production. Chưa cài self-hosted runner, chưa tự deploy.
 
 Không ghi token Cloudflare, Telegram, JWT, SMTP, VAPID hay database password vào master này.
 

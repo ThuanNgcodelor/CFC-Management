@@ -23,6 +23,8 @@ Chặng này chỉ chạy trên GitHub-hosted runners. Không có secret product
 
 ### Chặng 2 — Làm deploy hiện tại an toàn
 
+**Trạng thái 05/11/2026:** Đã cập nhật script local để giữ JAR trước, ghi commit/thời điểm release, giữ Cloudflare Tunnel chạy trong lúc restart backend và tự rollback JAR khi backend không health-check được hoặc bước xác minh schema thất bại. Đã kiểm tra cú pháp Bash và `--help`; chưa chạy build/deploy trên Fedora, chưa kiểm chứng rollback với database production.
+
 Trước khi tự động hóa, sửa và thử script Linux để:
 
 1. Build trong thư mục staging, không thay JAR đang chạy khi build chưa đạt.

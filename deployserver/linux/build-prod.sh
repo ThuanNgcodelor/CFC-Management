@@ -10,7 +10,11 @@ STAGING_DIR="$BACKEND_DIR/target-build"
 STAGING_JAR="$STAGING_DIR/$JAR_NAME"
 TARGET_DIR="$BACKEND_DIR/target"
 TARGET_JAR="$TARGET_DIR/$JAR_NAME"
+NEW_TARGET_JAR="$TARGET_JAR.new"
 PREVIOUS_JAR="$TARGET_JAR.previous"
+RELEASE_VERSION="$TARGET_DIR/release-version.txt"
+NEW_RELEASE_VERSION="$RELEASE_VERSION.new"
+PREVIOUS_RELEASE_VERSION="$RELEASE_VERSION.previous"
 BUILD_ONLY=false
 RUN_ARGUMENTS=()
 
@@ -105,17 +109,32 @@ java -Xms32m -Xmx256m \
   -cp "$STAGING_JAR" \
   org.springframework.boot.loader.launch.PropertiesLauncher
 
+if [[ "$BUILD_ONLY" == true ]]; then
+  rm -rf -- "$STAGING_DIR"
+  log "Build-only va smoke-test hoan tat; release dang chay khong bi thay doi."
+  exit 0
+fi
+
 log "[4/4] Kich hoat JAR moi..."
 mkdir -p -- "$TARGET_DIR"
+cp -- "$STAGING_JAR" "$NEW_TARGET_JAR"
+git_commit="$(git -C "$ROOT_DIR" rev-parse HEAD 2>/dev/null || printf 'unknown')"
+git_dirty="$(git -C "$ROOT_DIR" status --porcelain 2>/dev/null | head -n 1)"
+if [[ -n "$git_dirty" ]]; then
+  git_commit+="-dirty"
+fi
+printf '%s\nBuilt at: %s\n' "$git_commit" "$(date --iso-8601=seconds)" > "$NEW_RELEASE_VERSION"
 if [[ -f "$TARGET_JAR" ]]; then
   cp -- "$TARGET_JAR" "$PREVIOUS_JAR"
+  if [[ -f "$RELEASE_VERSION" ]]; then
+    cp -- "$RELEASE_VERSION" "$PREVIOUS_RELEASE_VERSION"
+  else
+    printf 'unknown\n' > "$PREVIOUS_RELEASE_VERSION"
+  fi
 fi
-cp -- "$STAGING_JAR" "$TARGET_JAR"
+mv -f -- "$NEW_TARGET_JAR" "$TARGET_JAR"
+mv -f -- "$NEW_RELEASE_VERSION" "$RELEASE_VERSION"
 rm -rf -- "$STAGING_DIR"
 
 log "Build thanh cong; khoi dong production..."
-if [[ "$BUILD_ONLY" == true ]]; then
-  log "Build-only hoan tat; chua khoi dong backend hoac tunnel."
-  exit 0
-fi
 exec "$SCRIPT_DIR/run.sh" "${RUN_ARGUMENTS[@]}"

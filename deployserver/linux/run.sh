@@ -6,6 +6,9 @@ ROOT_DIR="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 BACKEND_DIR="$ROOT_DIR/backend"
 JAR_NAME="booking-system-0.0.1-SNAPSHOT.jar"
 JAR_PATH="$BACKEND_DIR/target/$JAR_NAME"
+PREVIOUS_JAR_PATH="$JAR_PATH.previous"
+RELEASE_VERSION="$BACKEND_DIR/target/release-version.txt"
+PREVIOUS_RELEASE_VERSION="$RELEASE_VERSION.previous"
 TUNNEL_ID="745ab8be-c55c-4e72-b985-d918206ca82f"
 CREDENTIAL_FILE="$HOME/.cloudflared/$TUNNEL_ID.json"
 RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp}/bookingbase"
@@ -131,6 +134,55 @@ wait_for_database() {
   fail "MySQL container $DB_CONTAINER khong san sang sau 60 giay."
 }
 
+start_backend() {
+  systemctl --user reset-failed "$BACKEND_UNIT" 2>/dev/null || true
+  systemd-run --user --unit "${BACKEND_UNIT%.service}" --collect \
+    --property=Restart=on-failure --property=RestartSec=5s \
+    "$BACKEND_LAUNCHER" >/dev/null
+}
+
+wait_for_backend() {
+  local timeout="$1"
+  for ((i=1; i<=timeout; i++)); do
+    if ! systemctl --user is-active --quiet "$BACKEND_UNIT"; then
+      tail -n 80 "$BACKEND_LOG" >&2 || true
+      return 1
+    fi
+    if curl --fail --silent --max-time 2 http://127.0.0.1:8080/ >/dev/null; then
+      return 0
+    fi
+    sleep 1
+  done
+  tail -n 80 "$BACKEND_LOG" >&2 || true
+  return 1
+}
+
+rollback_backend_release() {
+  if [[ ! -f "$PREVIOUS_JAR_PATH" ]]; then
+    log "Khong co JAR truoc de rollback; can can thiep thu cong."
+    return 1
+  fi
+
+  log "Khoi phuc JAR truoc: $(head -n 1 "$PREVIOUS_RELEASE_VERSION" 2>/dev/null || printf 'unknown')"
+  systemctl --user stop "$BACKEND_UNIT" 2>/dev/null || true
+  cp -- "$PREVIOUS_JAR_PATH" "$JAR_PATH.rollback"
+  mv -f -- "$JAR_PATH.rollback" "$JAR_PATH"
+  if [[ -f "$PREVIOUS_RELEASE_VERSION" ]]; then
+    cp -- "$PREVIOUS_RELEASE_VERSION" "$RELEASE_VERSION.rollback"
+    mv -f -- "$RELEASE_VERSION.rollback" "$RELEASE_VERSION"
+  else
+    printf 'unknown\n' > "$RELEASE_VERSION"
+  fi
+  : > "$BACKEND_LOG"
+  start_backend || return 1
+  if ! wait_for_backend "$BACKEND_STARTUP_TIMEOUT"; then
+    systemctl --user stop "$BACKEND_UNIT" 2>/dev/null || true
+    log "Rollback JAR da chay nhung backend cu khong health-check duoc."
+    return 1
+  fi
+  log "Rollback hoan tat; ban truoc dang phuc vu."
+}
+
 read_db_scalar() {
   local query="$1"
   docker exec "$DB_CONTAINER" sh -c '
@@ -221,8 +273,10 @@ if [[ "$flyway_history_count" == 0 && "$legacy_table_count" != 0 && "$FLYWAY_BAS
   fail "Database cu co $legacy_table_count bang nhung chua khoi tao Flyway. Hay chay mot lan: ./deployserver/linux/run.sh --initialize-hr-schema"
 fi
 
-systemctl --user stop "$TUNNEL_UNIT" "$BACKEND_UNIT" 2>/dev/null || true
-systemctl --user reset-failed "$TUNNEL_UNIT" "$BACKEND_UNIT" 2>/dev/null || true
+# Keep an existing tunnel online during the backend restart. It will reconnect
+# to port 8080 as soon as the new or rolled-back application is healthy.
+systemctl --user stop "$BACKEND_UNIT" 2>/dev/null || true
+systemctl --user reset-failed "$BACKEND_UNIT" 2>/dev/null || true
 
 if [[ "$FLYWAY_BASELINE_MODE" == true ]]; then
   log "Che do one-time Flyway baseline: tao backup va khoa row-count legacy sau khi backend da dung..."
@@ -233,50 +287,45 @@ fi
 
 log "Khoi dong Backend + Frontend production JAR..."
 : > "$BACKEND_LOG"
-systemd-run --user --unit "${BACKEND_UNIT%.service}" --collect \
-  --property=Restart=on-failure --property=RestartSec=5s \
-  "$BACKEND_LAUNCHER" >/dev/null
+start_backend
 
 BACKEND_STARTUP_TIMEOUT="${BACKEND_STARTUP_TIMEOUT:-120}"
-backend_ready=false
-for ((i=1; i<=BACKEND_STARTUP_TIMEOUT; i++)); do
-  if ! systemctl --user is-active --quiet "$BACKEND_UNIT"; then
-    tail -n 80 "$BACKEND_LOG" >&2 || true
-    systemctl --user stop "$BACKEND_UNIT" 2>/dev/null || true
-    fail "Backend da thoat khi khoi dong. Log: $BACKEND_LOG"
+if ! wait_for_backend "$BACKEND_STARTUP_TIMEOUT"; then
+  if ! rollback_backend_release; then
+    fail "Backend moi khong san sang va rollback that bai. Tunnel duoc giu nguyen; can kiem tra $BACKEND_LOG"
   fi
-  if curl --fail --silent --max-time 2 http://127.0.0.1:8080/ >/dev/null; then
-    backend_ready=true
-    break
-  fi
-  sleep 1
-done
-
-if [[ "$backend_ready" != true ]]; then
-  tail -n 80 "$BACKEND_LOG" >&2 || true
-  systemctl --user stop "$BACKEND_UNIT" 2>/dev/null || true
-  fail "Backend khong san sang sau ${BACKEND_STARTUP_TIMEOUT} giay. Log: $BACKEND_LOG"
+  fail "Backend moi khong san sang; da rollback ve release truoc. Xem log: $BACKEND_LOG"
 fi
 
 if [[ "$FLYWAY_BASELINE_MODE" == true ]]; then
   log "Xac minh HR V1 va doi chieu row-count legacy truoc khi mo lai tunnel..."
   if ! BOOKINGBASE_HR_LEGACY_SNAPSHOT="$HR_LEGACY_SNAPSHOT" "$HR_VERIFY_SCRIPT"; then
-    systemctl --user stop "$BACKEND_UNIT" 2>/dev/null || true
-    fail "HR Phase 1 verify that bai; backend da dung va tunnel chua duoc mo lai."
+    if ! rollback_backend_release; then
+      fail "HR Phase 1 verify that bai va rollback cung that bai; kiem tra $BACKEND_LOG"
+    fi
+    fail "HR Phase 1 verify that bai; da rollback JAR. Database khong duoc rollback tu dong."
   fi
 fi
 
 if [[ "$HR_PRODUCTION_ATTENDANCE_ENABLED" == true ]]; then
   log "Xac minh schema va seed cham cong ca san xuat..."
-  "$PRODUCTION_ATTENDANCE_VERIFY_SCRIPT"
+  if ! "$PRODUCTION_ATTENDANCE_VERIFY_SCRIPT"; then
+    if ! rollback_backend_release; then
+      fail "Production attendance verify that bai va rollback cung that bai; kiem tra $BACKEND_LOG"
+    fi
+    fail "Production attendance verify that bai; da rollback JAR. Database khong duoc rollback tu dong."
+  fi
 fi
 
-log "Khoi dong Cloudflare Tunnel bookingbase..."
-: > "$TUNNEL_LOG"
-systemd-run --user --unit "${TUNNEL_UNIT%.service}" --collect \
-  --property=Restart=on-failure --property=RestartSec=5s \
-  "$TUNNEL_LAUNCHER" >/dev/null
-sleep 3
+if ! systemctl --user is-active --quiet "$TUNNEL_UNIT"; then
+  log "Khoi dong Cloudflare Tunnel bookingbase..."
+  : > "$TUNNEL_LOG"
+  systemctl --user reset-failed "$TUNNEL_UNIT" 2>/dev/null || true
+  systemd-run --user --unit "${TUNNEL_UNIT%.service}" --collect \
+    --property=Restart=on-failure --property=RestartSec=5s \
+    "$TUNNEL_LAUNCHER" >/dev/null
+  sleep 3
+fi
 
 if ! systemctl --user is-active --quiet "$TUNNEL_UNIT"; then
   tail -n 80 "$TUNNEL_LOG" >&2 || true
@@ -288,6 +337,7 @@ printf '%s\n' \
   "  Local:   http://localhost:8080" \
   "  Public:  https://cfcbooking.io.vn" \
   "  API:     https://api.cfcbooking.io.vn" \
+  "  Release: $(head -n 1 "$RELEASE_VERSION" 2>/dev/null || printf 'unknown')" \
   "  Backend log: $BACKEND_LOG" \
   "  Tunnel log:  $TUNNEL_LOG"
 if [[ "$HR_PRODUCTION_ATTENDANCE_ENABLED" == true ]]; then
