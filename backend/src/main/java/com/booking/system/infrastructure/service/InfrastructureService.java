@@ -44,8 +44,14 @@ public class InfrastructureService {
         Map<String, StatusResponse> statuses = new HashMap<>();
         if (!rows.isEmpty()) {
             String marks = String.join(",", Collections.nCopies(rows.size(), "?"));
+            String[] deviceIds = rows.stream().map(DeviceRow::id).toArray(String[]::new);
             jdbc.query("SELECT device_id,status,software_version,uptime,cpu_load,free_memory_bytes,total_memory_bytes,interface_up_count,interface_down_count,checked_at,last_error FROM network_device_status WHERE device_id IN (" + marks + ")",
-                    rs -> { while (rs.next()) statuses.put(rs.getString(1), mapStatus(rs)); }, rows.stream().map(DeviceRow::id).toArray());
+                    statement -> {
+                        for (int index = 0; index < deviceIds.length; index++) {
+                            statement.setString(index + 1, deviceIds[index]);
+                        }
+                    },
+                    rs -> statuses.put(rs.getString("device_id"), mapStatus(rs)));
         }
         List<DeviceResponse> items = rows.stream().map(row -> row.toResponse(statuses.getOrDefault(row.id(), notConfigured()))).toList();
         return new PageResponse<>(items, safePage, safeSize, total);
