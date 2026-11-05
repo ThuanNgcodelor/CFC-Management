@@ -231,21 +231,21 @@ Kafka chỉ quay lại phương án nếu phép đo chứng minh cần replay d�
 
 ### Phase 4 — IPAM và phát hiện xung đột IP
 
-**Việc làm:** VLAN/subnet/IP inventory; đối chiếu DHCP+ARP+MAC; lịch sử IP/MAC; conflict candidate queue; xác minh thủ công; báo IP tĩnh không khai báo.
+**Đã triển khai bước đầu:** ADMIN có thể yêu cầu đọc DHCP lease và ARP qua RouterOS REST HTTPS, lưu lịch sử quan sát IP/MAC/hostname/interface, tìm kiếm, và xem ứng viên khi cùng IP có nhiều MAC trong 15 phút. Có thể ghi nhận `OPEN`, `CONFIRMED`, `NOT_CONFLICT`, `RESOLVED` kèm người xử lý; đây là luồng xác minh, không chặn IP. Bản ghi giữ `first_seen`/`last_seen`, chưa có chính sách purge.
 
-**Nghiệm thu:** test cùng IP cùng lúc/historical reuse/lease renewal/NAT/VRRP; không tự kết luận/chặn; mỗi candidate có bằng chứng và trạng thái xử lý.
+**Còn lại:** subnet/VLAN scopes, nhận diện IP tĩnh không khai báo, giữ dấu vết tất cả lần cấp lại thay vì first/last seen, purge/retention, và kiểm thử cùng IP/NAT/VRRP trên dữ liệu thật. Chưa chạy trên router thật. Candidate chỉ dựa trên các quan sát mới trong 15 phút, nên không phải kết luận xung đột.
 
 ### Phase 5 — Bản đồ topology và switch/AP đa hãng
 
-**Việc làm:** SNMPv3/read-only, LLDP/CDP/MNDP, interface counters, FDB/MAC-port, AP client table/CAPsMAN; khám phá candidate links; map switch tổng/uplink; graph topology.
+**Đã triển khai bước đầu:** ADMIN có thể khai báo đường nối thiết bị, cổng hai đầu, loại liên kết và VLAN tùy chọn; đánh dấu liên kết đã kiểm tra thủ công. Giao diện phân biệt liên kết chưa xác minh và xác minh thủ công.
 
-**Nghiệm thu:** chọn một tuyến thực tế từ router đến access switch/camera; phân biệt auto-discovered/manual/unknown; port down tạo event; thiết bị unmanaged hiện rõ là giới hạn; không tuyên bố bản đồ đầy đủ khi còn đoạn không đo được.
+**Còn lại:** SNMPv3, LLDP/CDP/MNDP, interface counters, FDB/MAC-port, CAPsMAN/client discovery, tự khám phá links và cảnh báo port down. Chưa biết model/firmware switch Ruijie nên chưa thêm MIB/OID hoặc tuyên bố đã kết nối thiết bị.
 
 ### Phase 6 — Danh mục máy trạm và phòng ban
 
-**Việc làm:** import mã tài sản; workflow thiết bị chưa nhận diện; map MAC/interface/IP với asset; gán phòng ban, vị trí, người phụ trách; lịch sử đổi người/vị trí.
+**Đã triển khai bước đầu:** danh mục tài sản thủ công với mã tài sản, loại, tên, MAC/IP, phòng ban, vị trí, người phụ trách, trạng thái và ghi nhận lịch sử phân công khi cập nhật. Không tự gán nhân viên theo hostname.
 
-**Nghiệm thu:** không tự gán nhân viên dựa hostname; hỗ trợ MAC random/BYOD/shared devices; quyền xem dữ liệu người dùng; audit merge/assignment.
+**Còn lại:** mẫu CSV/Excel import cần chốt theo file thực tế; hàng đợi đối chiếu thiết bị chưa nhận diện; lịch sử liên kết IP/MAC/interface; audit phân công chi tiết; chính sách BYOD/MAC random/shared và quyền xem dữ liệu theo phòng ban. Chưa kiểm chứng với danh mục tài sản thật.
 
 ### Phase 7 — Camera inventory và trạng thái NVR/camera (để sau)
 

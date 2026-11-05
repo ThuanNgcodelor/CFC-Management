@@ -27,7 +27,7 @@ Never cache: DRAFT imports/shifts, unconfirmed qualifications, notifications, bo
 | Connection pool (HikariCP) | defaults (10 connections) | |
 | `spring.servlet.multipart.max-file-size` | 50MB | Upload limit for Excel imports |
 | Hibernate dialect | `MySQLDialect` | Tests use H2 |
-| Migrations | Flyway V1 to V31; V1–V28 SQL resources, V29 Java migration, V30–V31 SQL | Schema changes only via new migration; V31 adds infrastructure inventory and latest device status |
+| Migrations | Flyway V1 to V32; V1–V28 SQL resources, V29 Java migration, V30–V32 SQL | Schema changes only via new migration; V31–V32 cover infrastructure inventory, IP observations, topology links, assets, and assignment history |
 | Secrets and credentials (JWT, DB, SMTP, VAPID) | set through config/env; names only in `application.properties.example` | Defaults currently committed (P0 in TECH_DEBT). Never write values here |
 | `cfc.word-editor.enabled` / `WORD_EDITOR_ENABLED` | `false` mặc định; `run.sh` ép `false` sau khi đọc `.env` và trong backend launcher | Không đăng ký API editor/kho mẫu, không chạy ONLYOFFICE; `run.sh` dừng container cũ và không tạo ingress docs. Muốn bật lại cần quyết định và sửa code triển khai. |
 | `CFC_INFRA_MONITORING_ENABLED` | `false` | Bật polling read-only RouterOS từ backend sau khi kiểm tra route/ACL và tài khoản API riêng; không tự đổi cấu hình router |

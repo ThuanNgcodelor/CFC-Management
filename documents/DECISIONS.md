@@ -54,6 +54,7 @@ Entry format: `date | decision | reason | status`
 - 2026-11-04, cập nhật sau xác nhận người dùng | Phần số chứng từ của mục mở ngay trên đã được chốt: chỉ Tăng điền sẵn đuôi, số đầu nhập tay, mọi phần sửa được; Giảm để trống hoặc tự điền; không tự cấp số. | Người dùng trả lời câu hỏi và yêu cầu mẫu vẫn phải sửa được. | Quy tắc số chứng từ chuyển sang phạm vi đã chốt phía trên; phương án Dừng tiếp nhận/lưu trữ vẫn đang đề xuất.
 
 - 2026-11-05 | Pilot hạ tầng CFCBase dùng inventory MySQL, polling RouterOS REST qua HTTPS với tài khoản chỉ đọc và trạng thái gần nhất; log dùng Alloy syslog → Loki với retention 168 giờ. Kafka/RabbitMQ không thêm vào pilot. | Quy mô ban đầu vài thiết bị và truy vấn log một tuần không cần message broker; Loki là nơi tìm kiếm log. TLS certificate verification bật mặc định, polling tắt cho tới khi cấu hình server. | Phase 1–3 được triển khai local; chưa kết nối MikroTik, chưa nhận syslog và chưa khởi chạy overlay.
+- 2026-11-05 | IPAM đọc DHCP/ARP qua HTTPS, chỉ tạo ứng viên nhiều MAC trên cùng IP để người quản trị xác minh; topology nhập thủ công; người phụ trách tài sản là nhãn văn bản, không suy ra từ hostname hoặc HR. | Model switch/AP và dữ liệu quản lý tài sản chưa được xác nhận; giữ tích hợp ở chế độ đọc và tránh gán nhầm thiết bị/người. | Phase 4–6 có bản triển khai ban đầu local; chưa kiểm thử trên thiết bị thật.
 
 
 

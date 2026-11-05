@@ -467,3 +467,6 @@ Không ghi token Cloudflare, Telegram, JWT, SMTP, VAPID hay database password v�
 - [HrAttendance.jsx](../frontend/src/pages/hr/HrAttendance.jsx), [hrAttendanceApi.js](../frontend/src/api/hrAttendanceApi.js) — màn hình/API Attendance.
 - [HrOcrModal.jsx](../frontend/src/components/hr/HrOcrModal.jsx), [HrOcrSettingsModal.jsx](../frontend/src/components/hr/HrOcrSettingsModal.jsx) — OCR UI/cấu hình.
 - [DashboardLayout.jsx](../frontend/src/layouts/DashboardLayout.jsx), [index.css](../frontend/src/index.css) — shell và design system dùng chung.
+## 17. Trạng thái module hạ tầng (2026-11-05)
+
+Giám sát hạ tầng chỉ dành cho ADMIN tại `/admin/infrastructure`. Pilot lưu danh mục router MikroTik đã biết và chỉ đọc sức khỏe/nhật ký khi được cấu hình. IPAM đọc DHCP lease và ARP qua RouterOS HTTPS, lưu lần thấy đầu/cuối và đưa các trường hợp nhiều MAC cùng IP vào hàng đợi xác minh; không tự chặn máy. Liên kết topology được nhập thủ công và đánh dấu chưa xác minh/đã kiểm tra thủ công; tự khám phá switch/AP chưa bật. Tài sản đầu cuối nhập thủ công với MAC/IP, phòng ban/vị trí/người phụ trách và lịch sử phân công. Không suy đoán nhân viên từ hostname. Giám sát camera để giai đoạn sau.
