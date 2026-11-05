@@ -29,10 +29,9 @@ public class InfrastructureService {
     private final InfrastructureProperties properties;
     // Spring Boot 4 in this project does not provide a Jackson 2 ObjectMapper bean.
     private final ObjectMapper mapper = new ObjectMapper();
-    private final RestClient.Builder restBuilder;
 
-    public InfrastructureService(JdbcTemplate jdbc, InfrastructureProperties properties, RestClient.Builder restBuilder) {
-        this.jdbc = jdbc; this.properties = properties; this.restBuilder = restBuilder;
+    public InfrastructureService(JdbcTemplate jdbc, InfrastructureProperties properties) {
+        this.jdbc = jdbc; this.properties = properties;
     }
 
     @Transactional(readOnly = true)
@@ -97,10 +96,10 @@ public class InfrastructureService {
         String id = ids.get(0);
         try {
             URI uri = URI.create(properties.routerBaseUrl());
-            RestClient client = restBuilder.baseUrl(uri.toString()).requestFactory(timeoutRequestFactory())
+            RestClient client = RestClient.builder().baseUrl(uri.toString()).requestFactory(timeoutRequestFactory())
                     .defaultHeaders(headers -> headers.setBasicAuth(properties.routerUsername(), properties.routerPassword())).build();
-            JsonNode resource = client.get().uri("/rest/system/resource").retrieve().body(JsonNode.class);
-            JsonNode interfaces = client.get().uri("/rest/interface").retrieve().body(JsonNode.class);
+            JsonNode resource = mapper.readTree(client.get().uri("/rest/system/resource").retrieve().body(String.class));
+            JsonNode interfaces = mapper.readTree(client.get().uri("/rest/interface").retrieve().body(String.class));
             int up = 0, down = 0;
             if (interfaces != null && interfaces.isArray()) for (JsonNode item : interfaces) { if (item.path("running").asBoolean(false)) up++; else down++; }
             saveStatus(id, "ONLINE", text(resource, "version"), text(resource, "uptime"), integer(resource, "cpu-load"), number(resource, "free-memory"), number(resource, "total-memory"), up, down, null);
@@ -121,7 +120,8 @@ public class InfrastructureService {
         if (query != null && !query.isBlank()) selector += " |= \"" + escape(query.trim().substring(0, Math.min(query.trim().length(), 120))) + "\"";
         String url = properties.lokiBaseUrl().replaceAll("/$", "") + "/loki/api/v1/query_range?query=" + encode(selector) + "&start=" + start.toEpochMilli() * 1_000_000L + "&end=" + end.toEpochMilli() * 1_000_000L + "&limit=" + safeSize + "&direction=backward";
         try {
-            JsonNode root = restBuilder.baseUrl(properties.lokiBaseUrl()).requestFactory(timeoutRequestFactory()).build().get().uri(url).retrieve().body(JsonNode.class);
+            JsonNode root = mapper.readTree(RestClient.builder().baseUrl(properties.lokiBaseUrl())
+                    .requestFactory(timeoutRequestFactory()).build().get().uri(url).retrieve().body(String.class));
             List<LogResponse> entries = new ArrayList<>(); JsonNode values = root == null ? null : root.path("data").path("result");
             if (values != null && values.isArray()) for (JsonNode stream : values) { JsonNode labels = stream.path("stream"); JsonNode lines = stream.path("values"); for (JsonNode line : lines) if (entries.size() < safeSize) entries.add(new LogResponse(line.path(0).asText(), labels.path("device_ip").asText(""), labels.path("level").asText("info"), line.path(1).asText())); }
             return new PageResponse<>(entries, 0, safeSize, entries.size());

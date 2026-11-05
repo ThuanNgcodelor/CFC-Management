@@ -2,6 +2,7 @@ package com.booking.system.infrastructure.service;
 
 import com.booking.system.infrastructure.api.InfrastructureDtos.*;
 import com.booking.system.infrastructure.config.InfrastructureProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -17,13 +18,13 @@ import org.springframework.web.client.RestClient;
 @Service
 public class NetworkOperationsService {
     private static final Logger log = LoggerFactory.getLogger(NetworkOperationsService.class);
+    private final ObjectMapper mapper = new ObjectMapper();
     private final JdbcTemplate jdbc;
     private final InfrastructureProperties properties;
-    private final RestClient.Builder restBuilder;
     private final NetworkObservationPersistence persistence;
 
-    public NetworkOperationsService(JdbcTemplate jdbc, InfrastructureProperties properties, RestClient.Builder restBuilder, NetworkObservationPersistence persistence) {
-        this.jdbc = jdbc; this.properties = properties; this.restBuilder = restBuilder; this.persistence = persistence;
+    public NetworkOperationsService(JdbcTemplate jdbc, InfrastructureProperties properties, NetworkObservationPersistence persistence) {
+        this.jdbc = jdbc; this.properties = properties; this.persistence = persistence;
     }
 
     public int syncIpam() {
@@ -32,11 +33,11 @@ public class NetworkOperationsService {
         if (routerId == null) throw new IllegalStateException("Chưa có router trong danh mục thiết bị.");
         try {
             URI base = URI.create(properties.routerBaseUrl());
-            RestClient client = restBuilder.baseUrl(base.toString()).requestFactory(requestFactory())
+            RestClient client = RestClient.builder().baseUrl(base.toString()).requestFactory(requestFactory())
                     .defaultHeaders(headers -> headers.setBasicAuth(properties.routerUsername(), properties.routerPassword())).build();
             List<Observed> observations = new ArrayList<>();
-            collect(client.get().uri("/rest/ip/dhcp-server/lease").retrieve().body(JsonNode.class), "DHCP", observations);
-            collect(client.get().uri("/rest/ip/arp").retrieve().body(JsonNode.class), "ARP", observations);
+            collect(mapper.readTree(client.get().uri("/rest/ip/dhcp-server/lease").retrieve().body(String.class)), "DHCP", observations);
+            collect(mapper.readTree(client.get().uri("/rest/ip/arp").retrieve().body(String.class)), "ARP", observations);
             return persistence.persist(routerId, observations);
         } catch (Exception exception) {
             log.warn("Không đồng bộ được IPAM từ RouterOS {}: {}", routerIp(), exception.getClass().getSimpleName());
