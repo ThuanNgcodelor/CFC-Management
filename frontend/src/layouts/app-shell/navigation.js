@@ -7,6 +7,7 @@ import {
   HardHat,
   LayoutDashboard,
   Library,
+  Network,
   BadgeDollarSign,
   MoreHorizontal,
   TableProperties,
@@ -28,6 +29,7 @@ export function buildNavigation({ isAdmin, isHrUser = false, role = isAdmin ? 'A
       show: isAdmin,
       badge: pendingRegistrationCount,
     },
+    { name: 'Hạ tầng mạng', path: '/admin/infrastructure', icon: Network, show: isAdmin },
   ].filter((item) => item.show);
 
   const hrItems = [

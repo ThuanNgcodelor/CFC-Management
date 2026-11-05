@@ -27,9 +27,16 @@ Never cache: DRAFT imports/shifts, unconfirmed qualifications, notifications, bo
 | Connection pool (HikariCP) | defaults (10 connections) | |
 | `spring.servlet.multipart.max-file-size` | 50MB | Upload limit for Excel imports |
 | Hibernate dialect | `MySQLDialect` | Tests use H2 |
-| Migrations | Flyway V1 to V29; V1–V28 SQL resources and V29 Java migration in `db.migration` | Schema changes only via new migration |
+| Migrations | Flyway V1 to V31; V1–V28 SQL resources, V29 Java migration, V30–V31 SQL | Schema changes only via new migration; V31 adds infrastructure inventory and latest device status |
 | Secrets and credentials (JWT, DB, SMTP, VAPID) | set through config/env; names only in `application.properties.example` | Defaults currently committed (P0 in TECH_DEBT). Never write values here |
 | `cfc.word-editor.enabled` / `WORD_EDITOR_ENABLED` | `false` mặc định; `run.sh` ép `false` sau khi đọc `.env` và trong backend launcher | Không đăng ký API editor/kho mẫu, không chạy ONLYOFFICE; `run.sh` dừng container cũ và không tạo ingress docs. Muốn bật lại cần quyết định và sửa code triển khai. |
+| `CFC_INFRA_MONITORING_ENABLED` | `false` | Bật polling read-only RouterOS từ backend sau khi kiểm tra route/ACL và tài khoản API riêng; không tự đổi cấu hình router |
+| `CFC_INFRA_ROUTER_BASE_URL` | `https://192.168.1.1` | URL HTTPS RouterOS REST; JVM kiểm tra chứng thư mặc định, không tắt xác thực TLS |
+| `CFC_INFRA_ROUTER_USERNAME` / `CFC_INFRA_ROUTER_PASSWORD` | trống | Tài khoản RouterOS riêng, quyền chỉ đọc; giữ trong secret store/env server, không lưu DB/UI/tài liệu |
+| `CFC_INFRA_POLL_INTERVAL_MS` | `60000` (giới hạn 15–300 giây) | Chu kỳ lấy system resource/interfaces; chỉ truy vấn một router được cấu hình trong catalog |
+| `CFC_INFRA_LOKI_BASE_URL` | trống | URL nội bộ tới Loki; endpoint tra log giới hạn tối đa 7 ngày và 200 dòng/lần |
+| `NETWORK_SYSLOG_BIND_IP` / `NETWORK_SYSLOG_PORT` | `127.0.0.1` / `5514` | Bind UDP syslog Alloy; phải đổi sang IP LAN khi sẵn sàng nhận log và giới hạn bằng firewall |
+| `NETWORK_LOKI_PORT` | `3100` | Port quản trị/query Loki chỉ bind loopback trên host trong overlay compose |
 
 ## Frontend configuration
 

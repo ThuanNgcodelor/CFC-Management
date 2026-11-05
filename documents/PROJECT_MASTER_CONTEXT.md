@@ -22,6 +22,8 @@ Không có xác nhận deploy production trong tài liệu này. Các con số n
 
 Kế hoạch ngày 04/11/2026: [hoàn thiện Tổng quan, tra cứu, điều hướng và hai báo cáo nhân sự](HR_REPORTING_UX_PLAN.md). **Phase 0–3 đã triển khai local**: Tổng quan đếm riêng ứng viên `IN_PROBATION`, Tổng hồ sơ vẫn chỉ đếm employee; các nhãn Chờ tiếp nhận/Chờ xác nhận/Đã nghỉ việc phân biệt đúng ngữ cảnh. Thẻ thử việc chỉ dẫn vào phân hệ khi vai trò được phép.
 
+Theo yêu cầu 05/11/2026, [kế hoạch Quản lý hạ tầng mạng và camera](NETWORK_AND_CAMERA_INTEGRATION_PLAN.md) đã có Phase 1–3 code local: trang/API ADMIN-only, inventory/audit, polling RouterOS HTTPS read-only (tắt mặc định), overlay Alloy→Loki retention 168h và UI/API tra log. Flyway hiện tới V31. Chưa deploy, chưa kết nối router, chưa bật polling/chạy overlay; camera, discovery Ruijie, DHCP/ARP/neighbor, WAN probe, correlation và alert tiếp tục để sau. Credential chỉ qua env server, không lưu DB. Không thêm Kafka/RabbitMQ. Giới hạn và cổng nghiệm thu thật ở plan.
+
 Phase 4 bổ sung trạng thái employee `INTAKE_STOPPED` (“Dừng tiếp nhận”) cho hồ sơ `DRAFT` không tiếp tục tuyển. Hồ sơ vẫn thuộc tổng nhân sự nhưng không được tính đang làm/đã nghỉ. ADMIN/MANAGER có thể dừng và khôi phục; dừng sẽ hủy các Tăng `DRAFT` trong cùng transaction, giữ nguyên liên kết và audit, khôi phục chỉ đưa hồ sơ về `DRAFT`. Chẩn đoán tham chiếu là API chỉ đọc và giới hạn theo role quản lý.
 
 Phase 5 có bản đầu ở `/manager/hr/reports`: biểu đồ/bảng quân số theo tháng, danh sách nghỉ việc, lọc theo năm/tháng/nhóm/hợp đồng/đơn vị/lý do, drill-down movement và xuất Excel. Quy tắc đã chốt: số cuối kỳ theo hiệu lực ngày cuối kỳ, người nghỉ và lượt nghỉ tách riêng, hợp đồng xét tại ngày báo cáo; nhóm dùng nhóm hiện tại vì chưa có lịch sử snapshot. HR_STAFF chỉ có GET đọc/xuất. Còn đối chiếu fixture, test quyền API và test giao diện; truy vấn projection còn nạp timeline movement lớn. Chưa deploy. Chi tiết: [Phase 5](HR_REPORTING_UX_PHASES.md#7-phase-5--báo-cáo-quân-số-và-nghỉ-việc).
@@ -43,10 +45,13 @@ flowchart TB
     Security --> Legacy[Legacy booking/auth/notification controllers]
     HR --> MySQL[(MySQL 8 booking_db)]
     HR --> Redis[(Redis 7 token + OTP/session data)]
-    Backend --> Flyway[Flyway V1..V29]
+    Backend --> Flyway[Flyway V1..V31]
     HR --> Gemini[Google Gemini REST]
     HR --> Groq[Groq OpenAI-compatible REST]
     HR --> Telegram[Telegram Bot API/webhook]
+    Backend --> RouterOS[RouterOS REST HTTPS read-only, optional]
+    RouterOS --> Alloy[Alloy UDP syslog receiver, optional]
+    Alloy --> Loki[(Loki, 168h retention, optional)]
     AppScript[Apps Script QuanLyNgayPhep] -->|GET leave-roster| Backend
     Browser -->|WSS/SockJS| Backend
 ```
@@ -55,7 +60,7 @@ flowchart TB
 
 - Backend: Spring Boot **4.0.0**, Java **21**, Spring MVC, JPA/Hibernate, Security, WebSocket/STOMP, Redis, Mail, Actuator.
 - Database: MySQL 8; các đối tượng HR do Flyway sở hữu. `LegacySchemaFilterProvider` ngăn Hibernate tự tạo/sửa/xóa bảng `hr_*`.
-- Migration hiện có: **V1 đến V29**, tổng cộng **55 bảng `hr_*`**. V27 thêm lịch sử nâng lương, snapshot bậc/ngạch/chu kỳ/ngày hiệu lực và import type `SALARY_RAISE`; V28 thêm trạng thái rà soát, ngày theo dõi lại và index danh sách tới hạn. V29 mở rộng role HR_STAFF trên bảng users legacy. Màn hình Mẫu Word và ONLYOFFICE đã tắt: menu/route không truy cập được, API editor không đăng ký khi flag tắt, script triển khai không khởi động Document Server và dừng container cũ. Việc xuất/xem/tải hợp đồng DOCX và dữ liệu mẫu đã có vẫn hoạt động. [Ghi chú vận hành](HR_WORD_EDITOR_SETUP.md).
+- Migration hiện có: **V1 đến V31**, tổng cộng **55 bảng `hr_*`**. V27 thêm lịch sử nâng lương, snapshot bậc/ngạch/chu kỳ/ngày hiệu lực và import type `SALARY_RAISE`; V28 thêm trạng thái rà soát, ngày theo dõi lại và index danh sách tới hạn. V29 mở rộng role HR_STAFF trên bảng users legacy. Màn hình Mẫu Word và ONLYOFFICE đã tắt: menu/route không truy cập được, API editor không đăng ký khi flag tắt, script triển khai không khởi động Document Server và dừng container cũ. Việc xuất/xem/tải hợp đồng DOCX và dữ liệu mẫu đã có vẫn hoạt động. [Ghi chú vận hành](HR_WORD_EDITOR_SETUP.md).
 - File Excel/DOCX: Apache POI 5.4.1; hợp đồng DOCX dùng mẫu classpath mặc định hoặc phiên bản active trong kho DB. `HrDocxEngine` thay biến xuyên qua các Word run. Hướng dẫn cài đặt Document Server: [ONLYOFFICE Setup](HR_WORD_EDITOR_SETUP.md).
 - Frontend: React **19.2**, React Router **7**, Vite **8**, Tailwind CSS **4**, Axios, `react-datepicker`, `xlsx`, Lucide, PWA Workbox.
 - Token: access JWT ngắn hạn, refresh JWT lưu cookie/Redis; API HR phân quyền theo ADMIN/MANAGER và phạm vi giới hạn của HR_STAFF (mục 6), trừ các route được permit riêng.

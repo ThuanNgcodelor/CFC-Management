@@ -81,6 +81,20 @@ class DashboardSecurityContractTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void infrastructureEndpointsRequireAdminRole() throws Exception {
+        mockMvc.perform(get("/api/v1/infrastructure/security-contract"))
+                .andExpect(status().isUnauthorized());
+        stubToken("manager-infrastructure-token", user("manager-id", RoleEnum.MANAGER));
+        mockMvc.perform(get("/api/v1/infrastructure/security-contract")
+                        .header("Authorization", "Bearer manager-infrastructure-token"))
+                .andExpect(status().isForbidden());
+        stubToken("admin-infrastructure-token", user("admin-infra-id", RoleEnum.ADMIN));
+        mockMvc.perform(get("/api/v1/infrastructure/security-contract")
+                        .header("Authorization", "Bearer admin-infrastructure-token"))
+                .andExpect(status().isOk());
+    }
+
     private void stubToken(String token, User user) {
         when(jwtUtils.validateJwtToken(token)).thenReturn(true);
         when(jwtUtils.getEmailFromJwtToken(token)).thenReturn(user.getEmail());
@@ -135,5 +149,8 @@ class DashboardSecurityContractTest {
         String admin() {
             return "ok";
         }
+
+        @GetMapping("/api/v1/infrastructure/security-contract")
+        String infrastructure() { return "ok"; }
     }
 }

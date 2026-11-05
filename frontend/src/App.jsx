@@ -40,6 +40,7 @@ const HrAttendance = lazy(() => import('./pages/hr/HrAttendance'));
 const HrProductionAttendance = lazy(() => import('./pages/hr/HrProductionAttendance'));
 const HrAttendanceSandbox = lazy(() => import('./pages/hr/HrAttendanceSandbox'));
 const HrNightRewards = lazy(() => import('./pages/hr/HrNightRewards'));
+const Infrastructure = lazy(() => import('./pages/Infrastructure'));
 
 const SessionCheckScreen = ({ unavailable = false }) => (
   <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', justifyContent: 'center' }}>
@@ -170,6 +171,7 @@ function App() {
       }>
         <Route index element={<RoleHome />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="admin/infrastructure" element={<AdminRoute><Infrastructure /></AdminRoute>} />
 
         {/* Phân hệ HR dành cho ADMIN và MANAGER. */}
         <Route path="manager/hr" element={<HrRoute><HrOverview /></HrRoute>} />

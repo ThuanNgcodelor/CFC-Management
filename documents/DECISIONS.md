@@ -53,6 +53,8 @@ Entry format: `date | decision | reason | status`
 - 2026-11-04 | Hồ sơ `DRAFT` không tiếp tục tuyển chuyển sang `INTAKE_STOPPED`; giữ trong tổng hồ sơ, không cộng vào ACTIVE/INACTIVE. ADMIN/MANAGER dừng/khôi phục; khi dừng tự hủy Tăng `DRAFT`, giữ các liên kết và audit. Lý do thao tác tùy chọn; khôi phục đưa về `DRAFT` nhưng không hồi sinh Tăng đã hủy. | Tránh xóa cứng các hồ sơ có snapshot/import/biến động và tránh nhầm dừng tuyển với nghỉ việc. Cùng thứ tự khóa hồ sơ trước biến động để đồng bộ với xác nhận Tăng. | Đã triển khai local với migration V30, chưa deploy. Kiểm thử mục tiêu và H2 migration tại [phases](HR_REPORTING_UX_PHASES.md). Phase 5 báo cáo hoãn theo yêu cầu người dùng.
 - 2026-11-04, cập nhật sau xác nhận người dùng | Phần số chứng từ của mục mở ngay trên đã được chốt: chỉ Tăng điền sẵn đuôi, số đầu nhập tay, mọi phần sửa được; Giảm để trống hoặc tự điền; không tự cấp số. | Người dùng trả lời câu hỏi và yêu cầu mẫu vẫn phải sửa được. | Quy tắc số chứng từ chuyển sang phạm vi đã chốt phía trên; phương án Dừng tiếp nhận/lưu trữ vẫn đang đề xuất.
 
+- 2026-11-05 | Pilot hạ tầng CFCBase dùng inventory MySQL, polling RouterOS REST qua HTTPS với tài khoản chỉ đọc và trạng thái gần nhất; log dùng Alloy syslog → Loki với retention 168 giờ. Kafka/RabbitMQ không thêm vào pilot. | Quy mô ban đầu vài thiết bị và truy vấn log một tuần không cần message broker; Loki là nơi tìm kiếm log. TLS certificate verification bật mặc định, polling tắt cho tới khi cấu hình server. | Phase 1–3 được triển khai local; chưa kết nối MikroTik, chưa nhận syslog và chưa khởi chạy overlay.
+
 
 
 | Topic | Question | Where |

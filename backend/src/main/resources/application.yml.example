@@ -66,6 +66,13 @@ jwt:
     expiration: ${JWT_REFRESH_EXPIRATION:7776000000} # 90 ngày
 
 cfc:
+  infrastructure:
+    monitoring-enabled: ${CFC_INFRA_MONITORING_ENABLED:false}
+    router-base-url: ${CFC_INFRA_ROUTER_BASE_URL:https://192.168.1.1}
+    router-username: ${CFC_INFRA_ROUTER_USERNAME:}
+    router-password: ${CFC_INFRA_ROUTER_PASSWORD:}
+    loki-base-url: ${CFC_INFRA_LOKI_BASE_URL:}
+    poll-interval-ms: ${CFC_INFRA_POLL_INTERVAL_MS:60000}
   word-editor:
     enabled: ${WORD_EDITOR_ENABLED:false}
     document-server-url: ${WORD_EDITOR_DOCUMENT_SERVER_URL:}

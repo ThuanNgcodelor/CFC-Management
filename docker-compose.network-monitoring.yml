@@ -1,0 +1,32 @@
+services:
+  loki:
+    image: grafana/loki:3.7.9
+    command: ["-config.file=/etc/loki/config.yml"]
+    restart: unless-stopped
+    volumes:
+      - ./infrastructure/logging/loki-config.yml:/etc/loki/config.yml:ro
+      - network_loki_data:/loki
+    ports:
+      - "127.0.0.1:${NETWORK_LOKI_PORT:-3100}:3100"
+    healthcheck:
+      test: ["CMD", "/usr/bin/loki", "-verify-config=true", "-config.file=/etc/loki/config.yml"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  alloy:
+    image: grafana/alloy:v1.21.3
+    command: ["run", "/etc/alloy/config.alloy", "--storage.path=/var/lib/alloy/data"]
+    restart: unless-stopped
+    depends_on:
+      loki:
+        condition: service_started
+    volumes:
+      - ./infrastructure/logging/config.alloy:/etc/alloy/config.alloy:ro
+      - network_alloy_data:/var/lib/alloy/data
+    ports:
+      - "${NETWORK_SYSLOG_BIND_IP:-127.0.0.1}:${NETWORK_SYSLOG_PORT:-5514}:5514/udp"
+
+volumes:
+  network_loki_data:
+  network_alloy_data:

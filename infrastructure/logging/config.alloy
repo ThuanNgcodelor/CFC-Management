@@ -1,0 +1,14 @@
+loki.source.syslog "network" {
+  listener {
+    address  = "0.0.0.0:5514"
+    protocol = "udp"
+    labels   = { job = "network-syslog" }
+  }
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
