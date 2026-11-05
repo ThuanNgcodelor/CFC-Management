@@ -55,6 +55,7 @@ Entry format: `date | decision | reason | status`
 
 - 2026-11-05 | Pilot hạ tầng CFCBase dùng inventory MySQL, polling RouterOS REST qua HTTPS với tài khoản chỉ đọc và trạng thái gần nhất; log dùng Alloy syslog → Loki với retention 168 giờ. Kafka/RabbitMQ không thêm vào pilot. | Quy mô ban đầu vài thiết bị và truy vấn log một tuần không cần message broker; Loki là nơi tìm kiếm log. TLS certificate verification bật mặc định, polling tắt cho tới khi cấu hình server. | Phase 1–3 được triển khai local; chưa kết nối MikroTik, chưa nhận syslog và chưa khởi chạy overlay.
 - 2026-11-05 | IPAM đọc DHCP/ARP qua HTTPS, chỉ tạo ứng viên nhiều MAC trên cùng IP để người quản trị xác minh; topology nhập thủ công; người phụ trách tài sản là nhãn văn bản, không suy ra từ hostname hoặc HR. | Model switch/AP và dữ liệu quản lý tài sản chưa được xác nhận; giữ tích hợp ở chế độ đọc và tránh gán nhầm thiết bị/người. | Phase 4–6 có bản triển khai ban đầu local; chưa kiểm thử trên thiết bị thật.
+- 2026-11-05 | CI/CD triển khai từng chặng: trước tiên GitHub-hosted CI chỉ lint/build/test và không deploy; sau đó harden script Fedora; cuối cùng mới dùng self-hosted runner với production approval. Không mở cổng server từ Internet để GitHub truy cập. | Giữ nguyên hạ tầng hiện tại và ngăn một workflow thử nghiệm tác động website đang chạy. Runner production chỉ được cài sau khi người dùng thực hiện/chốt các bước trên Fedora. | Chặng 1 workflow local; chặng deploy chưa cấu hình.
 
 
 
