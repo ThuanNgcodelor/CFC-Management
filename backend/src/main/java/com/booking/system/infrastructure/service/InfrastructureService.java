@@ -27,11 +27,12 @@ public class InfrastructureService {
     }
     private final JdbcTemplate jdbc;
     private final InfrastructureProperties properties;
-    private final ObjectMapper mapper;
+    // Spring Boot 4 in this project does not provide a Jackson 2 ObjectMapper bean.
+    private final ObjectMapper mapper = new ObjectMapper();
     private final RestClient.Builder restBuilder;
 
-    public InfrastructureService(JdbcTemplate jdbc, InfrastructureProperties properties, ObjectMapper mapper, RestClient.Builder restBuilder) {
-        this.jdbc = jdbc; this.properties = properties; this.mapper = mapper; this.restBuilder = restBuilder;
+    public InfrastructureService(JdbcTemplate jdbc, InfrastructureProperties properties, RestClient.Builder restBuilder) {
+        this.jdbc = jdbc; this.properties = properties; this.restBuilder = restBuilder;
     }
 
     @Transactional(readOnly = true)
