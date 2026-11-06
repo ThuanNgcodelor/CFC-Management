@@ -43,7 +43,9 @@ Trước khi tự động hóa, sửa và thử script Linux để:
 4. User này thuộc nhóm `wheel` và `docker`, nên runner có quyền gần tương đương root. Chỉ cho phép workflow deploy thủ công từ `main`, có duyệt production; không chạy pull request hoặc workflow từ nhánh không tin cậy trên runner này.
 5. Runner dùng checkout hiện có để gọi `git pull --ff-only` và deploy script. Không truyền `.env`, Cloudflare credential, DB password hoặc private key qua GitHub Actions/artifact/log.
 
-Việc cài runner là thao tác trên Fedora, chưa thực hiện từ workspace này.
+**Trạng thái kiểm tra ngày 06/11/2026:** runner `cfcbase-fedora-prod` đã được đăng ký ở repo GitHub `CFC-Management` và đang `Idle` (online, chờ job); log người dùng gửi xác nhận user service `cfcbase-runner.service` chạy dưới `david-nguyen`. Repo local vẫn dùng remote URL `ThuanNgcodelor/CFCBase`, được GitHub chuyển hướng sang tên repo hiện tại `CFC-Management`. Ảnh Settings chỉ có labels mặc định `self-hosted`, `Linux`, `X64`; label riêng `cfcbase-production` chưa được thêm. Chưa xác minh được visibility/private và ruleset bảo vệ `main`: phiên MCP trả 404 ở Settings và workspace không có GitHub CLI/API credential. Workflow hiện có chỉ chạy trên `ubuntu-latest`, không gửi job CI hoặc PR đến runner Fedora.
+
+**Để hoàn tất chặng 3 trong GitHub:** thêm label `cfcbase-production` vào runner `cfcbase-fedora-prod`; xác nhận repo là Private; tạo ruleset cho `main` chặn force-push/xóa nhánh và yêu cầu hai status check CI (`Frontend lint and build`, `Backend tests`). Chỉ sau khi các mục này được xác nhận mới đánh dấu chặng 3 hoàn tất. Không đưa job deploy vào workflow CI; workflow deploy và phê duyệt production thuộc chặng 4.
 
 ### Chặng 4 — Deploy có người duyệt
 
