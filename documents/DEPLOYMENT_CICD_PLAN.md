@@ -78,8 +78,8 @@ Các điều kiện của auto-deploy:
 
 - Bắt buộc có một lần deploy thủ công thành công bằng script mới để ghi baseline `.git/cfcbase-deploy-state.json`. Không suy đoán baseline từ HEAD hoặc marker cũ có `-dirty`.
 - Bỏ qua commit đã chạy thành công, không build/restart hoặc gọi GitHub API lại cho cùng release. Vẫn fetch Git để phát hiện bản mới. Backend/tunnel phải active, marker release phải khớp trạng thái thành công; khi chúng lệch nhau thì chặn, không tự sửa.
-- Checkout phải là main sạch, fast-forward được. CI phải thành công đúng SHA và đủ hai job; job kiểm thử deployment cũng phải thành công vì được tính trong kết quả workflow tổng. CI chưa xong/đỏ thì chờ, API lỗi thì không deploy và kiểm tra lại ở lần timer tiếp theo.
-- Thay đổi bất kỳ file trong migration SQL hoặc Java so với release thành công gần nhất đều cần rà soát và `--deploy` thủ công. Không tự chạy migration mới qua timer.
+- Checkout phải là main sạch, fast-forward được. CI phải thành công đúng SHA và đủ ba job: Frontend lint and build, Backend tests, Deployment script checks. CI chưa xong/đỏ thì chờ, API lỗi thì không deploy và kiểm tra lại ở lần timer tiếp theo.
+- Migration SQL mới có version lớn hơn release đã chạy, được review tương thích ngược và khai báo đúng SHA256 trong `auto-migrations.json` được tự deploy sau backup. V33 đã khai báo. Sửa/xóa migration cũ, Java migration, version trùng/cũ hoặc thiếu khai báo đều bị chặn trước merge/build. Quy tắc này thay thế gate “mọi migration phải manual” theo yêu cầu người dùng 06/11/2026.
 - Trước khi merge/build phải ghi trạng thái `deploying`; sau khi build, health/schema và trạng thái release/dịch vụ đạt mới ghi `success`. Lỗi ghi `failed`; timeout/mất điện có thể để lại `deploying`. Cả hai trạng thái đều chặn mọi lần auto tiếp theo, kể cả khi main có commit khác.
 - Chỉ retry sau khi xử lý nguyên nhân và chủ động chạy `--deploy --retry-failed`. Không reset code, không xóa state để bỏ qua chặn, không tự sửa/rollback DB. Wrapper dùng một lock cho manual/auto; không chạy build-prod riêng đồng thời với timer.
 
@@ -118,7 +118,44 @@ Lệnh dừng lên lịch; nếu service deploy đang chạy, chờ nó hoàn t�
 python3 deployserver/linux/ci-deploy.py --deploy --retry-failed
 ```
 
-Kiểm thử local: `python3 -m unittest discover -s deployserver/linux/tests -v` gồm 25 test, trong đó có repository Git tạm thật. Build/service/GitHub được mô phỏng để không chạm server. Log người dùng xác nhận deploy thủ công release `cbaebcef7549af664f8f00fecb7b9e0bc5250556` thành công, marker sạch và --status sẵn sàng; installer enable timer, service fetch Public HTTPS và kết thúc với “Đang chạy bản mới nhất; không build/restart lại.” Lịch tiếp theo khoảng 5 phút. Chưa chứng minh tự deploy một commit mới, chạy sau reboot hoặc rollback có chủ đích trên Fedora.
+Kiểm thử local: `python3 -m unittest discover -s deployserver/linux/tests -v` hiện gồm 45 test, trong đó có repository Git tạm thật. Build/service/GitHub được mô phỏng để không chạm server. Log người dùng xác nhận deploy thủ công release `cbaebcef7549af664f8f00fecb7b9e0bc5250556` thành công, marker sạch và --status sẵn sàng; installer enable timer, service fetch Public HTTPS và kết thúc với “Đang chạy bản mới nhất; không build/restart lại.” Lịch tiếp theo khoảng 5 phút. Chưa chứng minh tự deploy một commit mới, chạy sau reboot hoặc rollback có chủ đích trên Fedora.
+
+### Chặng 5 bổ sung — Tự build, backup và chuyển release sau merge
+
+**Đã triển khai và kiểm thử local, chưa cài phiên bản bổ sung này trên Fedora.** Không thêm runner production hoặc workflow chạy trên Fedora. Timer hiện có tiếp tục fetch commit main mỗi khoảng 5 phút và chỉ thực thi sau CI xanh đúng SHA. CI đỏ/chưa xong không đổi code/release và không khởi động bản mới.
+
+Luồng khi có migration được duyệt:
+
+1. Kiểm tra baseline release, main sạch, CI cả ba job và khai báo migration từ blob Git của candidate (không đọc nội dung chưa commit).
+2. Ghi `deploying`, fast-forward checkout; JAR cũ vẫn phục vụ trong lúc npm/Maven build và smoke-test JAR mới.
+3. Build/smoke đạt mới chạy backup database bằng script có sẵn; kiểm tra gzip, schema/table và footer kết thúc mysqldump. Dump lỗi/truncated không được publish. Backup tệp 0600, thư mục 0700, giữ 24 bản theo cấu hình hiện có; tên có nanosecond tránh ghi đè hai lần gần nhau.
+4. Backup đạt mới thay JAR và marker rồi chạy launcher. Nếu chưa đổi migration, bỏ qua backup deploy này (timer backup định kỳ vẫn riêng).
+5. Nếu start/health/schema lỗi, launcher thử khôi phục JAR và chạy lại bản cũ. Nếu preflight launcher lỗi trước restart, build script khôi phục JAR/marker trên đĩa. Ghi `failed`, giữ last_success_sha và dừng auto toàn bộ tới khi xử lý/retry có chủ đích; không che lỗi rollback thất bại.
+6. Chỉ ghi `success` khi marker đúng SHA và backend/tunnel đạt kiểm tra. Database không tự restore hoặc rollback; backup chưa thay thế kiểm thử restore và review tương thích.
+
+**Một lần nâng cấp deploy-agent trên Fedora đã có baseline/timer:** agent cũ vẫn chặn migration trước khi tự cập nhật code, nên cần pull bộ script mới một lần. Làm sau khi PR đã merge và CI main xanh:
+
+```bash
+cd ~/Works/BookingBase
+systemctl --user stop bookingbase-deploy.timer
+flock -n .git/cfcbase-deploy.lock git pull --ff-only origin main
+```
+
+Chỉ tiếp tục nếu pull thành công. Nếu flock báo bận, chờ lượt deploy đang chạy kết thúc rồi chạy lại; không dừng service đang build/migrate và không reset/stash code. Khóa này trùng khóa wrapper, ngăn pull trong lúc deploy. Pull chỉ nâng code/script, chưa restart JAR đang phục vụ.
+
+```bash
+systemctl --user enable --now bookingbase-deploy.timer
+systemctl --user start bookingbase-deploy.service
+journalctl --user -u bookingbase-deploy.service -n 80 --no-pager
+```
+
+Nếu CI chưa xanh, service chờ lượt timer tiếp theo; không cần chạy tay mỗi release. Nếu state cũ là failed/deploying hoặc marker lệch baseline, phải xử lý nguyên nhân trước và dùng `--deploy --retry-failed`, không xóa state. Máy chưa có baseline/timer vẫn dùng phần cài lần đầu phía trên.
+
+**Từ máy dev cho các bản sau:** push nhánh `feat/fedora-deploy` hoặc nhánh tính năng → PR main → CI xanh → merge → CI push/main xanh → Fedora tự build/deploy. Không push trực tiếp main để né ruleset.
+
+**Khi dev thêm migration:** review rằng JAR trước vẫn chạy được sau khi áp dụng, thêm entry đường dẫn/sha256/backwardCompatible/reason vào `deployserver/linux/auto-migrations.json` trong cùng PR. SHA tính từ đúng bytes SQL đã commit (`sha256sum <path>`). Declaration là cam kết review, không phải máy tự chứng minh SQL an toàn. CI kiểm tra manifest còn khớp nội dung; không khai báo phá cấu trúc như xóa/rename/cột bắt buộc không tương thích. V33 chỉ thêm một bảng độc lập nên đã được khai báo. Migration chưa được phép auto vẫn triển khai manual sau rà soát; manual có thay đổi migration hoặc chưa có baseline cũng bắt buộc backup sau build và trước kích hoạt.
+
+**Giới hạn:** vẫn một backend tại cổng 8080 nên lúc restart có gián đoạn ngắn. Không có blue-green hoặc đảm bảo zero downtime; không tự restore DB đang có dữ liệu mới phát sinh. Kiểm thử local dùng Git repo thật và thực thi các shell script với Docker/build/systemd giả lập: build fail, smoke fail, backup fail/truncated, start fail, health fail, rollback thành công/thất bại. Chưa nghiệm thu backup/rollback trên Fedora thật. Kiểm tra cuối local: 45 deploy tests đạt; backend Maven offline Java 21 chạy 261 test, 0 failure/error, 4 skipped; frontend build đạt, lint 0 lỗi/10 cảnh báo cũ; Bash syntax và git diff --check đạt.
 
 ### Chặng 6 — Giảm downtime (tùy chọn)
 

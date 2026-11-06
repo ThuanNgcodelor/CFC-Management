@@ -11,12 +11,14 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from ci_deploy_state import (
-    MIGRATION_PATHS, STATE_FILE, load_state, require_ready,
+    STATE_FILE, load_state, require_ready,
     require_retry_acknowledgement, save_state,
 )
 
+from ci_deploy_migrations import changed_migrations, require_auto_migrations
+
 REPOSITORY = "ThuanNgcodelor/CFC-Management"
-REQUIRED_JOBS = {"Frontend lint and build", "Backend tests"}
+REQUIRED_JOBS = {"Frontend lint and build", "Backend tests", "Deployment script checks"}
 API_ROOT = f"https://api.github.com/repos/{REPOSITORY}"
 PUBLIC_GIT_URL = f"https://github.com/{REPOSITORY}.git"
 API_TIMEOUT_SECONDS = 30
@@ -95,7 +97,7 @@ def require_services(check_running=True):
             subprocess.run(["systemctl", "--user", "is-active", "--quiet", unit], check=True)
 
 
-def deploy_release(root, previous, candidate, state_path, state):
+def deploy_release(root, previous, candidate, state_path, state, backup_required=False):
     if git(root, "rev-parse", "HEAD") != previous or git(root, "status", "--porcelain"):
         raise RuntimeError("Checkout đã thay đổi trong lúc kiểm tra; chạy lại.")
     # Persist before any mutation so power loss/timeout cannot silently retry migrations.
@@ -103,7 +105,11 @@ def deploy_release(root, previous, candidate, state_path, state):
     try:
         subprocess.run(["git", "-C", str(root), "merge", "--ff-only", candidate], check=True)
         print("Bắt đầu build/deploy. Health-check và rollback JAR do script hiện có xử lý.", flush=True)
-        subprocess.run(["bash", str(root / "deployserver/linux/build-prod.sh")], cwd=root, check=True)
+        command = ["bash", str(root / "deployserver/linux/build-prod.sh")]
+        if backup_required:
+            command.append("--backup-before-activate")
+            print("Có migration: build/smoke trước, backup database đạt mới kích hoạt; database không tự rollback.", flush=True)
+        subprocess.run(command, cwd=root, check=True)
         require_services()
         require_ready({"phase": "success", "last_success_sha": candidate}, root)
     except (Exception, KeyboardInterrupt):
@@ -121,16 +127,14 @@ def auto_deploy(root, state_path, state):
     if candidate == state["last_success_sha"]:
         print("Đang chạy bản mới nhất; không build/restart lại.")
         return
-    changes = git(root, "diff", "--name-only", state["last_success_sha"], candidate, "--", *MIGRATION_PATHS)
-    if changes:
-        raise RuntimeError("Bản mới thay đổi migration SQL/Java; cần rà soát và deploy thủ công.")
     try:
         run = verify_ci(candidate)
     except CiNotReady as error:
         print(str(error))
         return
     print(f"CI đạt: {run['html_url']}", flush=True)
-    deploy_release(root, previous, candidate, state_path, state)
+    backup_required = require_auto_migrations(root, state["last_success_sha"], candidate)
+    deploy_release(root, previous, candidate, state_path, state, backup_required=backup_required)
 
 
 def main():
@@ -138,7 +142,7 @@ def main():
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check", action="store_true", help="Chỉ fetch và kiểm tra; không đổi working tree/release.")
     mode.add_argument("--deploy", action="store_true", help="Sau khi CI đạt, fast-forward main rồi build/deploy.")
-    mode.add_argument("--auto", action="store_true", help="Dành cho timer: bỏ qua bản đã chạy, chặn migration/lần deploy lỗi.")
+    mode.add_argument("--auto", action="store_true", help="Dành cho timer: CI đạt, backup trước migration tương thích, chặn lần deploy lỗi.")
     mode.add_argument("--status", action="store_true", help="Kiểm tra trạng thái thành công, release và dịch vụ trước khi bật timer.")
     parser.add_argument("--retry-failed", action="store_true", help="Chỉ cùng --deploy: xác nhận đã xử lý lần deploy lỗi/gián đoạn.")
     args = parser.parse_args()
@@ -156,6 +160,7 @@ def main():
         if args.status:
             if git(root, "branch", "--show-current") != "main" or git(root, "status", "--porcelain"):
                 raise RuntimeError("Cần checkout main sạch trước khi bật auto-deploy.")
+            print(f"Trạng thái deploy: {state.get('phase', 'chưa khởi tạo')}; commit thử gần nhất: {state.get('attempt_sha', 'chưa có')}")
             require_ready(state, root)
             require_services()
             print(f"Sẵn sàng tự deploy; release thành công gần nhất: {state['last_success_sha']}")
@@ -170,7 +175,9 @@ def main():
             print("Chỉ kiểm tra: chưa cập nhật code hoặc khởi động lại hệ thống.")
             return
         require_services(check_running=False)
-        deploy_release(root, previous, candidate, state_path, state)
+        baseline = state.get("last_success_sha")
+        backup_required = not baseline or bool(changed_migrations(root, baseline, candidate))
+        deploy_release(root, previous, candidate, state_path, state, backup_required=backup_required)
 
 
 if __name__ == "__main__":

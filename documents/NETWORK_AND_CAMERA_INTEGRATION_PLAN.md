@@ -434,8 +434,8 @@ Người dùng đã chọn nhập mật khẩu MikroTik ngay trên CFCBase, thay
 
 ### Đưa lên Fedora
 
-1. Merge thay đổi qua PR sau CI đạt. Có migration **V33**, nên timer auto sẽ chặn theo thiết kế.
-2. Trên Fedora, trong `~/Works/BookingBase`, chạy `python3 deployserver/linux/ci-deploy.py --check`, sau đó `python3 deployserver/linux/ci-deploy.py --deploy`. Không cần nhập credential router vào Git hoặc terminal.
+1. Merge thay đổi qua PR sau CI đạt. Có migration **V33**: timer bản cũ chặn theo thiết kế; bản deploy-agent bổ sung cho phép tự deploy sau CI và backup theo khai báo tương thích ngược.
+2. V33 đã được khai báo auto migration tương thích ngược trong bản deploy-agent bổ sung. Nếu Fedora còn agent cũ, nâng agent một lần theo [hướng dẫn CI/CD](DEPLOYMENT_CICD_PLAN.md); sau đó timer tự build, backup rồi deploy khi CI main xanh. Agent cũ hoặc trường hợp triển khai manual vẫn dùng `ci-deploy.py --check` rồi `--deploy`. Không cần nhập credential router vào Git hoặc terminal.
 3. ADMIN mở tab Kết nối MikroTik, nhập ví dụ địa chỉ `https://192.168.1.1` và tài khoản đọc REST của router, chọn Kiểm tra kết nối. Backend Fedora cần route/ACL tới IP và RouterOS phải bật www-ssl. Nếu báo chứng thư, cấu hình chứng thư có IP SAN phù hợp và truststore JVM; không dùng bỏ qua TLS.
 4. Lưu cấu hình, xác nhận health có checkedAt/uptime/CPU/RAM, sau đó thử đồng bộ DHCP/ARP. Chỉ nghiệm thu khi đã đọc được router thật; lưu thành công không đồng nghĩa kết nối thành công.
 5. Khóa sinh lần lưu đầu tại `~/.local/share/cfcbase/infrastructure/credential.key`, quyền 0600. Backup khóa này ngoài Git cùng DB; nếu mất khóa, khôi phục hoặc nhập lại mật khẩu trên web. Có thể đổi đường dẫn bằng `CFC_INFRA_CREDENTIAL_KEY_FILE`; giữ đường dẫn/khóa ổn định qua các release.

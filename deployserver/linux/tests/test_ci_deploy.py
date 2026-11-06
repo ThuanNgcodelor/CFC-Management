@@ -55,7 +55,7 @@ class CiGateTest(unittest.TestCase):
             with self.subTest(updates=updates), self.assertRaises(RuntimeError):
                 deploy.latest_run([run(**updates)], "abc")
 
-    def test_required_jobs_must_both_succeed(self):
+    def test_required_jobs_must_all_succeed(self):
         jobs = [{"name": name, "status": "completed", "conclusion": "success"}
                 for name in deploy.REQUIRED_JOBS]
         deploy.verify_jobs(jobs)
@@ -84,6 +84,9 @@ class AutoDeployTest(unittest.TestCase):
         self.release.parent.mkdir(parents=True)
         self.release.write_text(self.old + "\nBuilt at: test\n")
         self.state = state_store.save_state(self.state_path, {}, "success", self.old)
+        policy = patch.object(deploy, "require_auto_migrations", return_value=False)
+        self.policy = policy.start()
+        self.addCleanup(policy.stop)
 
     def test_unchanged_release_never_calls_api_or_restarts(self):
         with patch.object(deploy, "require_services"), patch.object(deploy, "prepare", return_value=(self.old, self.old)), \
@@ -98,16 +101,26 @@ class AutoDeployTest(unittest.TestCase):
                 patch.object(deploy, "verify_ci", return_value={"html_url": "https://github.com/test"}), \
                 patch.object(deploy, "deploy_release") as build:
             deploy.auto_deploy(self.root, self.state_path, self.state)
-        self.assertEqual((self.old, self.new), git.call_args.args[3:5])
+        self.policy.assert_called_once_with(self.root, self.old, self.new)
         build.assert_called_once()
 
-    def test_migration_change_requires_manual_deploy_before_ci_or_build(self):
+    def test_unapproved_migration_stops_after_ci_before_mutation(self):
+        self.policy.side_effect = RuntimeError("Migration chưa duyệt")
         with patch.object(deploy, "require_services"), patch.object(deploy, "prepare", return_value=(self.old, self.new)), \
-                patch.object(deploy, "git", return_value="backend/src/main/java/db/migration/V100.java"), \
-                patch.object(deploy, "verify_ci") as api, patch.object(deploy, "deploy_release") as build, self.assertRaises(RuntimeError):
+                patch.object(deploy, "verify_ci", return_value={"html_url": "https://github.com/test"}) as api, \
+                patch.object(deploy, "deploy_release") as build, self.assertRaises(RuntimeError):
             deploy.auto_deploy(self.root, self.state_path, self.state)
-        api.assert_not_called()
+        api.assert_called_once_with(self.new)
         build.assert_not_called()
+        self.assertEqual("success", state_store.load_state(self.state_path)["phase"])
+
+    def test_approved_migration_requests_backup_before_activation(self):
+        self.policy.return_value = True
+        with patch.object(deploy, "require_services"), patch.object(deploy, "prepare", return_value=(self.old, self.new)), \
+                patch.object(deploy, "verify_ci", return_value={"html_url": "https://github.com/test"}), \
+                patch.object(deploy, "deploy_release") as build:
+            deploy.auto_deploy(self.root, self.state_path, self.state)
+        self.assertTrue(build.call_args.kwargs["backup_required"])
 
     def test_failed_interrupted_or_uninitialized_state_blocks_new_commits(self):
         for state in ({}, {**self.state, "phase": "failed"}, {**self.state, "phase": "deploying"}):
@@ -123,6 +136,7 @@ class AutoDeployTest(unittest.TestCase):
             deploy.auto_deploy(self.root, self.state_path, self.state)
         build.assert_not_called()
         self.assertEqual("success", state_store.load_state(self.state_path)["phase"])
+        self.policy.assert_not_called()
 
     def test_build_failure_keeps_successful_sha_and_pauses_future_runs(self):
         def command(arguments, **kwargs):
@@ -148,6 +162,13 @@ class AutoDeployTest(unittest.TestCase):
             deploy.deploy_release(self.root, self.old, self.new, self.state_path, self.state)
         state = state_store.load_state(self.state_path)
         self.assertEqual(("success", self.new), (state["phase"], state["last_success_sha"]))
+
+    def test_migration_flag_is_forwarded_to_build_script(self):
+        with patch.object(deploy, "git", side_effect=[self.old, ""]), \
+                patch.object(deploy.subprocess, "run") as command, patch.object(deploy, "require_services"), \
+                patch.object(deploy, "require_ready"):
+            deploy.deploy_release(self.root, self.old, self.new, self.state_path, self.state, backup_required=True)
+        self.assertEqual("--backup-before-activate", command.call_args.args[0][-1])
 
     def test_exit_zero_with_wrong_release_is_failure(self):
         with patch.object(deploy, "git", side_effect=[self.old, ""]), \

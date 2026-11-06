@@ -1,5 +1,7 @@
 """Real local Git repositories; only CI responses, build and services are simulated."""
 
+import hashlib
+import json
 from pathlib import Path
 import subprocess
 from tempfile import TemporaryDirectory
@@ -62,13 +64,30 @@ class PullDeployIntegrationTest(unittest.TestCase):
         self.assertEqual(1, self.builds)
         self.assertEqual(1, api.call_count)
 
+    def test_approved_migration_bootstrap_uses_running_release_and_requests_backup(self):
+        path = "backend/src/main/resources/db/migration/V33__new.sql"
+        sql = "CREATE TABLE new_table(id INT);"
+        self.publish(path, sql)
+        manifest = {"version": 1, "migrations": {path: {"sha256": hashlib.sha256(sql.encode()).hexdigest(),
+                    "backwardCompatible": True, "reason": "Independent table"}}}
+        self.new = self.publish("deployserver/linux/auto-migrations.json", json.dumps(manifest))
+        # One-time agent upgrade pulls scripts without changing the running JAR marker.
+        self.command("-C", self.root, "pull", "--ff-only", "origin", "main")
+        with patch.object(deploy, "PUBLIC_GIT_URL", str(self.origin)), patch.object(deploy, "require_services"), \
+                patch.object(deploy, "verify_ci", return_value={"html_url": "https://github.com/test"}), \
+                patch.object(subprocess, "run", side_effect=self.build_command) as command:
+            deploy.auto_deploy(self.root, self.state_path, self.state)
+        builds = [call.args[0] for call in command.call_args_list if call.args[0][0] == "bash"]
+        self.assertEqual("--backup-before-activate", builds[0][-1])
+        self.assertEqual(self.new, state_store.load_state(self.state_path)["last_success_sha"])
+
     def test_actual_java_migration_diff_blocks_before_merge(self):
         self.publish("backend/src/main/java/db/migration/V100__test.java", "migration fixture")
         with patch.object(deploy, "PUBLIC_GIT_URL", str(self.origin)), patch.object(deploy, "require_services"), \
-                patch.object(deploy, "verify_ci") as api, self.assertRaises(RuntimeError):
+                patch.object(deploy, "verify_ci", return_value={"html_url": "https://github.com/test"}) as api, self.assertRaises(RuntimeError):
             deploy.auto_deploy(self.root, self.state_path, self.state)
         self.assertEqual(self.old, self.command("-C", self.root, "rev-parse", "HEAD"))
-        api.assert_not_called()
+        api.assert_called_once()
 
     def test_dirty_checkout_stops_before_api_and_preserves_user_file(self):
         (self.root / "local.txt").write_text("preserve me")

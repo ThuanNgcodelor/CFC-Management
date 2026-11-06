@@ -80,9 +80,15 @@ List variable names (not values) that deploy relies on. Add a row when a new one
 | GitHub API timeout / job bound | 30 seconds per API call; at most 100 jobs, rejects larger runs instead of accepting a partial list; API failures stop deploy | `deployserver/linux/ci-deploy.py` |
 | Deploy concurrency lock | `.git/cfcbase-deploy.lock`, non-blocking shared lock for manual/auto wrapper invocations | `deployserver/linux/ci-deploy.py` |
 | Auto-deploy state | `.git/cfcbase-deploy-state.json`, atomic write, successful SHA and deploying/failed/success phases; interrupted/failed attempts pause all auto-deploys until acknowledged manual retry succeeds | `ci_deploy_state.py`; no credentials, no TTL |
-| Migration gate | SQL `backend/src/main/resources/db/migration` and Java `backend/src/main/java/db/migration` changes since last successful release require manual deploy | `ci-deploy.py --auto` |
+| Migration gate | New SQL versions above deployed baseline may auto-deploy only with matching SHA256, backwardCompatible=true and review reason in candidate `auto-migrations.json`; changed/deleted/Java/undeclared migrations stay manual | `ci_deploy_migrations.py`; V33 declared, no runtime cache |
 | Auto-deploy Git transport | Fixed public repository HTTPS URL, noninteractive; no SSH agent/PAT, does not rewrite origin | `ci-deploy.py --auto` |
 | User timer cadence / timeout | OnBootSec 2min; OnUnitInactiveSec 5min; RandomizedDelaySec 30s; AccuracySec 30s; service timeout 30min; no Restart | `bookingbase-deploy.service` / `.timer`, opt-in via installer |
 | User service build environment | Captures only PATH/JAVA_HOME in user config `cfcbase/deploy.env`, mode 600; rerun installer if tool paths change. GIT_TERMINAL_PROMPT=0, PYTHONUNBUFFERED=1 and noninteractive SSH policy in unit. Production `.env` unchanged | `install-deploy-timer.py`; no secrets copied |
 
 Cấu hình mặc định hạ tầng được đóng gói trong `infrastructure-defaults.properties` qua `@PropertySource`, nên alias `CFC_INFRA_*` không còn phụ thuộc file application YAML ignored. Các property nguồn có ưu tiên cao hơn vẫn được giữ. Khi đã lưu WEB, bật/tắt giám sát bằng web; env chỉ là fallback trước lần lưu đầu. Không thêm cache hoặc broker.
+
+| Deploy setting | Behavior | Location / lifecycle |
+| --- | --- | --- |
+| Deploy migration backup | `build-prod.sh --backup-before-activate`: after build/smoke, before JAR/marker swap; failure stops activation | Auto approved migrations and manual schema changes/unknown baseline require it. Existing BOOKINGBASE_BACKUP_DIR/KEEP/DB_CONTAINER/DB_NAME apply; no new env or secret |
+| Backup publishing | umask 077; gzip + schema/table/footer validation, nanosecond filenames; retention 24 by existing BOOKINGBASE_BACKUP_KEEP | `backup-database.sh`; failed dump never deletes older backups. Consumes full stream, no early grep pipe close |
+| CI deploy jobs | Frontend lint and build, Backend tests, Deployment script checks; exact SHA/push-main/latest attempt + overall success | `ci-deploy.py`; CI pending/failure leaves release unchanged |

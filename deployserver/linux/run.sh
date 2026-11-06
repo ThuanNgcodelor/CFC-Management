@@ -287,10 +287,8 @@ fi
 
 log "Khoi dong Backend + Frontend production JAR..."
 : > "$BACKEND_LOG"
-start_backend
-
 BACKEND_STARTUP_TIMEOUT="${BACKEND_STARTUP_TIMEOUT:-120}"
-if ! wait_for_backend "$BACKEND_STARTUP_TIMEOUT"; then
+if ! start_backend || ! wait_for_backend "$BACKEND_STARTUP_TIMEOUT"; then
   if ! rollback_backend_release; then
     fail "Backend moi khong san sang va rollback that bai. Tunnel duoc giu nguyen; can kiem tra $BACKEND_LOG"
   fi

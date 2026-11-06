@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+umask 077
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
@@ -8,7 +9,7 @@ CONTAINER_NAME="${BOOKINGBASE_DB_CONTAINER:-booking_db}"
 DATABASE_NAME="${BOOKINGBASE_DB_NAME:-booking_db}"
 KEEP_COUNT="${BOOKINGBASE_BACKUP_KEEP:-24}"
 LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/bookingbase-database-backup.lock"
-TIMESTAMP="$(date '+%Y-%m-%d_%H-%M-%S')"
+TIMESTAMP="$(date '+%Y-%m-%d_%H-%M-%S_%N')"
 FINAL_FILE="$BACKUP_DIR/${DATABASE_NAME}_${TIMESTAMP}.sql.gz"
 TEMP_FILE="$BACKUP_DIR/.${DATABASE_NAME}_${TIMESTAMP}.sql.gz.tmp"
 
@@ -21,7 +22,7 @@ fail() {
   exit 1
 }
 
-for command_name in docker gzip zgrep flock find sort sed; do
+for command_name in docker gzip awk flock find sort sed; do
   command -v "$command_name" >/dev/null 2>&1 || fail "Khong tim thay lenh '$command_name'."
 done
 
@@ -47,6 +48,8 @@ docker exec "$CONTAINER_NAME" sh -c '
   : "${MYSQL_PASSWORD:?MYSQL_PASSWORD is missing}"
   exec env MYSQL_PWD="$MYSQL_PASSWORD" mysqldump \
     --user="$MYSQL_USER" \
+    --comments \
+    --dump-date \
     --single-transaction \
     --quick \
     --routines \
@@ -62,8 +65,13 @@ docker exec "$CONTAINER_NAME" sh -c '
 
 [[ -s "$TEMP_FILE" ]] || fail "File backup rong."
 gzip -t "$TEMP_FILE" || fail "File gzip khong hop le."
-zgrep -q -m1 'CREATE DATABASE' "$TEMP_FILE" || fail "Backup thieu CREATE DATABASE."
-zgrep -q -m1 'CREATE TABLE' "$TEMP_FILE" || fail "Backup thieu CREATE TABLE."
+# Consume the whole stream: grep -q can close its pipe early on large dumps.
+gzip -cd -- "$TEMP_FILE" | awk '
+  /CREATE DATABASE/ { database = 1 }
+  /CREATE TABLE/ { table = 1 }
+  /-- Dump completed on/ { complete = 1 }
+  END { if (!database || !table || !complete) exit 1 }
+' || fail "Backup thieu schema/table hoac dau ket thuc mysqldump; khong kich hoat release."
 
 chmod 600 "$TEMP_FILE"
 mv -- "$TEMP_FILE" "$FINAL_FILE"
