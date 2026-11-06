@@ -33,21 +33,21 @@ Trước khi tự động hóa, sửa và thử script Linux để:
 4. Khi health-check lỗi, khôi phục JAR cũ và khởi động lại phiên bản cũ; báo rõ nếu rollback lỗi.
 5. Không rollback database tự động. Flyway thường tiến schema về phía trước; phải xác nhận migration tương thích ngược trước mỗi lần deploy. Backup DB vẫn cần theo chính sách hiện tại.
 
-`run.sh` hiện dừng backend và Cloudflare Tunnel trước khi khởi động bản mới. Chặng này cần giảm thời gian gián đoạn và bảo đảm Tunnel được mở lại cả khi khởi động thất bại. Chưa chạy script trên production.
+`run.sh` giữ Cloudflare Tunnel chạy khi backend khởi động lại; nếu health-check hoặc xác minh thất bại, script thử rollback JAR trước. Đã chạy thành công một lần trên Fedora; vẫn cần theo dõi các lần deploy và thử quy trình rollback có kiểm soát. Database không tự rollback.
 
 ### Chặng 3 — Chuẩn bị quyền deploy trên Fedora
 
 1. Xác nhận repo được giữ private và bật bảo vệ nhánh `main`/yêu cầu CI xanh.
-2. Tạo user Linux riêng cho runner, không dùng tài khoản cá nhân.
-3. Cài runner như systemd service và giới hạn runner chỉ nhận workflow của repo này.
-4. Đánh giá quyền Docker: quyền truy cập Docker socket gần tương đương quyền root. Không cấp rộng hơn mức bắt buộc; workflow không được chạy code từ pull request không tin cậy trên runner production.
-5. Runner chỉ cần kết nối đi tới GitHub. Không đưa `.env`, Cloudflare credential, DB password hoặc private key vào GitHub log/artifact.
+2. Theo lựa chọn ngày 06/11/2026, giữ nguyên repo `~/Works/BookingBase`, `.env`, Cloudflare credential và user service `david-nguyen`; không chuyển repo hay runtime sang user mới.
+3. Cài self-hosted runner như systemd service dưới user `david-nguyen`, gắn label riêng `cfcbase-production` và chỉ kết nối tới repo CFCBase.
+4. User này thuộc nhóm `wheel` và `docker`, nên runner có quyền gần tương đương root. Chỉ cho phép workflow deploy thủ công từ `main`, có duyệt production; không chạy pull request hoặc workflow từ nhánh không tin cậy trên runner này.
+5. Runner dùng checkout hiện có để gọi `git pull --ff-only` và deploy script. Không truyền `.env`, Cloudflare credential, DB password hoặc private key qua GitHub Actions/artifact/log.
 
 Việc cài runner là thao tác trên Fedora, chưa thực hiện từ workspace này.
 
 ### Chặng 4 — Deploy có người duyệt
 
-Sau khi CI xanh, workflow deploy được kích hoạt thủ công qua GitHub Actions và chạy trên runner Fedora. Runner lấy đúng source/artifact theo commit, gọi deploy script an toàn, health-check rồi báo thành công/thất bại. Giai đoạn đầu giữ xác nhận thủ công trước production.
+Sau khi CI xanh và runner đã Online, workflow `workflow_dispatch` được kích hoạt thủ công từ `main`, có GitHub Environment `production` yêu cầu người duyệt. Job chạy dưới `david-nguyen`, cập nhật checkout dùng chung rồi gọi `build-prod.sh`; health-check/rollback do script thực hiện. Không triển khai từ pull request.
 
 ### Chặng 5 — Tự deploy sau khi ổn định
 
