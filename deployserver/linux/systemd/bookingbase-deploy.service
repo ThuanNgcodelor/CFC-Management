@@ -1,0 +1,13 @@
+[Unit]
+Description=CFCBase pull main and deploy after successful CI
+
+[Service]
+Type=oneshot
+WorkingDirectory=@REPO_ROOT@
+EnvironmentFile=@DEPLOY_ENV@
+Environment=PYTHONUNBUFFERED=1
+Environment=GIT_TERMINAL_PROMPT=0
+Environment="GIT_SSH_COMMAND=/usr/bin/ssh -oBatchMode=yes -oConnectTimeout=15"
+ExecStart=@PYTHON@ @DEPLOY_SCRIPT@ --auto
+TimeoutStartSec=30min
+Nice=10

@@ -375,7 +375,7 @@ Quy trình Linux được chia thành:
 3. `backup-database.sh`/`restore-database.sh`: backup gzip có lock, giữ số bản cấu hình được, restore thủ công có kiểm soát.
 4. systemd timer chạy backup; các script Windows tương đương phục vụ môi trường Windows.
 
-Kế hoạch CI/CD ở [DEPLOYMENT_CICD_PLAN.md](DEPLOYMENT_CICD_PLAN.md). Người dùng xác nhận CI xanh, deploy script Chặng 2 đã chạy trên Fedora, runner đã online và hai required checks đã chọn trên GitHub. Ngày 06/11/2026 người dùng giữ repo Public: Chặng 4 chuyển sang Fedora chủ động pull từ main sau khi kiểm tra CI đúng SHA và đủ hai job thành công. Wrapper có chế độ chỉ kiểm tra và deploy thủ công; tái sử dụng build/health-check/rollback JAR hiện có, không tự rollback DB. Chưa chạy wrapper trên Fedora; cần dừng/gỡ runner production cũ. Chưa bật tự deploy hoặc kiểm chứng rollback database.
+Kế hoạch CI/CD ở [DEPLOYMENT_CICD_PLAN.md](DEPLOYMENT_CICD_PLAN.md). Repo Public; CI chạy trên GitHub-hosted runners. Người dùng gửi log Chặng 4 deploy `833d18d` thành công trên Fedora, backend/tunnel active, checkout sạch và runner user service đã disable. Chặng 5 có code local cho user timer opt-in: fetch main qua public HTTPS, kiểm tra CI đúng SHA rồi deploy; bỏ qua release đã chạy, chặn migration mới ở auto và dừng mọi auto-deploy sau lỗi/gián đoạn tới khi retry thủ công thành công. Bắt buộc bootstrap bằng deploy thủ công với wrapper mới. State/lock nằm trong .git, installer chỉ lưu tool PATH/JAVA_HOME; không có secret production đưa lên GitHub. Timer chưa cài trên Fedora; rollback có chủ đích và API có đăng nhập chưa kiểm chứng qua log người dùng.
 
 Không ghi token Cloudflare, Telegram, JWT, SMTP, VAPID hay database password vào master này.
 

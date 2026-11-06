@@ -75,4 +75,9 @@ List variable names (not values) that deploy relies on. Add a row when a new one
 | --- | --- | --- |
 | CI repository / workflow gate | Public `ThuanNgcodelor/CFC-Management`, workflow `ci.yml`; push/main, exact SHA and both `Frontend lint and build` / `Backend tests` successful | `deployserver/linux/ci-deploy.py`; no PAT or new env variable |
 | GitHub API timeout / job bound | 30 seconds per API call; at most 100 jobs, rejects larger runs instead of accepting a partial list; API failures stop deploy | `deployserver/linux/ci-deploy.py` |
-| Deploy concurrency lock | `.git/cfcbase-deploy.lock`, non-blocking lock for wrapper invocations; no timer or automatic retries | `deployserver/linux/ci-deploy.py` |
+| Deploy concurrency lock | `.git/cfcbase-deploy.lock`, non-blocking shared lock for manual/auto wrapper invocations | `deployserver/linux/ci-deploy.py` |
+| Auto-deploy state | `.git/cfcbase-deploy-state.json`, atomic write, successful SHA and deploying/failed/success phases; interrupted/failed attempts pause all auto-deploys until acknowledged manual retry succeeds | `ci_deploy_state.py`; no credentials, no TTL |
+| Migration gate | SQL `backend/src/main/resources/db/migration` and Java `backend/src/main/java/db/migration` changes since last successful release require manual deploy | `ci-deploy.py --auto` |
+| Auto-deploy Git transport | Fixed public repository HTTPS URL, noninteractive; no SSH agent/PAT, does not rewrite origin | `ci-deploy.py --auto` |
+| User timer cadence / timeout | OnBootSec 2min; OnUnitInactiveSec 5min; RandomizedDelaySec 30s; AccuracySec 30s; service timeout 30min; no Restart | `bookingbase-deploy.service` / `.timer`, opt-in via installer |
+| User service build environment | Captures only PATH/JAVA_HOME in user config `cfcbase/deploy.env`, mode 600; rerun installer if tool paths change. GIT_TERMINAL_PROMPT=0, PYTHONUNBUFFERED=1 and noninteractive SSH policy in unit. Production `.env` unchanged | `install-deploy-timer.py`; no secrets copied |

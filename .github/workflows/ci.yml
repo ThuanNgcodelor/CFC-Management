@@ -13,6 +13,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  deployment-scripts:
+    name: Deployment script checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lấy source code
+        uses: actions/checkout@v7
+      - name: Kiểm tra cơ chế deploy và timer
+        run: python3 -m unittest discover -s deployserver/linux/tests -v
+
   frontend:
     name: Frontend lint and build
     runs-on: ubuntu-latest

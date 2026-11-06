@@ -41,7 +41,7 @@ Trước khi tự động hóa, sửa và thử script Linux để:
 
 Người dùng quyết định giữ repository **Public**. Giữ cùng checkout `~/Works/BookingBase`, `.env`, Cloudflare credential, user `david-nguyen` và backend/tunnel user services hiện có. Repo GitHub hiện mang tên `ThuanNgcodelor/CFC-Management`, URL cũ `CFCBase` được chuyển hướng.
 
-Do runner nằm trên production dưới user thuộc `wheel`/`docker`, phương án vận hành tiếp theo chuyển sang **Fedora chủ động pull**, không tạo workflow deploy trên runner này. Trước lần deploy đầu tiên, chạy `systemctl --user disable --now cfcbase-runner.service`, rồi gỡ runner trong GitHub Settings → Actions → Runners. Việc dừng/gỡ này chưa được xác nhận trên Fedora; không đánh dấu đã hoàn thành thay người dùng. CI vẫn chạy trên `ubuntu-latest`.
+Do runner nằm trên production dưới user thuộc `wheel`/`docker`, phương án vận hành tiếp theo chuyển sang **Fedora chủ động pull**, không tạo workflow deploy trên runner này. Trước lần deploy đầu tiên, chạy `systemctl --user disable --now cfcbase-runner.service`, rồi gỡ runner trong GitHub Settings → Actions → Runners. Người dùng đã gửi log xác nhận user service runner bị disable/stop; thao tác gỡ đăng ký trên GitHub chưa được xác nhận. CI vẫn chạy trên `ubuntu-latest`.
 
 ### Chặng 4 — Deploy thủ công từ Fedora sau khi CI đạt
 
@@ -66,11 +66,59 @@ Lệnh pull đầu tiên chỉ để nhận công cụ mới, không tự build/
 python3 deployserver/linux/ci-deploy.py --deploy
 ```
 
-Từ các lần sau, wrapper tự fetch/kiểm tra/cập nhật, không cần git pull riêng. Chỉ chạy dưới `david-nguyen`, không dùng sudo. Đã kiểm tra CLI và test gate CI bằng dữ liệu mô phỏng; chưa chạy wrapper trên Fedora hoặc deploy production. Không có workflow CD hoặc timer tự deploy nào được bật ở chặng này.
+Từ các lần sau, wrapper tự fetch/kiểm tra/cập nhật, không cần git pull riêng. Chỉ chạy dưới `david-nguyen`, không dùng sudo. Người dùng đã gửi log deploy thành công release `833d18d3872beec05e608d41b60877ea6368681b`: build/smoke/schema đạt, backend và tunnel active, checkout sạch sau build. Smoke API có đăng nhập bị bỏ qua vì chưa có token; chưa kiểm chứng rollback lỗi trên production. Marker `-dirty` lúc build có thể do thư mục staging, không đồng nghĩa checkout sau build còn bẩn; Chặng 5 bổ sung ignore riêng cho thư mục sinh tự động này.
 
-### Chặng 5 — Tự deploy sau khi ổn định
+### Chặng 5 — Fedora tự kiểm tra và deploy
 
-Sau vài lần deploy thủ công và kiểm chứng rollback, có thể cài systemd user timer trên Fedora để kiểm tra main/CI và triển khai phiên bản đạt. Cần bổ sung dấu release thành công, chống lặp commit lỗi và chặn retry migration lỗi trước khi bật. Chưa triển khai timer; hiện push code chỉ chạy CI.
+**Đã triển khai local ngày 06/11/2026, chưa cài/bật trên Fedora:** systemd user timer gọi `ci-deploy.py --auto`. CI có thêm job `Deployment script checks` để chạy kiểm thử wrapper/state/installer. Các job đều chạy trên GitHub-hosted runners.
+
+Luồng sau khi bật: push nhánh → CI → merge vào main → CI push/main xanh → Fedora fetch main qua HTTPS Public và deploy sau lần kiểm tra tiếp theo (khoảng 5 phút, cộng jitter và thời gian build). Không cần GitHub runner, PAT hoặc SSH agent. Git remote hiện có không bị đổi. Timer không nhận hoặc thực thi code từ PR.
+
+Các điều kiện của auto-deploy:
+
+- Bắt buộc có một lần deploy thủ công thành công bằng script mới để ghi baseline `.git/cfcbase-deploy-state.json`. Không suy đoán baseline từ HEAD hoặc marker cũ có `-dirty`.
+- Bỏ qua commit đã chạy thành công, không build/restart hoặc gọi GitHub API lại cho cùng release. Vẫn fetch Git để phát hiện bản mới. Backend/tunnel phải active, marker release phải khớp trạng thái thành công; khi chúng lệch nhau thì chặn, không tự sửa.
+- Checkout phải là main sạch, fast-forward được. CI phải thành công đúng SHA và đủ hai job; job kiểm thử deployment cũng phải thành công vì được tính trong kết quả workflow tổng. CI chưa xong/đỏ thì chờ, API lỗi thì không deploy và kiểm tra lại ở lần timer tiếp theo.
+- Thay đổi bất kỳ file trong migration SQL hoặc Java so với release thành công gần nhất đều cần rà soát và `--deploy` thủ công. Không tự chạy migration mới qua timer.
+- Trước khi merge/build phải ghi trạng thái `deploying`; sau khi build, health/schema và trạng thái release/dịch vụ đạt mới ghi `success`. Lỗi ghi `failed`; timeout/mất điện có thể để lại `deploying`. Cả hai trạng thái đều chặn mọi lần auto tiếp theo, kể cả khi main có commit khác.
+- Chỉ retry sau khi xử lý nguyên nhân và chủ động chạy `--deploy --retry-failed`. Không reset code, không xóa state để bỏ qua chặn, không tự sửa/rollback DB. Wrapper dùng một lock cho manual/auto; không chạy build-prod riêng đồng thời với timer.
+
+**Cài lần đầu trên Fedora, sau khi PR Chặng 5 đã merge và CI main xanh:**
+
+```bash
+cd ~/Works/BookingBase
+git pull --ff-only origin main
+python3 deployserver/linux/ci-deploy.py --deploy
+python3 deployserver/linux/ci-deploy.py --status
+```
+
+Deploy thủ công này cần chạy một lần để tạo baseline mới; chỉ tiếp tục nếu thành công. Bật linger để user services tồn tại sau logout/reboot nếu chưa có:
+
+```bash
+sudo loginctl enable-linger david-nguyen
+python3 deployserver/linux/install-deploy-timer.py
+systemctl --user start bookingbase-deploy.service
+systemctl --user list-timers bookingbase-deploy.timer --no-pager
+journalctl --user -u bookingbase-deploy.service -n 80 --no-pager
+```
+
+Installer không chạy bằng sudo; kiểm tra main sạch, baseline/release/dịch vụ và linger trước khi bật. Nó lưu PATH/JAVA_HOME hiện tại cho môi trường systemd, không sao chép secret production. Lần start service đầu tiên sẽ báo không cần build lại nếu main chưa thay đổi. Python 3 và các tool build phải có sẵn như khi deploy thủ công. Thay đường dẫn JDK/Node thì chạy lại installer để cập nhật môi trường.
+
+Timer kiểm tra sau boot 2 phút, rồi 5 phút sau khi lần chạy trước kết thúc, có độ trễ ngẫu nhiên tối đa 30 giây và AccuracySec 30 giây. Một lượt tối đa 30 phút; timeout sẽ để lại state chặn retry. Không thêm Restart tự động. GitHub API public giới hạn 60 request/giờ/IP; chu kỳ này dùng tối đa khoảng 24 request/giờ khi liên tục có bản mới, và không gọi API khi không có bản mới. Nếu chung IP có tải khác/rate-limit, wrapper dừng lượt đó, không deploy. [GitHub rate limits](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api), [systemd timer](https://www.freedesktop.org/software/systemd/man/latest/systemd.timer.html).
+
+**Tạm dừng lịch tự deploy:**
+
+```bash
+systemctl --user disable --now bookingbase-deploy.timer
+```
+
+Lệnh dừng lên lịch; nếu service deploy đang chạy, chờ nó hoàn tất rồi mới thao tác manual. Bật lại bằng `systemctl --user enable --now bookingbase-deploy.timer`. Nếu auto đã bị chặn do failed/deploying, bật timer không xóa chặn. Đọc journal và backend log để xử lý; sau đó retry có chủ đích:
+
+```bash
+python3 deployserver/linux/ci-deploy.py --deploy --retry-failed
+```
+
+Kiểm thử local: `python3 -m unittest discover -s deployserver/linux/tests -v` gồm 25 test, trong đó có repository Git tạm thật. Build/service/GitHub được mô phỏng để không chạm server. Chưa thử timer, reboot, đường truyền API hoặc rollback có chủ đích trên Fedora.
 
 ### Chặng 6 — Giảm downtime (tùy chọn)
 
