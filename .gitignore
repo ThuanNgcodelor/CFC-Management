@@ -8,6 +8,7 @@ frontend/.env.*
 
 # Backend 
 backend/target/
+/backend/target-build/
 backend/bin/
 backend/.settings/
 backend/.classpath

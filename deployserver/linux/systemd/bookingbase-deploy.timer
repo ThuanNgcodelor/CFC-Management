@@ -1,0 +1,12 @@
+[Unit]
+Description=Check CFCBase main and CI every five minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=5min
+RandomizedDelaySec=30s
+AccuracySec=30s
+Unit=bookingbase-deploy.service
+
+[Install]
+WantedBy=timers.target
