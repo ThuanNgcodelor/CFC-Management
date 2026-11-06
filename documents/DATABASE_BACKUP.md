@@ -1,6 +1,6 @@
 # Backup Và Restore Database CFCBase
 
-Cập nhật: **2026-09-01** (Production Baseline: 35 Bảng Master CSDL, 338 Nhân sự T8-2026, Cấu hình AI OCR `hr_system_settings`, Hồ sơ đa định dạng `hr_employee_documents`).
+Baseline lịch sử: **2026-09-01** (Production Baseline: 35 Bảng Master CSDL, 338 Nhân sự T8-2026, Cấu hình AI OCR `hr_system_settings`, Hồ sơ đa định dạng `hr_employee_documents`).
 
 ## 1. Chính sách hiện tại
 
@@ -55,3 +55,11 @@ Không truyền password trong command line. Script đọc `MYSQL_USER`/`MYSQL_P
 7. `hr_employment_contracts` (Hợp đồng lao động chính thức).
 8. `hr_monthly_rosters` & `hr_monthly_roster_items` (Quân số các tháng T6, T7, T8).
 9. `flyway_schema_history` (12 migration versions V1..V12).
+
+## 5. Backup trước auto-deploy migration — 06/11/2026
+
+Các số liệu bảng/nhân sự/version phía trên là baseline lịch sử, không phải kiểm kê production hiện tại. Bản deploy-agent bổ sung local dùng cùng script để backup sau build/smoke và trước khi thay JAR khi có migration. V33 thuộc nhóm được phép auto theo review tương thích ngược; xem [quy trình CI/CD](DEPLOYMENT_CICD_PLAN.md).
+
+Dump bắt buộc gzip hợp lệ, có schema/table và footer mysqldump hoàn tất; pipeline lỗi hoặc dump thiếu footer bị loại, không kích hoạt ứng dụng mới và không xóa backup cũ. File mới có tên dạng `booking_db_YYYY-MM-DD_HH-MM-SS_NANOSECONDS.sql.gz`; script restore vẫn nhận cả tên cũ và mới qua đường dẫn tệp. Quyền 0600 được đặt từ lúc tạo; retention và lock dùng chung với backup định kỳ.
+
+Backup khi ứng dụng cũ còn chạy là snapshot InnoDB; không tự khôi phục snapshot đó khi deploy lỗi vì có thể mất dữ liệu phát sinh sau snapshot. Rollback tự động chỉ áp dụng JAR; schema phải tương thích ngược và restore vẫn là thao tác chủ động theo quy trình. Với credential MikroTik mã hóa, phải backup riêng tệp khóa ngoài checkout cùng DB; dump không chứa khóa giải mã. Chưa xác minh dump/restore thực tế cho luồng mới trên Fedora.

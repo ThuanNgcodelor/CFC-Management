@@ -16,6 +16,7 @@ RELEASE_VERSION="$TARGET_DIR/release-version.txt"
 NEW_RELEASE_VERSION="$RELEASE_VERSION.new"
 PREVIOUS_RELEASE_VERSION="$RELEASE_VERSION.previous"
 BUILD_ONLY=false
+BACKUP_BEFORE_ACTIVATE=false
 RUN_ARGUMENTS=()
 
 # Vite flags are resolved at build time. Load the same private production env
@@ -34,6 +35,7 @@ usage() {
 Cach dung:
   ./deployserver/linux/build-prod.sh
   ./deployserver/linux/build-prod.sh --build-only
+  ./deployserver/linux/build-prod.sh --backup-before-activate
   ./deployserver/linux/build-prod.sh --initialize-hr-schema
 
 --initialize-hr-schema  Build, sau do khoi tao Flyway cho database legacy theo
@@ -62,6 +64,9 @@ case "${1:-}" in
     ;;
   --build-only)
     BUILD_ONLY=true
+    ;;
+  --backup-before-activate)
+    BACKUP_BEFORE_ACTIVATE=true
     ;;
   --initialize-hr-schema)
     RUN_ARGUMENTS=(--initialize-hr-schema)
@@ -115,6 +120,11 @@ if [[ "$BUILD_ONLY" == true ]]; then
   exit 0
 fi
 
+if [[ "$BACKUP_BEFORE_ACTIVATE" == true ]]; then
+  log "Backup database truoc khi kich hoat migration; ban cu van dang phuc vu..."
+  bash "$SCRIPT_DIR/backup-database.sh" || fail "Backup khong thanh cong; giu nguyen JAR/dich vu cu."
+fi
+
 log "[4/4] Kich hoat JAR moi..."
 mkdir -p -- "$TARGET_DIR"
 cp -- "$STAGING_JAR" "$NEW_TARGET_JAR"
@@ -137,4 +147,18 @@ mv -f -- "$NEW_RELEASE_VERSION" "$RELEASE_VERSION"
 rm -rf -- "$STAGING_DIR"
 
 log "Build thanh cong; khoi dong production..."
-exec "$SCRIPT_DIR/run.sh" "${RUN_ARGUMENTS[@]}"
+if "$SCRIPT_DIR/run.sh" "${RUN_ARGUMENTS[@]}"; then
+  exit 0
+else
+  activation_status=$?
+  # run.sh handles health-check rollback. Also restore disk artifacts when its
+  # preflight fails before restarting the old process (missing tools/config).
+  if [[ -f "$PREVIOUS_JAR" ]] && [[ "$(head -n 1 "$RELEASE_VERSION")" == "$git_commit" ]]; then
+    cp -- "$PREVIOUS_JAR" "$TARGET_JAR.rollback"
+    mv -f -- "$TARGET_JAR.rollback" "$TARGET_JAR"
+    cp -- "$PREVIOUS_RELEASE_VERSION" "$RELEASE_VERSION.rollback"
+    mv -f -- "$RELEASE_VERSION.rollback" "$RELEASE_VERSION"
+    log "Da khoi phuc JAR/marker tren dia; kiem tra log run.sh de biet trang thai dich vu."
+  fi
+  exit "$activation_status"
+fi

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "migrations": {
+    "backend/src/main/resources/db/migration/V33__add_router_web_connection.sql": {
+      "sha256": "94994f89e7180a9817a4b950947e9f6846ad338ccfec0cc075794edc42c00ccf",
+      "backwardCompatible": true,
+      "reason": "Chỉ tạo bảng cấu hình RouterOS độc lập; không sửa dữ liệu/bảng hiện có. JAR cũ không đọc bảng này và vẫn chạy được khi bảng tồn tại."
+    }
+  }
+}
