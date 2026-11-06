@@ -27,11 +27,13 @@ public class InfrastructureService {
     }
     private final JdbcTemplate jdbc;
     private final InfrastructureProperties properties;
+    private final RouterConnectionService connections;
+    private final RouterOsClient routerClient;
     // Spring Boot 4 in this project does not provide a Jackson 2 ObjectMapper bean.
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public InfrastructureService(JdbcTemplate jdbc, InfrastructureProperties properties) {
-        this.jdbc = jdbc; this.properties = properties;
+    public InfrastructureService(JdbcTemplate jdbc, InfrastructureProperties properties, RouterConnectionService connections, RouterOsClient routerClient) {
+        this.jdbc = jdbc; this.properties = properties; this.connections = connections; this.routerClient = routerClient;
     }
 
     @Transactional(readOnly = true)
@@ -84,27 +86,28 @@ public class InfrastructureService {
     }
 
     public StatusResponse routerStatus() {
+        var configuration = connections.metadata();
+        if (!configuration.passwordConfigured()) return new StatusResponse("UNKNOWN", null, null, null, null, null, null, null, null, "Chưa cấu hình tài khoản MikroTik; mở Kết nối MikroTik để thiết lập.");
+        if (!configuration.enabled()) return new StatusResponse("UNKNOWN", null, null, null, null, null, null, null, null, "Đã tắt giám sát MikroTik.");
         return jdbc.query("SELECT status,software_version,uptime,cpu_load,free_memory_bytes,total_memory_bytes,interface_up_count,interface_down_count,checked_at,last_error FROM network_device_status s JOIN network_devices d ON d.id=s.device_id WHERE d.device_type='ROUTER' AND d.active=TRUE AND d.management_ip=? ORDER BY s.checked_at DESC LIMIT 1",
                 rs -> rs.next() ? new StatusResponse(rs.getString(1), rs.getString(2), rs.getString(3), (Integer) rs.getObject(4), rs.getObject(5, Long.class), rs.getObject(6, Long.class), (Integer) rs.getObject(7), (Integer) rs.getObject(8), rs.getTimestamp(9).toInstant().toString(), rs.getString(10)) : notConfigured(), configuredRouterIp());
     }
 
     @Scheduled(fixedDelayString = "${cfc.infrastructure.poll-interval-ms:60000}")
-    public void pollRouter() {
-        if (!properties.monitoringEnabled() || !routerConfigurationValid()) return;
-        List<String> ids = jdbc.query("SELECT id FROM network_devices WHERE active=TRUE AND device_type='ROUTER' AND management_ip=? LIMIT 1", (rs, row) -> rs.getString(1), configuredRouterIp());
+    public synchronized void pollRouter() {
+        var metadata = connections.metadata();
+        if (!metadata.enabled() || !metadata.passwordConfigured()) return;
+        String ip = URI.create(metadata.baseUrl()).getHost();
+        List<String> ids = jdbc.query("SELECT id FROM network_devices WHERE active=TRUE AND device_type='ROUTER' AND management_ip=? LIMIT 1", (rs, row) -> rs.getString(1), ip);
         if (ids.isEmpty()) return;
-        String id = ids.get(0);
         try {
-            URI uri = URI.create(properties.routerBaseUrl());
-            RestClient client = RestClient.builder().baseUrl(uri.toString()).requestFactory(timeoutRequestFactory())
-                    .defaultHeaders(headers -> headers.setBasicAuth(properties.routerUsername(), properties.routerPassword())).build();
-            JsonNode resource = mapper.readTree(client.get().uri("/rest/system/resource").retrieve().body(String.class));
-            JsonNode interfaces = mapper.readTree(client.get().uri("/rest/interface").retrieve().body(String.class));
-            int up = 0, down = 0;
-            if (interfaces != null && interfaces.isArray()) for (JsonNode item : interfaces) { if (item.path("running").asBoolean(false)) up++; else down++; }
-            saveStatus(id, "ONLINE", text(resource, "version"), text(resource, "uptime"), integer(resource, "cpu-load"), number(resource, "free-memory"), number(resource, "total-memory"), up, down, null);
-        } catch (Exception exception) {
-            saveStatus(id, "OFFLINE", null, null, null, null, null, null, null, "Không kết nối được RouterOS qua HTTPS; kiểm tra mạng, chứng thư và tài khoản chỉ đọc.");
+            StatusResponse status = routerClient.health(connections.effective());
+            if (!metadata.equals(connections.metadata())) return;
+            saveStatus(ids.get(0), "ONLINE", status.softwareVersion(), status.uptime(), status.cpuLoad(),
+                    status.freeMemory(), status.totalMemory(), status.interfacesUp(), status.interfacesDown(), null);
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            if (!metadata.equals(connections.metadata())) return;
+            saveStatus(ids.get(0), "OFFLINE", null, null, null, null, null, null, null, exception.getMessage());
         }
     }
 
@@ -133,18 +136,18 @@ public class InfrastructureService {
     private StatusResponse mapStatus(java.sql.ResultSet rs) throws java.sql.SQLException { return new StatusResponse(rs.getString(1), rs.getString(2), rs.getString(3), (Integer) rs.getObject(4), rs.getObject(5, Long.class), rs.getObject(6, Long.class), (Integer) rs.getObject(7), (Integer) rs.getObject(8), rs.getTimestamp(9).toInstant().toString(), rs.getString(10)); }
     private void saveStatus(String id, String state, String version, String uptime, Integer cpu, Long free, Long total, Integer up, Integer down, String error) { jdbc.update("INSERT INTO network_device_status(device_id,status,software_version,uptime,cpu_load,free_memory_bytes,total_memory_bytes,interface_up_count,interface_down_count,checked_at,last_error) VALUES(?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP(6),?) ON DUPLICATE KEY UPDATE status=VALUES(status),software_version=VALUES(software_version),uptime=VALUES(uptime),cpu_load=VALUES(cpu_load),free_memory_bytes=VALUES(free_memory_bytes),total_memory_bytes=VALUES(total_memory_bytes),interface_up_count=VALUES(interface_up_count),interface_down_count=VALUES(interface_down_count),checked_at=CURRENT_TIMESTAMP(6),last_error=VALUES(last_error)", id, state, version, uptime, cpu, free, total, up, down, error); }
     private void audit(String actorId, String actorName, String action, String deviceId, String ip) { jdbc.update("INSERT INTO network_audit_events(id,actor_id,actor_name,action,device_id,management_ip) VALUES(?,?,?,?,?,?)", UUID.randomUUID().toString(), actorId, actorName, action, deviceId, ip); }
-    private boolean routerConfigurationValid() { try { URI uri = URI.create(properties.routerBaseUrl()); return "https".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null && uri.getUserInfo() == null && properties.routerUsername() != null && !properties.routerUsername().isBlank() && properties.routerPassword() != null && !properties.routerPassword().isBlank(); } catch (Exception e) { return false; } }
     private org.springframework.http.client.ClientHttpRequestFactory timeoutRequestFactory() {
         var factory = new org.springframework.http.client.JdkClientHttpRequestFactory(
                 HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
         factory.setReadTimeout(Duration.ofSeconds(5));
         return factory;
     }
-    private String configuredRouterIp() { try { return URI.create(properties.routerBaseUrl()).getHost(); } catch (Exception e) { return ""; } }
+    private String configuredRouterIp() {
+        var configuration = connections.metadata();
+        try { return URI.create(configuration.baseUrl()).getHost(); }
+        catch (IllegalArgumentException | NullPointerException exception) { return ""; }
+    }
     private StatusResponse notConfigured() { return new StatusResponse("UNKNOWN", null, null, null, null, null, null, null, null, "Chưa có số liệu giám sát."); }
-    private String text(JsonNode node, String key) { return node == null || node.path(key).isMissingNode() ? null : node.path(key).asText(null); }
-    private Integer integer(JsonNode node, String key) { return node != null && node.has(key) ? node.path(key).asInt() : null; }
-    private Long number(JsonNode node, String key) { return node != null && node.has(key) ? node.path(key).asLong() : null; }
     private String clean(String value) { return value == null || value.isBlank() ? null : value.trim(); }
     private Instant parseInstant(String value, Instant fallback) {
         if (value == null || value.isBlank()) return fallback;
