@@ -1,6 +1,6 @@
 # Kế hoạch đề xuất: Quản lý hạ tầng mạng và camera
 
-> Trạng thái: Phase 1–3 đã có nền tảng local trong CFCBase; chưa deploy, chưa bật polling, chưa khởi chạy Loki/Alloy và chưa kết nối/đổi cấu hình router thật. Xem ghi chú thực hiện ở cuối tài liệu.
+> Trạng thái rà soát 06/11/2026: giao diện và API đã có trên production; Phase 1–6 mới có các phần triển khai ban đầu, chưa nghiệm thu kết nối mạng thật. MCP xác nhận danh mục thiết bị đang rỗng và trạng thái router UNKNOWN, chưa có checkedAt. Xem mục 17 về kết quả audit production và mục 18 về cấu hình kết nối ADMIN mới đã triển khai local, chưa deploy.
 > Ngày lập: 04/11/2026 (Asia/Ho_Chi_Minh)
 > Mục tiêu: giúp người phụ trách không chuyên sâu về mạng có một nơi để biết hạ tầng nào đang chạy, thiết bị nào kết nối ở đâu, lỗi nào cần xử lý và xem camera được phép xem mà không phải mở từng công cụ riêng.
 
@@ -375,3 +375,75 @@ Vì bạn là một dev phụ trách và mạng hiện có quy mô pilot nhỏ, 
 - Nền tảng này hỗ trợ demo UI và bước pilot; chưa nghiệm thu trên mạng thật, chưa xác nhận availability/topology và không gồm camera.
 
 Đây là trạng thái code local; chưa xác minh model/cấu hình đầy đủ hay quyền truy cập mạng CFC. Cổng nghiệm thu thật là pilot an toàn trên thiết bị đại diện và đối chiếu với WinBox.
+
+
+## 17. Rà soát triển khai và production — 06/11/2026
+
+Theo yêu cầu người dùng, đã đối chiếu code hiện tại, cấu hình mẫu, tài liệu MikroTik và truy cập read-only trang production bằng MCP. Không tạo/sửa thiết bị, không nhập credential, không gọi đồng bộ/router và không đổi cấu hình mạng.
+
+### Bằng chứng quan sát được
+
+- `/admin/infrastructure` đã phục vụ giao diện; GET `/api/v1/infrastructure/devices?page=0&size=100&q=` trả 200, `content=[]`, `totalElements=0`.
+- GET `/api/v1/infrastructure/router/status` trả 200, `status=UNKNOWN`, `checkedAt=null`, `lastError=Chưa có số liệu giám sát.` Đây không phải bằng chứng router OFFLINE hoặc sai mật khẩu.
+- Collector chỉ truy vấn khi monitoring bật, endpoint/tài khoản hợp lệ và có router active trong catalog khớp IP endpoint. Catalog rỗng làm collector bỏ qua cả khi env đã cấu hình. V31 trong source có seed router `192.168.1.1`, nhưng production không trả record active nào: cần kiểm tra dữ liệu active/ẩn và Flyway V31/V32 trực tiếp trên Fedora; chưa xác định nguyên nhân, không sửa migration đã áp dụng hoặc chèn lại seed mù.
+- Nút Tải lại hiện chỉ đọc catalog/trạng thái đã lưu; chưa có endpoint test kết nối theo yêu cầu hoặc màn kiểm tra từng điều kiện cấu hình.
+
+### Mức độ hoàn thành thực tế
+
+| Phase | Đã có trong code | Còn thiếu để nghiệm thu |
+| --- | --- | --- |
+| 0 | Thông tin router pilot/IP từ người dùng | Route Fedora → router, REST HTTPS, CA/ACL, user riêng và model Ruijie/AP chưa xác minh |
+| 1 | Trang/API ADMIN, CRUD danh mục và audit | Chưa có inventory active trên live; thiếu hướng dẫn khởi tạo và trạng thái cấu hình |
+| 2 | Collector một router, đọc resource/interfaces, lưu trạng thái gần nhất | Chưa có pilot live; thiếu test connection/diagnostics; parser resource cần sửa; chưa có lịch sử availability/WAN probes |
+| 3 | Compose Alloy/Loki và API tìm log | Không tự khởi chạy qua run.sh; chưa xác minh collector/syslog ở Fedora; thiếu labels device/severity, correlation và log thật |
+| 4 | Đọc DHCP/ARP thủ công, lưu IP/MAC và ứng viên xung đột | Phụ thuộc kết nối Phase 2, chưa kiểm chứng router thật hoặc toàn bộ lịch sử cấp IP |
+| 5 | Nhập liên kết/cổng topology thủ công | Chưa có SNMP/LLDP/MNDP, kết nối Ruijie, CAPsMAN hoặc danh sách Wi-Fi clients |
+| 6 | Danh mục tài sản và lịch sử phân công thủ công | Chưa có discovery/mapping tự động và nghiệm thu tài sản thật |
+| 7–9 | Roadmap | Camera/cảnh báo toàn hệ thống chưa triển khai |
+
+### Khoảng trống kỹ thuật cần xử lý trước pilot
+
+1. **Credential onboarding:** hiện chỉ đọc server config; giao diện thêm thiết bị không lưu username/password. Đây là lựa chọn env-server trong quyết định 05/11, không phải ô nhập bị lỗi. Muốn nhập credential qua web cần quyết định thay đổi cách lưu secret, API write-only và mã hóa phía server; chưa triển khai theo lần rà soát này.
+2. **Phân biệt trạng thái:** thiếu config, monitoring tắt, chưa có router, chưa từng poll, lỗi auth/TLS/timeout hiện không có diagnostic riêng; UI gộp UNKNOWN thành Chưa cấu hình. Cần màn hướng dẫn, checklist và nút kiểm tra read-only, không trả password về browser.
+3. **Đóng gói cấu hình:** `CFC_INFRA_*` được ánh xạ trong YAML/example YAML; application YAML/properties thực dùng bị Git ignore. Properties example và env example deploy hiện chưa có ánh xạ/keys này. Chưa xác minh config Fedora; không bảo đảm chỉ thêm env theo tài liệu sẽ được bind trên mọi bản cài cũ. Cần cấu hình mặc định được version hóa và kiểm thử binding.
+4. **RouterOS resource JSON:** collector hiện đọc version/uptime/CPU như object root, trong khi ví dụ chính thức GET `/rest/system/resource` trả mảng một phần tử. Cần chuẩn hóa array/object và test fixture trước khi tuyên bố có số liệu health đúng. Nguồn: [MikroTik REST API](https://help.mikrotik.com/docs/spaces/ROS/pages/47579162/REST%2BAPI).
+5. **Syslog:** Alloy hiện gắn label job; chưa có bước relabel device IP/severity cho các trường UI và lọc theo nguồn thật. Phải thử RouterOS → Alloy → Loki → CFCBase, không chỉ kiểm tra có container.
+
+### Thứ tự công việc tiếp theo
+
+1. Làm lại phần kích hoạt/kết nối: kiểm tra inventory pilot và config thực ở Fedora, bổ sung diagnostics/config onboarding, sửa parser resource và có test read-only. Không đổi cấu hình router khi chưa xác minh route/quyền.
+2. Nghiệm thu một MikroTik: IP `192.168.1.1`, uptime/CPU/RAM/interfaces khớp WinBox; lỗi mật khẩu/TLS/timeout hiện rõ và không ảnh hưởng HR.
+3. Sau health đạt, nghiệm thu DHCP/ARP và một luồng syslog thật.
+4. Sau đó mới khảo sát Ruijie/AP để chọn SNMP/LLDP/CAPsMAN và xây Wi-Fi client/topology thật. Camera vẫn để sau.
+
+Hoàn thành source/CI hoặc nhìn thấy tab không đồng nghĩa đã hoàn thành kết nối và nghiệm thu. Chưa có thay đổi code ứng dụng, secret hoặc cấu hình thiết bị trong lần rà soát này.
+
+
+## 18. Cấu hình MikroTik trên web — cập nhật 06/11/2026
+
+Người dùng đã chọn nhập mật khẩu MikroTik ngay trên CFCBase, thay cho cách chỉ đặt credential trong env ở các mục trước. Phần này cập nhật quyết định triển khai; mục 17 vẫn là bằng chứng trạng thái production trước thay đổi.
+
+Đã triển khai local:
+
+- ADMIN mở **Hạ tầng mạng → Kết nối MikroTik**, nhập HTTPS IP LAN, tài khoản và mật khẩu; **Kiểm tra kết nối** chỉ đọc resource/interfaces, không lưu và không thay đổi router.
+- **Lưu cấu hình** lưu mật khẩu AES-256-GCM vào DB rồi kiểm tra ngay nếu bật giám sát. Phân biệt đã lưu nhưng kết nối lỗi với lưu thất bại. Thông báo tách sai tài khoản (401), thiếu quyền (403), thiếu REST API, timeout và chứng thư TLS.
+- Cấu hình WEB dùng chung cho polling uptime/CPU/RAM/interface và đồng bộ DHCP/ARP. Env cũ vẫn là fallback trước lần lưu đầu; WEB tắt không fallback. Chỉ một cấu hình router, chưa hỗ trợ nhiều router/AP.
+- Lưu tạo hoặc kích hoạt lại catalog ROUTER theo IP; IP đã thuộc loại thiết bị khác thì từ chối. Không sửa seed V31 và không thay các dữ liệu topology/tài sản khác. Audit chỉ ghi người thao tác, action và IP, không ghi credential.
+- Mật khẩu không trả lại API, không lưu localStorage/cookie. Để trống khi chỉnh cùng URL/tài khoản giữ mật khẩu cũ; đổi URL/tài khoản buộc nhập lại. rowVersion chống ghi đè giữa các phiên ADMIN.
+- Chỉ cho web cấu hình IP RFC1918 qua HTTPS; không đi theo redirect, không tắt kiểm tra chứng thư. Parser health hỗ trợ resource object hoặc mảng một phần tử và giá trị số dạng chuỗi của RouterOS.
+
+### Đưa lên Fedora
+
+1. Merge thay đổi qua PR sau CI đạt. Có migration **V33**, nên timer auto sẽ chặn theo thiết kế.
+2. Trên Fedora, trong `~/Works/BookingBase`, chạy `python3 deployserver/linux/ci-deploy.py --check`, sau đó `python3 deployserver/linux/ci-deploy.py --deploy`. Không cần nhập credential router vào Git hoặc terminal.
+3. ADMIN mở tab Kết nối MikroTik, nhập ví dụ địa chỉ `https://192.168.1.1` và tài khoản đọc REST của router, chọn Kiểm tra kết nối. Backend Fedora cần route/ACL tới IP và RouterOS phải bật www-ssl. Nếu báo chứng thư, cấu hình chứng thư có IP SAN phù hợp và truststore JVM; không dùng bỏ qua TLS.
+4. Lưu cấu hình, xác nhận health có checkedAt/uptime/CPU/RAM, sau đó thử đồng bộ DHCP/ARP. Chỉ nghiệm thu khi đã đọc được router thật; lưu thành công không đồng nghĩa kết nối thành công.
+5. Khóa sinh lần lưu đầu tại `~/.local/share/cfcbase/infrastructure/credential.key`, quyền 0600. Backup khóa này ngoài Git cùng DB; nếu mất khóa, khôi phục hoặc nhập lại mật khẩu trên web. Có thể đổi đường dẫn bằng `CFC_INFRA_CREDENTIAL_KEY_FILE`; giữ đường dẫn/khóa ổn định qua các release.
+
+Switch Ruijie, danh sách Wi-Fi clients, tự khám phá topology, thu syslog từ router và camera vẫn phải nghiệm thu riêng; màn cấu hình này chưa hoàn thành các phần đó.
+
+### Kiểm tra local
+
+Build/lint frontend và Maven offline Java 21. Kiểm thử mã hóa/tamper/mất khóa, HTTPS IP LAN, mật khẩu giữ lại/đổi định danh, rowVersion, metadata không lộ secret, repository rollback/audit/catalog, binding env và quyền API. MCP kiểm tra form với API giả lập, thông báo lỗi auth/TLS, xóa ô mật khẩu sau lưu và viewport 390 px; chưa dùng credential hay mạng router thật.
+
+Kết quả kiểm tra 06/11: frontend build đạt (chunk Infrastructure khoảng 30,17 kB), lint 0 lỗi và 10 cảnh báo cũ; Maven Java 21 offline đạt, lần quét tường minh `-Dtest=*Test` chạy 260 test với 4 skipped theo điều kiện sẵn có, không failure/error. Kiểm tra migration V33, binding cấu hình và quyền API thật đều nằm trong lượt này. Đã refresh AST knowledge graph; chưa tái trích xuất semantic tài liệu hoặc nghiệm thu thiết bị thật.

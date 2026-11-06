@@ -70,7 +70,7 @@ Từ các lần sau, wrapper tự fetch/kiểm tra/cập nhật, không cần gi
 
 ### Chặng 5 — Fedora tự kiểm tra và deploy
 
-**Đã triển khai local ngày 06/11/2026, chưa cài/bật trên Fedora:** systemd user timer gọi `ci-deploy.py --auto`. CI có thêm job `Deployment script checks` để chạy kiểm thử wrapper/state/installer. Các job đều chạy trên GitHub-hosted runners.
+**Đã cài/bật trên Fedora theo log người dùng ngày 06/11/2026:** systemd user timer gọi `ci-deploy.py --auto`. CI có thêm job `Deployment script checks` để chạy kiểm thử wrapper/state/installer. Các job đều chạy trên GitHub-hosted runners.
 
 Luồng sau khi bật: push nhánh → CI → merge vào main → CI push/main xanh → Fedora fetch main qua HTTPS Public và deploy sau lần kiểm tra tiếp theo (khoảng 5 phút, cộng jitter và thời gian build). Không cần GitHub runner, PAT hoặc SSH agent. Git remote hiện có không bị đổi. Timer không nhận hoặc thực thi code từ PR.
 
@@ -118,7 +118,7 @@ Lệnh dừng lên lịch; nếu service deploy đang chạy, chờ nó hoàn t�
 python3 deployserver/linux/ci-deploy.py --deploy --retry-failed
 ```
 
-Kiểm thử local: `python3 -m unittest discover -s deployserver/linux/tests -v` gồm 25 test, trong đó có repository Git tạm thật. Build/service/GitHub được mô phỏng để không chạm server. Chưa thử timer, reboot, đường truyền API hoặc rollback có chủ đích trên Fedora.
+Kiểm thử local: `python3 -m unittest discover -s deployserver/linux/tests -v` gồm 25 test, trong đó có repository Git tạm thật. Build/service/GitHub được mô phỏng để không chạm server. Log người dùng xác nhận deploy thủ công release `cbaebcef7549af664f8f00fecb7b9e0bc5250556` thành công, marker sạch và --status sẵn sàng; installer enable timer, service fetch Public HTTPS và kết thúc với “Đang chạy bản mới nhất; không build/restart lại.” Lịch tiếp theo khoảng 5 phút. Chưa chứng minh tự deploy một commit mới, chạy sau reboot hoặc rollback có chủ đích trên Fedora.
 
 ### Chặng 6 — Giảm downtime (tùy chọn)
 

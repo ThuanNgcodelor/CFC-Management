@@ -1,48 +1,32 @@
 package com.booking.system.infrastructure.service;
 
 import com.booking.system.infrastructure.api.InfrastructureDtos.*;
-import com.booking.system.infrastructure.config.InfrastructureProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.time.Duration;
 import java.util.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
 
 @Service
 public class NetworkOperationsService {
-    private static final Logger log = LoggerFactory.getLogger(NetworkOperationsService.class);
-    private final ObjectMapper mapper = new ObjectMapper();
     private final JdbcTemplate jdbc;
-    private final InfrastructureProperties properties;
+    private final RouterConnectionService connections;
+    private final RouterOsClient routerClient;
     private final NetworkObservationPersistence persistence;
 
-    public NetworkOperationsService(JdbcTemplate jdbc, InfrastructureProperties properties, NetworkObservationPersistence persistence) {
-        this.jdbc = jdbc; this.properties = properties; this.persistence = persistence;
+    public NetworkOperationsService(JdbcTemplate jdbc, RouterConnectionService connections, RouterOsClient routerClient, NetworkObservationPersistence persistence) {
+        this.jdbc = jdbc; this.connections = connections; this.routerClient = routerClient; this.persistence = persistence;
     }
 
     public int syncIpam() {
-        if (!properties.monitoringEnabled() || !routerConfigured()) throw new IllegalStateException("Chưa bật kết nối RouterOS HTTPS chỉ đọc.");
-        String routerId = jdbc.query("SELECT id FROM network_devices WHERE active=TRUE AND device_type='ROUTER' AND management_ip=? LIMIT 1", rs -> rs.next() ? rs.getString(1) : null, routerIp());
-        if (routerId == null) throw new IllegalStateException("Chưa có router trong danh mục thiết bị.");
-        try {
-            URI base = URI.create(properties.routerBaseUrl());
-            RestClient client = RestClient.builder().baseUrl(base.toString()).requestFactory(requestFactory())
-                    .defaultHeaders(headers -> headers.setBasicAuth(properties.routerUsername(), properties.routerPassword())).build();
-            List<Observed> observations = new ArrayList<>();
-            collect(mapper.readTree(client.get().uri("/rest/ip/dhcp-server/lease").retrieve().body(String.class)), "DHCP", observations);
-            collect(mapper.readTree(client.get().uri("/rest/ip/arp").retrieve().body(String.class)), "ARP", observations);
-            return persistence.persist(routerId, observations);
-        } catch (Exception exception) {
-            log.warn("Không đồng bộ được IPAM từ RouterOS {}: {}", routerIp(), exception.getClass().getSimpleName());
-            throw new IllegalStateException("Không lấy được DHCP/ARP từ RouterOS. Kiểm tra quyền read-only và kết nối HTTPS.");
-        }
+        var connection = connections.effective();
+        if (!connection.enabled()) throw new IllegalArgumentException("Chưa bật kết nối MikroTik; mở Kết nối MikroTik để thiết lập.");
+        String routerId = jdbc.query("SELECT id FROM network_devices WHERE active=TRUE AND device_type='ROUTER' AND management_ip=? LIMIT 1", rs -> rs.next() ? rs.getString(1) : null, connection.ip());
+        if (routerId == null) throw new IllegalArgumentException("Chưa có router trong danh mục thiết bị.");
+        List<Observed> observations = new ArrayList<>();
+        collect(routerClient.read(connection, "/rest/ip/dhcp-server/lease"), "DHCP", observations);
+        collect(routerClient.read(connection, "/rest/ip/arp"), "ARP", observations);
+        return persistence.persist(routerId, observations);
     }
 
     @Transactional(readOnly = true)
@@ -128,9 +112,6 @@ public class NetworkOperationsService {
             out.add(new Observed(source,ip,mac,clean(item.path("host-name").asText(null)),clean(item.path("interface").asText(null)),status));
         }
     }
-    private boolean routerConfigured() { try { return "https".equalsIgnoreCase(URI.create(properties.routerBaseUrl()).getScheme()) && properties.routerUsername()!=null && !properties.routerUsername().isBlank() && properties.routerPassword()!=null && !properties.routerPassword().isBlank(); } catch (Exception e) { return false; } }
-    private String routerIp() { try { return URI.create(properties.routerBaseUrl()).getHost(); } catch (Exception e) { return ""; } }
-    private org.springframework.http.client.ClientHttpRequestFactory requestFactory() { var factory=new org.springframework.http.client.JdkClientHttpRequestFactory(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build()); factory.setReadTimeout(Duration.ofSeconds(8)); return factory; }
     private String like(String value) { return value==null||value.isBlank()?"%%":"%"+value.trim()+"%"; }
     private static String clean(String value) { return value==null||value.isBlank()?null:value.trim(); }
     private List<String> csv(String value) { return value==null?List.of():Arrays.asList(value.split(",")); }
