@@ -211,8 +211,6 @@ export default function HrProductionAttendance() {
   const listAllowed = useMemo(() => ({ view: PRODUCTION_VIEW_VALUES }), []);
   const { values: listState, setValues: setListState, setPage } = useHrListState(listDefaults, listAllowed);
   const { month, importId: activeImportId, employeePage: employeeSummaryPage, employeeKeyword: employeeSummaryKeyword, view, employeeCode, page } = listState;
-  const [employeeCodeDraft, setEmployeeCodeDraft] = useDebouncedHrSearchValue(employeeCode, setEmployeeCode);
-  const [employeeSummaryKeywordDraft, setEmployeeSummaryKeywordDraft] = useDebouncedHrSearchValue(employeeSummaryKeyword, setEmployeeSummaryKeyword);
   const listStateRef = useRef(listState);
   listStateRef.current = listState;
   const setImportId = useCallback((value) => setListState({ importId: typeof value === 'function' ? value(listStateRef.current.importId) : value }, { resetPage: false, replace: true }), [setListState]);
@@ -232,6 +230,8 @@ export default function HrProductionAttendance() {
   const setEmployeeCode = useCallback((value) => setListState({ employeeCode: value, page: 0 }, { replace: true }), [setListState]);
   const setEmployeeSummaryPage = useCallback((value) => setListState({ employeePage: value }, { resetPage: false, replace: true }), [setListState]);
   const setEmployeeSummaryKeyword = useCallback((value) => setListState({ employeeKeyword: value, employeePage: 0 }, { resetPage: false, replace: true }), [setListState]);
+  const [employeeCodeDraft, setEmployeeCodeDraft] = useDebouncedHrSearchValue(employeeCode, setEmployeeCode);
+  const [employeeSummaryKeywordDraft, setEmployeeSummaryKeywordDraft] = useDebouncedHrSearchValue(employeeSummaryKeyword, setEmployeeSummaryKeyword);
   const [imports, setImports] = useState([]);
   const [employeeSummaries, setEmployeeSummaries] = useState(emptyPage);
   const [shifts, setShifts] = useState(emptyPage);
