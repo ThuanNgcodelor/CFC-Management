@@ -18,7 +18,7 @@ export function HrAttendanceEmployeeOverview({ result, keyword, onKeywordChange,
       </div>
       <input value={keyword} onChange={(event) => onKeywordChange(event.target.value)} placeholder="Tìm mã hoặc tên nhân viên" className="h-10 min-w-64 rounded-lg border border-gray-300 px-3 text-sm" />
     </div>
-    {loading ? (
+    {loading && !employees.length ? (
       <div className="mt-4 p-8"><HrLoading label="Đang tải tổng quan theo nhân viên..." /></div>
     ) : (
       <>
