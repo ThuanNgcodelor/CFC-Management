@@ -68,3 +68,11 @@ List variable names (not values) that deploy relies on. Add a row when a new one
 | Variable | Purpose | Default | Where used |
 | --- | --- | --- | --- |
 | `SHOW_SQL` (proposed) | Toggle SQL logging | `false` | `application.yml` |
+
+## Manual Fedora deployment
+
+| Setting | Value / purpose | Where |
+| --- | --- | --- |
+| CI repository / workflow gate | Public `ThuanNgcodelor/CFC-Management`, workflow `ci.yml`; push/main, exact SHA and both `Frontend lint and build` / `Backend tests` successful | `deployserver/linux/ci-deploy.py`; no PAT or new env variable |
+| GitHub API timeout / job bound | 30 seconds per API call; at most 100 jobs, rejects larger runs instead of accepting a partial list; API failures stop deploy | `deployserver/linux/ci-deploy.py` |
+| Deploy concurrency lock | `.git/cfcbase-deploy.lock`, non-blocking lock for wrapper invocations; no timer or automatic retries | `deployserver/linux/ci-deploy.py` |

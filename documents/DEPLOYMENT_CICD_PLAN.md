@@ -35,25 +35,42 @@ Trước khi tự động hóa, sửa và thử script Linux để:
 
 `run.sh` giữ Cloudflare Tunnel chạy khi backend khởi động lại; nếu health-check hoặc xác minh thất bại, script thử rollback JAR trước. Đã chạy thành công một lần trên Fedora; vẫn cần theo dõi các lần deploy và thử quy trình rollback có kiểm soát. Database không tự rollback.
 
-### Chặng 3 — Chuẩn bị quyền deploy trên Fedora
+### Chặng 3 — Runner và bảo vệ main
 
-1. Xác nhận repo được giữ private và bật bảo vệ nhánh `main`/yêu cầu CI xanh.
-2. Theo lựa chọn ngày 06/11/2026, giữ nguyên repo `~/Works/BookingBase`, `.env`, Cloudflare credential và user service `david-nguyen`; không chuyển repo hay runtime sang user mới.
-3. Cài self-hosted runner như systemd service dưới user `david-nguyen`, gắn label riêng `cfcbase-production` và chỉ kết nối tới repo CFCBase.
-4. User này thuộc nhóm `wheel` và `docker`, nên runner có quyền gần tương đương root. Chỉ cho phép workflow deploy thủ công từ `main`, có duyệt production; không chạy pull request hoặc workflow từ nhánh không tin cậy trên runner này.
-5. Runner dùng checkout hiện có để gọi `git pull --ff-only` và deploy script. Không truyền `.env`, Cloudflare credential, DB password hoặc private key qua GitHub Actions/artifact/log.
+**Ngày 06/11/2026:** ảnh người dùng xác nhận runner `cfcbase-fedora-prod` online/Idle với label `cfcbase-production`; ruleset `Protect main` Active, nhắm `main`; hai check `Frontend lint and build` và `Backend tests` đã được chọn (cần bấm Save changes). Các lần CI gần nhất trên main xanh. Đây là xác nhận qua ảnh, không phải kiểm tra Settings bằng API.
 
-**Trạng thái kiểm tra ngày 06/11/2026:** runner `cfcbase-fedora-prod` đã được đăng ký ở repo GitHub `CFC-Management` và đang `Idle` (online, chờ job); log người dùng gửi xác nhận user service `cfcbase-runner.service` chạy dưới `david-nguyen`. Repo local vẫn dùng remote URL `ThuanNgcodelor/CFCBase`, được GitHub chuyển hướng sang tên repo hiện tại `CFC-Management`. Ảnh Settings chỉ có labels mặc định `self-hosted`, `Linux`, `X64`; label riêng `cfcbase-production` chưa được thêm. Chưa xác minh được visibility/private và ruleset bảo vệ `main`: phiên MCP trả 404 ở Settings và workspace không có GitHub CLI/API credential. Workflow hiện có chỉ chạy trên `ubuntu-latest`, không gửi job CI hoặc PR đến runner Fedora.
+Người dùng quyết định giữ repository **Public**. Giữ cùng checkout `~/Works/BookingBase`, `.env`, Cloudflare credential, user `david-nguyen` và backend/tunnel user services hiện có. Repo GitHub hiện mang tên `ThuanNgcodelor/CFC-Management`, URL cũ `CFCBase` được chuyển hướng.
 
-**Để hoàn tất chặng 3 trong GitHub:** thêm label `cfcbase-production` vào runner `cfcbase-fedora-prod`; xác nhận repo là Private; tạo ruleset cho `main` chặn force-push/xóa nhánh và yêu cầu hai status check CI (`Frontend lint and build`, `Backend tests`). Chỉ sau khi các mục này được xác nhận mới đánh dấu chặng 3 hoàn tất. Không đưa job deploy vào workflow CI; workflow deploy và phê duyệt production thuộc chặng 4.
+Do runner nằm trên production dưới user thuộc `wheel`/`docker`, phương án vận hành tiếp theo chuyển sang **Fedora chủ động pull**, không tạo workflow deploy trên runner này. Trước lần deploy đầu tiên, chạy `systemctl --user disable --now cfcbase-runner.service`, rồi gỡ runner trong GitHub Settings → Actions → Runners. Việc dừng/gỡ này chưa được xác nhận trên Fedora; không đánh dấu đã hoàn thành thay người dùng. CI vẫn chạy trên `ubuntu-latest`.
 
-### Chặng 4 — Deploy có người duyệt
+### Chặng 4 — Deploy thủ công từ Fedora sau khi CI đạt
 
-Sau khi CI xanh và runner đã Online, workflow `workflow_dispatch` được kích hoạt thủ công từ `main`, có GitHub Environment `production` yêu cầu người duyệt. Job chạy dưới `david-nguyen`, cập nhật checkout dùng chung rồi gọi `build-prod.sh`; health-check/rollback do script thực hiện. Không triển khai từ pull request.
+**Đã chuẩn bị local:** `deployserver/linux/ci-deploy.py`, dùng Python 3 standard library, không cần PAT cho repo public. Fedora gọi GitHub REST API ra ngoài, không mở thêm cổng mạng. Script chỉ nhận main, từ chối checkout có thay đổi chưa lưu hoặc lịch sử không fast-forward; ghim SHA sau fetch rồi kiểm tra đúng CI workflow `ci.yml`, event push, branch main và đúng SHA. Run mới nhất phải hoàn tất thành công, đồng thời cả hai job bắt buộc đều success (skipped không được tính đạt). API lỗi/rate-limit hoặc CI chưa chạy xong đều chặn deploy.
+
+- `--check`: fetch và báo CI/commit; không merge, build hoặc restart dịch vụ.
+- `--deploy`: người vận hành chủ động cho phép cập nhật; kiểm tra lại checkout, fast-forward tới SHA đã kiểm tra, gọi `build-prod.sh`. Chặn nếu user service runner cũ còn active. Các lần chạy wrapper dùng chung khóa để tránh deploy trùng.
+- Health-check/rollback JAR vẫn do script hiện có xử lý; không tự rollback database hoặc reset working tree khi deploy lỗi. Nếu build lỗi, website cũ vẫn chạy nhưng checkout có thể đã tiến tới commit mới. Không chạy build/deploy thủ công khác đồng thời với wrapper.
+
+**Trên Fedora, sau khi code script đã có trên main:**
+
+```bash
+cd ~/Works/BookingBase
+systemctl --user disable --now cfcbase-runner.service
+git pull --ff-only origin main
+python3 deployserver/linux/ci-deploy.py --check
+```
+
+Lệnh pull đầu tiên chỉ để nhận công cụ mới, không tự build/deploy. Sau đó gỡ runner trên GitHub. Khi `--check` báo đủ CI thành công, muốn cập nhật website thì chạy:
+
+```bash
+python3 deployserver/linux/ci-deploy.py --deploy
+```
+
+Từ các lần sau, wrapper tự fetch/kiểm tra/cập nhật, không cần git pull riêng. Chỉ chạy dưới `david-nguyen`, không dùng sudo. Đã kiểm tra CLI và test gate CI bằng dữ liệu mô phỏng; chưa chạy wrapper trên Fedora hoặc deploy production. Không có workflow CD hoặc timer tự deploy nào được bật ở chặng này.
 
 ### Chặng 5 — Tự deploy sau khi ổn định
 
-Sau vài lần deploy có xác nhận và rollback đã được thử, có thể tự deploy khi code được merge vào `main`. Push lên nhánh tính năng chỉ chạy CI, không đụng production.
+Sau vài lần deploy thủ công và kiểm chứng rollback, có thể cài systemd user timer trên Fedora để kiểm tra main/CI và triển khai phiên bản đạt. Cần bổ sung dấu release thành công, chống lặp commit lỗi và chặn retry migration lỗi trước khi bật. Chưa triển khai timer; hiện push code chỉ chạy CI.
 
 ### Chặng 6 — Giảm downtime (tùy chọn)
 
@@ -71,6 +88,6 @@ Hiện backend và frontend được phục vụ chung qua ứng dụng Java t�
 - CI xanh ổn định trên GitHub.
 - Có backup gần nhất và quy trình restore đã kiểm chứng.
 - Script health-check/rollback được thử trên môi trường không production hoặc trong cửa sổ bảo trì.
-- Runner không chạy workflow từ fork/PR không tin cậy.
+- Runner production cũ đã dừng/gỡ khỏi repo public; cơ chế pull không nhận lệnh từ workflow PR.
 - Chốt rõ việc migration database nào được phép chạy tự động và phương án xử lý migration lỗi.
 - Thử ít nhất một lần deploy lỗi có chủ ý trên môi trường thử để chứng minh bản cũ vẫn phục hồi được.
