@@ -1,19 +1,42 @@
-import { useCallback, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { buildHrListParams, parseHrListState, safeHrPath, withHrReturnTo } from '../utils/hrListState';
 
 const NO_RESTRICTIONS = {};
 
 export function useHrListState(defaults, allowed = NO_RESTRICTIONS) {
-  const [params, setParams] = useSearchParams();
-  const key = params.toString();
-  const values = useMemo(() => parseHrListState(key, defaults, allowed), [key, defaults, allowed]);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const current = useRef({ location, navigate, defaults, allowed, search: location.search, active: true });
+  const values = useMemo(() => parseHrListState(location.search, defaults, allowed), [location.search, defaults, allowed]);
+  useLayoutEffect(() => {
+    const state = current.current;
+    if (state.location !== location) state.search = location.search;
+    Object.assign(state, { location, navigate, defaults, allowed });
+  });
+  useLayoutEffect(() => {
+    const state = current.current;
+    state.active = true;
+    return () => { state.active = false; };
+  }, []);
+  const getValues = useCallback(() => {
+    const state = current.current;
+    return parseHrListState(state.search, state.defaults, state.allowed);
+  }, []);
   const setValues = useCallback((updates, options = {}) => {
-    setParams((current) => buildHrListParams(current, defaults, updates, options.resetPage !== false), { replace: options.replace === true });
-  }, [defaults, setParams]);
+    const state = current.current;
+    if (!state.active) return;
+    const patch = typeof updates === 'function' ? updates(getValues()) : updates;
+    const next = buildHrListParams(state.search, state.defaults, patch, options.resetPage !== false).toString();
+    if (next === new URLSearchParams(state.search).toString()) return;
+    // Keep pending patches together even when two callers navigate before React renders.
+    state.search = next;
+    state.navigate({ pathname: state.location.pathname, search: next ? `?${next}` : '', hash: state.location.hash },
+      { replace: options.replace === true });
+  }, [getValues]);
   const setPage = useCallback((page) => setValues({ page }, { resetPage: false }), [setValues]);
-  return { values, setValues, setPage };
+  return { values, setValues, setPage, getValues };
 }
 
 export function useHrNavigation(fallback = '/manager/hr/employees') {
