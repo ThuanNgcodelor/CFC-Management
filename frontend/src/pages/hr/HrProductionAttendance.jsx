@@ -209,13 +209,11 @@ function IncidentDrawer({ open, activeImport, incidents, onClose, onRefresh }) {
 export default function HrProductionAttendance() {
   const listDefaults = useMemo(() => ({ month: storedMonth(), importId: '', employeePage: 0, employeeKeyword: '', view: 'NEEDS_REVIEW', employeeCode: '', page: 0 }), []);
   const listAllowed = useMemo(() => ({ view: PRODUCTION_VIEW_VALUES }), []);
-  const { values: listState, setValues: setListState, setPage } = useHrListState(listDefaults, listAllowed);
+  const { values: listState, setValues: setListState, setPage, getValues: getListState } = useHrListState(listDefaults, listAllowed);
   const { month, importId: activeImportId, employeePage: employeeSummaryPage, employeeKeyword: employeeSummaryKeyword, view, employeeCode, page } = listState;
-  const listStateRef = useRef(listState);
-  listStateRef.current = listState;
-  const setImportId = useCallback((value) => setListState({ importId: typeof value === 'function' ? value(listStateRef.current.importId) : value }, { resetPage: false, replace: true }), [setListState]);
+  const setImportId = useCallback((value) => setListState((current) => ({ importId: typeof value === 'function' ? value(current.importId) : value }), { resetPage: false, replace: true }), [setListState]);
   const selectImport = useCallback((item) => {
-    if (listStateRef.current.importId === item.id) return;
+    if (item.attendanceMonth !== getListState().month || getListState().importId === item.id) return;
     initializedImportContext.current = `${item.id}:${item.status}`;
     setListState({
       importId: item.id,
@@ -224,8 +222,8 @@ export default function HrProductionAttendance() {
       page: 0,
       employeePage: 0,
     }, { resetPage: false, replace: true });
-  }, [setListState]);
-  const setMonth = useCallback((value) => setListState({ month: value, page: 0 }, { replace: true }), [setListState]);
+  }, [setListState, getListState]);
+  const setMonth = useCallback((value) => setListState({ month: value, importId: '', employeeCode: '', employeePage: 0, page: 0 }, { replace: true }), [setListState]);
   const setView = useCallback((value) => setListState({ view: value, page: 0 }, { replace: true }), [setListState]);
   const setEmployeeCode = useCallback((value) => setListState({ employeeCode: value, page: 0 }, { replace: true }), [setListState]);
   const setEmployeeSummaryPage = useCallback((value) => setListState({ employeePage: value }, { resetPage: false, replace: true }), [setListState]);
@@ -250,22 +248,35 @@ export default function HrProductionAttendance() {
   const [shiftsLoading, setShiftsLoading] = useState(false);
   const [summariesLoading, setSummariesLoading] = useState(false);
   const [error, setError] = useState('');
+  const importsSeq = useRef(0);
+  const baseSeq = useRef(0);
   const shiftsSeq = useRef(0);
   const summariesSeq = useRef(0);
   const initializedImportContext = useRef('');
   const role = authApi.getRole();
   const canReopen = role === 'ADMIN' || role === 'MANAGER' || Boolean(role);
-  const activeImport = useMemo(() => imports.find((item) => item.id === activeImportId) || null, [imports, activeImportId]);
+  const displayImports = useMemo(() => imports.filter((item) => item.attendanceMonth === month), [imports, month]);
+  const activeImport = useMemo(() => displayImports.find((item) => item.id === activeImportId) || null, [displayImports, activeImportId]);
 
   const loadImports = useCallback(async () => {
+    if (getListState().month !== month) return undefined;
+    const seq = ++importsSeq.current;
     const importPage = await api.listImports({ page: 0, size: 100, month });
+    if (seq !== importsSeq.current || getListState().month !== month) return undefined;
     const nextImports = importPage?.content || [];
     setImports(nextImports);
-    setImportId((current) => nextImports.some((item) => item.id === current) ? current : nextImports[0]?.id || '');
+    setListState((current) => {
+      if (nextImports.some((item) => item.id === current.importId)) return {};
+      const fallback = nextImports[0];
+      return { importId: fallback?.id || '', employeeCode: '', page: 0, employeePage: 0,
+        view: fallback?.status === 'CONFIRMED' ? 'CONFIRMED' : fallback?.reviewShifts > 0 ? 'NEEDS_REVIEW' : 'AUTO_MATCHED' };
+    }, { resetPage: false, replace: true });
     return nextImports;
-  }, [month, setImportId]);
+  }, [month, getListState, setListState]);
 
   const loadBase = useCallback(async (silent = false) => {
+    if (getListState().month !== month) return undefined;
+    const seq = ++baseSeq.current;
     if (!silent) setLoading(true);
     else setRefreshing(true);
     setError('');
@@ -273,24 +284,28 @@ export default function HrProductionAttendance() {
       const [nextImports, nextSummary, nextPolicies, nextCreditRules, incidentPage] = await Promise.all([
         loadImports(), api.summary(month), api.shiftPolicies(), api.workCreditRules(), api.incidents({ page: 0, size: 100 }),
       ]);
+      if (seq !== baseSeq.current || getListState().month !== month) return undefined;
       setSummary(nextSummary); setPolicies(nextPolicies || []); setCreditRules(nextCreditRules || []); setIncidents(incidentPage?.content || []);
       return nextImports;
     } catch (requestError) {
-      setError(apiErrorMessage(requestError, 'Không thể tải chấm công ca sản xuất.'));
+      if (seq === baseSeq.current && getListState().month === month) setError(apiErrorMessage(requestError, 'Không thể tải chấm công ca sản xuất.'));
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (seq === baseSeq.current && getListState().month === month) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
-  }, [loadImports, month]);
+  }, [loadImports, month, getListState]);
 
   const loadShifts = useCallback(async (overrideImportId) => {
     const targetId = overrideImportId !== undefined ? overrideImportId : activeImportId;
+    if (getListState().month !== month || getListState().importId !== targetId) return;
+    const seq = ++shiftsSeq.current;
     if (!targetId) {
       setShifts(emptyPage);
       setShiftsLoading(false);
       return;
     }
-    const seq = ++shiftsSeq.current;
     setShiftsLoading(true);
     const params = { importId: targetId, page, size: 50, employeeCode: employeeCode.trim() || undefined };
     if (view === 'PRODUCTION_WORKER' || view === 'KCS') params.policyGroup = view;
@@ -316,16 +331,17 @@ export default function HrProductionAttendance() {
         setShiftsLoading(false);
       }
     }
-  }, [activeImportId, employeeCode, page, setImportId, view]);
+  }, [activeImportId, employeeCode, page, setImportId, view, month, getListState]);
 
   const loadEmployeeSummaries = useCallback(async (overrideImportId) => {
     const targetId = overrideImportId !== undefined ? overrideImportId : activeImportId;
+    if (getListState().month !== month || getListState().importId !== targetId) return;
+    const seq = ++summariesSeq.current;
     if (!targetId) {
       setEmployeeSummaries(emptyPage);
       setSummariesLoading(false);
       return;
     }
-    const seq = ++summariesSeq.current;
     setSummariesLoading(true);
     try {
       const res = await api.employeeSummaries(targetId, {
@@ -350,31 +366,30 @@ export default function HrProductionAttendance() {
         setSummariesLoading(false);
       }
     }
-  }, [activeImportId, employeeSummaryKeyword, employeeSummaryPage, setImportId]);
+  }, [activeImportId, employeeSummaryKeyword, employeeSummaryPage, setImportId, month, getListState]);
 
-  useEffect(() => { loadBase(); }, [loadBase]);
-  useEffect(() => { loadShifts(); }, [loadShifts]);
-  useEffect(() => { loadEmployeeSummaries(); }, [loadEmployeeSummaries]);
+  useEffect(() => {
+    loadBase();
+    return () => { baseSeq.current += 1; importsSeq.current += 1; };
+  }, [loadBase]);
+  useEffect(() => { loadShifts(); return () => { shiftsSeq.current += 1; }; }, [loadShifts]);
+  useEffect(() => { loadEmployeeSummaries(); return () => { summariesSeq.current += 1; }; }, [loadEmployeeSummaries]);
   useEffect(() => { localStorage.setItem('hr-production-attendance-month', month); }, [month]);
   useEffect(() => {
     let active = true;
     const refresh = async () => {
       if (document.visibilityState === 'visible') {
-        const nextImports = await loadImports().catch(() => []);
-        if (!active) return;
-        const exists = nextImports.some((item) => item.id === activeImportId);
-        if (exists && activeImportId) {
-          loadShifts(activeImportId);
-          loadEmployeeSummaries(activeImportId);
-        } else if (nextImports.length > 0) {
-          const fallbackId = nextImports[0].id;
-          setImportId(fallbackId);
-          loadShifts(fallbackId);
-          loadEmployeeSummaries(fallbackId);
-        } else {
-          setImportId('');
-          setShifts(emptyPage);
-          setEmployeeSummaries(emptyPage);
+        try {
+          const nextImports = await loadImports();
+          if (!active || !nextImports) return;
+          const currentId = getListState().importId;
+          // A changed selection is fetched by its effects with the new filter context.
+          if (currentId && currentId === activeImportId) {
+            loadShifts();
+            loadEmployeeSummaries();
+          }
+        } catch (requestError) {
+          if (active) toast.error(apiErrorMessage(requestError, 'Không thể tải lại danh sách file chấm công.'));
         }
       }
     };
@@ -383,12 +398,15 @@ export default function HrProductionAttendance() {
       active = false;
       document.removeEventListener('visibilitychange', refresh);
     };
-  }, [activeImportId, loadImports, loadShifts, loadEmployeeSummaries, setImportId]);
+  }, [activeImportId, loadImports, loadShifts, loadEmployeeSummaries, getListState]);
   useEffect(() => {
     if (!activeImport) return;
     const context = `${activeImportId}:${activeImport.status}`;
     if (initializedImportContext.current === context) return;
+    const previousContext = initializedImportContext.current;
     initializedImportContext.current = context;
+    // Preserve deep links and Back/Forward; only a status change of this import resets its workflow view.
+    if (!previousContext.startsWith(`${activeImportId}:`)) return;
     setListState({
       view: activeImport.status === 'CONFIRMED' ? 'CONFIRMED' : activeImport.reviewShifts > 0 ? 'NEEDS_REVIEW' : 'AUTO_MATCHED',
       employeeCode: '',
@@ -404,6 +422,7 @@ export default function HrProductionAttendance() {
       await action();
       toast.success(success);
       const nextImports = await loadBase(true);
+      if (!nextImports) return;
       const targetId = nextImports?.some((i) => i.id === activeImportId) ? activeImportId : (nextImports?.[0]?.id || '');
       if (targetId && targetId === activeImportId) {
         await Promise.all([loadShifts(targetId), loadEmployeeSummaries(targetId)]);
@@ -454,7 +473,8 @@ export default function HrProductionAttendance() {
     if (item.id === activeImportId) {
       const next = imports.find((i) => i.id !== item.id);
       const nextId = next ? next.id : '';
-      setImportId(nextId);
+      if (next) selectImport(next);
+      else setListState({ importId: '', employeeCode: '', page: 0, employeePage: 0 }, { resetPage: false, replace: true });
       if (!nextId) {
         setShifts(emptyPage);
         setEmployeeSummaries(emptyPage);
@@ -495,7 +515,7 @@ export default function HrProductionAttendance() {
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"><div className="flex items-start gap-3"><UploadCloud className="mt-0.5 h-5 w-5 text-blue-600" /><div><h2 className="font-semibold">Import Time Attendance</h2><p className="mt-1 text-xs text-gray-500">Có thể chọn nhiều file; mỗi file giữ nguyên G–J và đủ ngày.</p></div></div><input id="production-attendance-files" type="file" multiple accept=".xlsx,.xls,.xlsm" onChange={(event) => setFiles(Array.from(event.target.files || []))} className="mt-4 block w-full text-sm" /><Button type="button" className="mt-4 w-full" disabled={!files.length || working} onClick={upload}><FileSpreadsheet className="h-4 w-4" />{working ? 'Đang xử lý...' : `Import ${files.length || ''} file`}</Button></div>
     </section>
 
-    <section className="mt-5 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><h2 className="font-semibold">File đang xử lý</h2><p className="mt-1 text-xs text-gray-500">Chọn một file. File chờ xác nhận có thể xóa; file đã chốt có thể mở khóa để điều chỉnh.</p></div><span className="text-sm text-gray-500">{imports.length} file</span></div><div className="mt-4 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">{imports.map((item) => <ImportCard key={item.id} item={item} active={item.id === activeImportId} canReopen={canReopen} onSelect={() => selectImport(item)} onConfirm={() => confirmImport(item)} onRecalculate={() => mutate(() => api.recalculate(item.id), 'Đã tính lại từ dấu chấm gốc.', 'Không thể tính lại file.')} onDelete={() => deleteImport(item)} onReopen={() => reopen(item)} />)}{!imports.length && <HrEmpty title="Chưa có file ca sản xuất" description="Chọn tháng và import file Time Attendance ở phía trên." />}</div></section>
+    <section className="mt-5 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><h2 className="font-semibold">File đang xử lý</h2><p className="mt-1 text-xs text-gray-500">Chọn một file. File chờ xác nhận có thể xóa; file đã chốt có thể mở khóa để điều chỉnh.</p></div><span className="text-sm text-gray-500">{displayImports.length} file</span></div><div className="mt-4 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">{displayImports.map((item) => <ImportCard key={item.id} item={item} active={item.id === activeImportId} canReopen={canReopen} onSelect={() => selectImport(item)} onConfirm={() => confirmImport(item)} onRecalculate={() => mutate(() => api.recalculate(item.id), 'Đã tính lại từ dấu chấm gốc.', 'Không thể tính lại file.')} onDelete={() => deleteImport(item)} onReopen={() => reopen(item)} />)}{!displayImports.length && <HrEmpty title="Chưa có file ca sản xuất" description="Chọn tháng và import file Time Attendance ở phía trên." />}</div></section>
 
     <WorkflowGuide item={activeImport} />
     <HrAttendanceEmployeeOverview result={employeeSummaries} keyword={employeeSummaryKeywordDraft} onKeywordChange={setEmployeeSummaryKeywordDraft} selectedCode={employeeCode} onPageChange={setEmployeeSummaryPage} loading={summariesLoading} onSelect={(item) => setListState({ employeeCode: item.employeeCode, view: item.reviewShifts > 0 ? 'NEEDS_REVIEW' : 'ALL', page: 0 }, { resetPage: false, replace: true })} />
@@ -516,6 +536,7 @@ export default function HrProductionAttendance() {
       const reviewBefore = activeImport?.reviewShifts;
       setDecisionShift(null);
       const nextImports = await loadImports();
+      if (!nextImports || getListState().importId !== saved.importId) return;
       await Promise.all([loadShifts(), loadEmployeeSummaries()]);
       const nextImport = nextImports?.find((item) => item.id === saved.importId);
       const actionLabel = action === 'REJECT' ? 'Đã từ chối ca' : 'Đã xác nhận ca';

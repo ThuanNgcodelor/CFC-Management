@@ -92,3 +92,9 @@ Cấu hình mặc định hạ tầng được đóng gói trong `infrastructure
 | Deploy migration backup | `build-prod.sh --backup-before-activate`: after build/smoke, before JAR/marker swap; failure stops activation | Auto approved migrations and manual schema changes/unknown baseline require it. Existing BOOKINGBASE_BACKUP_DIR/KEEP/DB_CONTAINER/DB_NAME apply; no new env or secret |
 | Backup publishing | umask 077; gzip + schema/table/footer validation, nanosecond filenames; retention 24 by existing BOOKINGBASE_BACKUP_KEEP | `backup-database.sh`; failed dump never deletes older backups. Consumes full stream, no early grep pipe close |
 | CI deploy jobs | Frontend lint and build, Backend tests, Deployment script checks; exact SHA/push-main/latest attempt + overall success | `ci-deploy.py`; CI pending/failure leaves release unchanged |
+
+| Search/navigation setting | Behavior | Location / lifecycle |
+| --- | --- | --- |
+| Production attendance search debounce | 350 ms, unchanged; latest callback, pending acknowledgements preserve newer drafts, POP/external value cancels timer; cleanup on unmount | `useDebouncedHrSearchValue`; no cache or background polling |
+| HR list URL writer | Stable setter + getValues, same-tick patches merge against pending latest search, identical params do not navigate; cleanup blocks unmounted writers | `useHrListState`; no persisted extra state, URL remains source of applied filters |
+| Production attendance stale reads | Imports/base guarded by request sequence and current month; shifts/summaries retain sequence guard and invalidate on empty selection/cleanup | `HrProductionAttendance`; no AbortController mixed into this existing screen, no cache |
