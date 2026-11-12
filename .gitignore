@@ -2,6 +2,7 @@
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
+frontend/dev-dist/
 frontend/*.local
 frontend/.env
 frontend/.env.*
@@ -63,3 +64,11 @@ yarn-error.log*
 !/docs/hr-template/README.md
 !/docs/hr-template/PHASE_0_1_BASELINE_REPORT.md
 !/docs/hr-template/baseline-values-2026-manifest.json
+
+# Private employee health sources; keep the original Excel and extracted notes local
+/KHAM SUC KHOE 2025.xlsx
+/KHAM SUC KHOE 2025.md
+/So sánh kết quả sức khỏe gián tiếp 2023 - 2024.xlsx
+/So sánh kết quả sức khỏe gián tiếp 2023 - 2024.md
+/bo sung thong tin SK 2024.xlsx
+/bo sung thong tin SK 2024.md

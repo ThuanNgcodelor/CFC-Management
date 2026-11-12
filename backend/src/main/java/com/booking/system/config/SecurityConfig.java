@@ -70,6 +70,9 @@ public class SecurityConfig {
                                                                 "/admin/**",
                                                                 "/manager/**")
                                                 .permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/health-lookup").permitAll()
+                                                .requestMatchers(HttpMethod.HEAD, "/health-lookup").permitAll()
+                                                .requestMatchers("/api/v1/health-self/**").permitAll()
                                                 .requestMatchers("/api/v1/auth/**").permitAll() // Mở endpoint đăng nhập
                                                 .requestMatchers(HttpMethod.POST,
                                                                 "/api/v1/integrations/telegram/payroll/webhook")
@@ -81,6 +84,8 @@ public class SecurityConfig {
                                                 // payroll through Telegram and cannot access HR APIs.
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/word-editor/*/content").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/v1/word-editor/*/callback").permitAll()
+                                                .requestMatchers("/api/v1/hr/health", "/api/v1/hr/health/**")
+                                                .hasAnyRole("ADMIN", "MANAGER")
                                                 // HR staff can read personnel records, but writes belong to
                                                 // the attendance/reward modules only. Keep these before the fallback.
                                                 .requestMatchers(HttpMethod.GET,

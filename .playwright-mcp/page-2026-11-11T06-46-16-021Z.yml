@@ -1,0 +1,21 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - paragraph [ref=e6]: Quản lý nhân sự
+      - heading "Sổ sức khỏe" [level=1] [ref=e7]
+      - paragraph [ref=e8]: Quản lý đợt khám, chỉ tiêu và nhập kết quả sức khỏe nhân viên.
+    - button "Thêm đợt khám" [ref=e10]
+  - tablist "Quản lý sổ sức khỏe" [ref=e11]:
+    - tab "Đợt khám" [selected] [ref=e12]
+    - tab "Danh mục chỉ tiêu" [ref=e13]
+    - tab "Nhập dữ liệu" [ref=e14]
+  - generic [ref=e15]:
+    - textbox "Tìm mã hoặc tên" [ref=e16]
+    - spinbutton "Năm báo cáo" [ref=e17]
+    - combobox "Lọc khối nhân sự" [ref=e18]:
+      - option "Tất cả khối" [selected]
+      - option "Cả hai khối"
+      - option "Trực tiếp — Công nhân"
+      - option "Gián tiếp — Văn phòng"
+    - button "Tải lại" [disabled]
+  - generic [ref=e19]: Đang tải dữ liệu...

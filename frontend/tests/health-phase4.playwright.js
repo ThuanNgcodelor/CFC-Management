@@ -1,0 +1,45 @@
+// eslint-disable-next-line no-unused-expressions -- MCP executes this isolated UI fixture.
+async (page) => {
+  const errors = []; page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('http://127.0.0.1:5195/tests/health-phase4.html?tab=records');
+  await page.getByRole('button', { name: 'Mở sổ sức khỏe', exact: true }).first().waitFor();
+  await page.evaluate(() => { window.healthRecordTest.calls = []; });
+  const search = page.getByRole('textbox', { name: 'Tìm hồ sơ sức khỏe', exact: true });
+  await search.pressSequentially('RECORDDEV', { delay: 20 }); await page.waitForTimeout(500);
+  if ((await page.evaluate(() => window.healthRecordTest.calls)).length !== 1) throw new Error('Records search must debounce');
+  await page.getByLabel('Sắp xếp hồ sơ sức khỏe').selectOption('codeDesc');
+  await page.getByRole('button', { name: 'Sau', exact: false }).first().click();
+  await page.waitForTimeout(100); const listUrl = page.url();
+  await page.getByRole('button', { name: 'Mở sổ sức khỏe', exact: true }).first().click();
+  await page.getByText('Chưa có dữ liệu đã nhập', { exact: true }).waitFor();
+  if (await page.getByRole('checkbox').count() !== 4) throw new Error('All visits including repeats within a year must remain visible');
+  await page.getByRole('button', { name: 'Xem kết quả lần khám', exact: true }).first().click();
+  await page.getByRole('cell', { name: '<0.5', exact: true }).waitFor();
+  await page.getByRole('textbox', { name: 'Tìm chỉ tiêu lần khám', exact: true }).fill('AST'); await page.waitForTimeout(450);
+  await page.getByRole('cell', { name: '<0.5', exact: true }).waitFor();
+  await page.keyboard.press('Escape');
+  await page.getByRole('checkbox', { name: 'Chọn lượt FAKE-0' }).click(); await page.locator('input[aria-label="Chọn lượt FAKE-0"]:checked').waitFor();
+  await page.getByRole('checkbox', { name: 'Chọn lượt FAKE-3' }).click(); await page.locator('input[aria-label="Chọn lượt FAKE-3"]:checked').waitFor();
+  await page.getByRole('button', { name: 'So sánh 2 lượt đã chọn', exact: true }).click();
+  await page.getByRole('cell', { name: 'Không có dữ liệu', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Xem xu hướng số học', exact: true }).click();
+  await page.getByRole('img', { name: 'Xu hướng AST giả lập', exact: true }).waitFor();
+  await page.setViewportSize({ width: 390, height: 844 });
+  if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) throw new Error('Comparison must scroll within its container');
+  await page.screenshot({ path: '/tmp/health-phase4-mobile-fixture.png', fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({ path: '/tmp/health-phase4-desktop-fixture.png', fullPage: true });
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Quay lại danh sách hồ sơ', exact: true }).click();
+  if ((await search.inputValue()) !== 'RECORDDEV' || await page.getByLabel('Sắp xếp hồ sơ sức khỏe').inputValue() !== 'codeDesc' || !page.url().includes('page=1')) throw new Error('Return lost list filters or page');
+  await page.goto(listUrl);
+  await page.getByRole('button', { name: 'Mở sổ sức khỏe', exact: true }).first().click();
+  await page.goBack(); await page.getByRole('textbox', { name: 'Tìm hồ sơ sức khỏe', exact: true }).waitFor();
+  if ((await search.inputValue()) !== 'RECORDDEV' || !page.url().includes('page=1')) throw new Error('Browser Back lost list context');
+  await page.goForward(); await page.getByRole('button', { name: 'Quay lại danh sách hồ sơ', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Quay lại danh sách hồ sơ', exact: true }).click();
+  await search.fill('OLD'); await page.waitForTimeout(380); await search.fill('RECORDDEV'); await page.waitForTimeout(1100);
+  if ((await search.inputValue()) !== 'RECORDDEV' || await page.getByRole('button', { name: 'Mở sổ sức khỏe', exact: true }).count() !== 20) throw new Error('Old response overwrote current search');
+  if (errors.length) throw new Error('Browser errors: ' + errors.join('; '));
+  return { passed: ['debounced records search', 'server sort and pagination', 'all visits retained', 'missing year explicit', 'result source and reference', 'limited values preserved', 'comparison missing cells', 'compatible numeric chart', '390px responsive', 'return retains search/sort/page', 'browser Back/Forward', 'stale search cancelled'], screenshots: ['/tmp/health-phase4-desktop-fixture.png', '/tmp/health-phase4-mobile-fixture.png'] };
+}

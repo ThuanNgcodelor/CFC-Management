@@ -1,0 +1,16 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - strong [ref=e4]: DEV — API thật · H2 tạm · Nhân sự giả lập
+    - paragraph [ref=e5]: Dữ liệu chỉ nằm trong bộ nhớ; mất khi dừng backend. Không kết nối hệ thống/server thật.
+    - generic [ref=e6]:
+      - 'link "Tải Excel mẫu: 3 người, 1 người thiếu mã" [ref=e7] [cursor=pointer]':
+        - /url: /dev-fixtures/ket-qua-mau.xlsx
+      - 'link "Tải Excel bổ sung: tạo chênh lệch" [ref=e8] [cursor=pointer]':
+        - /url: /dev-fixtures/bo-sung-mau.xlsx
+    - paragraph [ref=e9]: Chọn DEV2026, mã nguồn DEV_HOSPITAL, ngày khám 01/01/2026. Hãy nhập file mẫu trước, rồi file bổ sung cùng nguồn để thử đối chiếu.
+  - generic [ref=e10]:
+    - generic [ref=e12]:
+      - paragraph [ref=e13]: Quản lý nhân sự
+      - heading "Sổ sức khỏe" [level=1] [ref=e14]
+      - paragraph [ref=e15]: Quản lý đợt khám, chỉ tiêu và nhập kết quả sức khỏe nhân viên.
+    - generic [ref=e16]: Đang tải dữ liệu...
