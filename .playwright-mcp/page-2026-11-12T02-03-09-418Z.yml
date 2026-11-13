@@ -1,0 +1,49 @@
+- main [ref=f1e3]:
+  - generic [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - paragraph [ref=f1e6]: CFC · SỔ SỨC KHỎE
+      - heading "Sức khỏe của tôi" [level=1] [ref=f1e7]
+    - button "Thoát tra cứu" [ref=f1e8]
+  - paragraph [ref=f1e9]: Chỉ hiển thị kết quả của bạn đã được công bố. Thiếu dữ liệu không đồng nghĩa chưa khám hoặc sức khỏe bình thường. Hãy thoát khi dùng xong trên máy chung.
+  - generic [ref=f1e10]:
+    - generic [ref=f1e11]:
+      - text: Từ năm
+      - spinbutton "Tra cứu từ năm" [ref=f1e12]: "2023"
+    - generic [ref=f1e13]:
+      - text: Đến năm
+      - spinbutton "Tra cứu đến năm" [ref=f1e14]: "2026"
+    - button "Xem lịch sử" [ref=f1e15]
+    - button "Tải lại" [ref=f1e16]
+  - generic [ref=f1e17]:
+    - heading "Người tra cứu giả lập" [level=2] [ref=f1e18]
+    - paragraph [ref=f1e19]: "Mã nhân viên: DEMO-SELF · Ngày sinh: Chưa có dữ liệu"
+  - generic [ref=f1e20]:
+    - button "So sánh 0 lượt đã chọn" [disabled]
+    - generic [ref=f1e21]: Chọn 2–6 lượt, có thể chọn qua nhiều trang.
+  - region "Lịch sử khám đã công bố" [ref=f1e22]:
+    - article [ref=f1e23]:
+      - generic [ref=f1e24]:
+        - checkbox "Chọn lượt 2024 Khám định kỳ giả lập 2024" [ref=f1e25]
+        - generic [ref=f1e26]:
+          - heading "2024 · Khám định kỳ giả lập 2024" [level=2] [ref=f1e27]
+          - paragraph [ref=f1e28]: "Cơ sở khám giả lập · Ngày khám: Chưa xác nhận ngày"
+          - paragraph [ref=f1e29]: "Phân loại theo cơ sở khám: II"
+          - paragraph [ref=f1e30]: Kết quả có thể chưa đầy đủ; liên hệ nhân sự nếu cần bổ sung.
+          - paragraph [ref=f1e31]: Phiên bản 1 · Công bố 2024-11-01
+      - button "Xem kết quả 2024" [ref=f1e32]
+    - article [ref=f1e33]:
+      - generic [ref=f1e34]:
+        - checkbox "Chọn lượt 2025 Khám định kỳ giả lập 2025" [ref=f1e35]
+        - generic [ref=f1e36]:
+          - heading "2025 · Khám định kỳ giả lập 2025" [level=2] [ref=f1e37]
+          - paragraph [ref=f1e38]: "Cơ sở khám giả lập · Ngày khám: Chưa xác nhận ngày"
+          - paragraph [ref=f1e39]: "Phân loại theo cơ sở khám: II"
+          - paragraph [ref=f1e40]: Kết quả có thể chưa đầy đủ; liên hệ nhân sự nếu cần bổ sung.
+          - paragraph [ref=f1e41]: Phiên bản 1 · Công bố 2025-11-01
+      - button "Xem kết quả 2025" [ref=f1e42]
+  - generic [ref=f1e43]:
+    - generic [ref=f1e44]: 2 kết quả · Trang 1/1
+    - generic [ref=f1e45]:
+      - button "Trước" [disabled]
+      - button "Đến trang 1" [ref=f1e47]: "1"
+      - button "Sau" [disabled]

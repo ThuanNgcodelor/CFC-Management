@@ -56,7 +56,7 @@ export function HrDrawer({ isOpen, onClose, title, description, children, size =
 
   if (!isOpen) return null;
 
-  const widthClass = size === 'wide' ? 'max-w-3xl' : 'max-w-xl';
+  const widthClass = size === 'full' ? 'max-w-[1600px]' : size === 'wide' ? 'max-w-3xl' : 'max-w-xl';
 
   return (
     <div className="fixed inset-0 z-[70]" role="presentation">

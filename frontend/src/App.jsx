@@ -1,3 +1,4 @@
+import { healthFeatureEnabled } from './utils/healthFeature';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { lazy, Suspense, useState, useEffect } from 'react';
@@ -138,6 +139,9 @@ const HrRoute = ({ children }) => (
   </ManagerRoute>
 );
 
+const HrHealth = lazy(() => import('./pages/health/HrHealth'));
+const HealthSelfPortal = lazy(() => import('./pages/health/HealthSelfPortal'));
+
 function App() {
 
   return (
@@ -145,6 +149,7 @@ function App() {
       <ServiceWorkerNavigateListener />
       <Toaster position="top-right" />
       <Routes>
+      <Route path="/health-lookup" element={<HealthSelfPortal />} />
       <Route path="/login" element={
         <LoginRoute>
           <Login />
@@ -175,6 +180,7 @@ function App() {
 
         {/* Phân hệ HR dành cho ADMIN và MANAGER. */}
         <Route path="manager/hr" element={<HrRoute><HrOverview /></HrRoute>} />
+        <Route path="manager/hr/health" element={healthFeatureEnabled ? <HrRoute><HrHealth /></HrRoute> : <Navigate to="/manager/hr" replace />} />
         <Route path="manager/hr/reports" element={<HrRoute><HrReports /></HrRoute>} />
         <Route path="manager/hr/employees" element={<HrRoute><HrEmployees /></HrRoute>} />
         <Route path="manager/hr/employees/new" element={<HrRoute><HrEmployeeForm /></HrRoute>} />

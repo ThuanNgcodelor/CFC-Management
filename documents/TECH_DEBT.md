@@ -37,7 +37,8 @@ Source: codebase audit on 2026-10-16. Read this file only when a task touches an
 | 17e | Pending employee records with draft movements cannot be deleted, and the generic reference error provides no resolution workflow | `HrWorkforceService.deleteDraftEmployee`, employee detail/delete UI | Add precise reference diagnostics and an approved stop-reception/archive workflow that preserves audit and confirmed history; planned in `HR_REPORTING_UX_PLAN.md`, not implemented |
 | 17f | Full backend suite has a reproducible unused Mockito stub in `previewLoadsQualificationAndEntitlementDetailsInBatches` | `HrNightRewardServiceTest.setUp`, entitlement repository stub at line 122 in the 04/11/2026 checkout | Scope the stub to tests that consume it; reproduced in isolation during HR UX Phase 0–3. Outside this change's business scope; full suite is not green even with the two attendance fixtures supplied. |
 | 17g | Workforce report projection and correction filtering load the full confirmed movement timeline before filtering | `HrReportService`, `HrRosterProjectionService.projectedItemsForPeriods` | Add date-bounded movement queries plus a correction lookup that still removes replacements outside the requested year; measure on MySQL before sign-off. |
-| 17h | Migration-count tests still expect schema versions before V29/V30 | `HrPhase1MigrationTest`, `HrPhase2RetentionMigrationTest` | Update expected migration counts and migration assertions to the current schema only after confirming every migration is applied; Phase 5 itself adds no schema change. |
+
+| 17i | Health staging/revision retention và MySQL chưa nghiệm thu | `health` import Phase 2 | Chốt TTL/purge/backup trước dữ liệu thật trên server; chạy V34/V35 và EXPLAIN MySQL dev. Phase 3 đã được phép nhập thật vào H2 dev riêng, có backup/restore nhưng /tmp không là lưu trữ dài hạn. Cancel xóa pending payload; không tự purge imported/history. Xem EMPLOYEE_HEALTH_PHASE3_DEV.md. |
 
 ## Group 3: Needs an owner decision (do not change on your own)
 
@@ -52,3 +53,9 @@ Source: codebase audit on 2026-10-16. Read this file only when a task touches an
 
 - Backend `./mvnw test` could not run (no `JAVA_HOME`).
 - No `EXPLAIN ANALYZE` on production-size data for the cross-file duplicate query.
+
+- Health Phase 5 trước rollout: nghiệm thu Excel/LibreOffice desktop và MySQL/EXPLAIN, duyệt mẫu xuất; bổ sung snapshot đơn vị lịch sử khi có nguồn. Spool export private được dọn khi close nhưng kill/mất điện có thể để lại cfc-health-export-*; cần quy trình dọn khi app dừng, không áp dụng purge rộng có thể xóa export còn chạy. Xem EMPLOYEE_HEALTH_PHASE5_DEV.md.
+
+- Health Phase 6 trước rollout: nghiệm thu V36, snapshot LONGTEXT/locking và truy vấn latest revision trên MySQL thật; chạy EXPLAIN với dữ liệu lớn trước quyết định thêm index. Cần backup/retention cho snapshot công bố, rà soát baseline thật trước phát hành. Phase 7 đã được duyệt mã tra cứu riêng và có cổng dev; chưa công bố thật hoặc mở production. Xem EMPLOYEE_HEALTH_PHASE6_DEV.md.
+
+- Health Phase 7 trước rollout: nghiệm thu V37/backfill frozen year và locking/EXPLAIN trên MySQL; kiểm tra remoteAddr thực sau Cloudflare/reverse proxy vì limiter chỉ RAM một instance (20/IP và10/mã trong15phút), restart reset và cùng proxy có thể dùng chung hạn mức. Chốt backup/retention cho grant/session và giám sát an toàn không log request body/token; không tự bật cổng hoặc thêm Redis. Xem EMPLOYEE_HEALTH_PHASE7_DEV.md.
