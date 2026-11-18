@@ -4,6 +4,8 @@ import { healthImportApi } from '../../api/healthImportApi';
 import { HrError, HrLoading, HrPagination } from '../../components/hr/HrUi';
 import { Button } from '../../components/ui/Button';
 import HealthCatalogPicker from './HealthCatalogPicker';
+import HealthMappingReview from './HealthMappingReview';
+import { reviewHealthMapping } from './healthMappingReview';
 import { healthInput, healthError } from './healthImportUi';
 
 const FIELDS = [['', 'Chọn cách xử lý'], ['IGNORE', 'Bỏ qua'], ['NAME', 'Họ tên'], ['EMPLOYEE_CODE', 'Mã nhân viên'], ['BIRTH', 'Ngày/năm sinh'], ['SID', 'SID lượt khám'], ['EXAM_DATE', 'Ngày khám'], ['RESULT', 'Kết quả'], ['REFERENCE', 'Khoảng tham chiếu']];
@@ -32,7 +34,7 @@ export default function HealthImportMapping({ campaign, onStaged }) {
     queryFn: ({ signal }) => healthImportApi.profiles(sheet.fingerprint, signal, profilePage) });
   const mapping = { ...initialMapping(sheet), ...custom };
   const columns = sheet?.columns || [];
-  const unmapped = columns.filter((column) => !mapping[column.index]?.field).length;
+  const review = reviewHealthMapping(columns, mapping);
   const stage = useMutation({ mutationFn: healthImportApi.stage, onSuccess: onStaged });
   const update = (field, value) => {
     setSettings((current) => ({ ...current, [field]: value }));
@@ -41,6 +43,7 @@ export default function HealthImportMapping({ campaign, onStaged }) {
   const map = (index, patch) => { setCustom((current) => ({ ...current, [index]: { ...mapping[index], ...patch } })); setAcknowledged(false); };
   const submit = (event) => {
     event.preventDefault();
+    if (!acknowledged || review.issues.length || inspect.isFetching || stage.isPending) return;
     stage.mutate({ file: picked.file, request: { ...settings, campaignId: campaign.id, sheet: sheet.name,
       headerRow: Number(settings.headerRow || sheet.headerRow), headerRows: Number(settings.headerRows), defaultDate: settings.defaultDate || null,
       profileName: settings.profileName || null, columns: mapping } });
@@ -76,7 +79,8 @@ export default function HealthImportMapping({ campaign, onStaged }) {
       {profiles.isError && <HrError message={healthError(profiles.error)} onRetry={profiles.refetch} />}
       {profiles.data?.totalPages > 1 && <HrPagination page={profilePage} totalPages={profiles.data.totalPages} totalElements={profiles.data.totalElements} loading={profiles.isFetching} onPageChange={setProfilePage} />}
       {!sheet.resultSheet && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Sheet này có thể là bảng thống kê hoặc danh sách công việc. Hãy kiểm tra trước khi chọn.</p>}
-      <p className="text-sm font-medium">{columns.length} cột · {unmapped} cột chưa chọn cách xử lý</p>
+      <HealthMappingReview review={review} onColumn={(index) => setColumnPage(Math.floor(columns.findIndex((column) => column.index === index) / 20))} />
+      <p className="text-sm font-medium">{columns.length} cột · {review.unresolved.length} cột chưa chọn cách xử lý</p>
       <div className="max-w-full overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead><tr><th className="p-2">Cột / Tên gốc</th><th className="p-2">Trường đích</th><th className="p-2">Chỉ tiêu / Đơn vị / Phương pháp</th></tr></thead><tbody>
         {columns.slice(columnPage * 20, columnPage * 20 + 20).map((column) => { const value = mapping[column.index]; return <tr key={column.index} className="border-t border-slate-100">
           <td className="p-2">{column.letter} · {column.name || '(Không có tiêu đề)'}</td>
@@ -94,7 +98,7 @@ export default function HealthImportMapping({ campaign, onStaged }) {
       <p className="text-xs text-slate-500">Khoảng tham chiếu phải gắn cùng chỉ tiêu, đơn vị và phương pháp với cột kết quả. Cột Code của các mẫu hiện tại là đơn vị, không phải mã nhân viên.</p>
       <label className="flex gap-2 text-sm"><input type="checkbox" checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} />Tôi đã kiểm tra sheet, tiêu đề và các cột bỏ qua.</label>
       {stage.isError && <HrError message={healthError(stage.error)} />}
-      <Button type="submit" disabled={!acknowledged || unmapped > 0 || stage.isPending || inspect.isFetching}>{stage.isPending ? 'Đang tạo lô...' : 'Tạo lô và xem trước'}</Button>
+      <Button type="submit" disabled={!acknowledged || review.issues.length > 0 || stage.isPending || inspect.isFetching}>{stage.isPending ? 'Đang tạo lô...' : 'Tạo lô và xem trước'}</Button>
     </form>}
     {picker !== null && <HealthCatalogPicker type="indicators" onClose={() => setPicker(null)} onSelect={(item) => { map(picker, { indicatorId: item.id }); setLabels((current) => ({ ...current, [item.id]: item.name })); }} />}
   </section>;

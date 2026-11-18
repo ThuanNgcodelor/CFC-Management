@@ -498,3 +498,7 @@ Hiệu chỉnh Phase7 cùng ngày12/11 theo lời làm rõ: hai phương thức 
 ### Sổ sức khỏe Phase 8 — nghiệm thu kỹ thuật dev 12/11/2026
 
 Đã kiểm thử MySQL8.0.46 riêng, upgrade V33→V39/backfill giữ snapshot, API quyền/phiên/công bố và backup/restore79 bảng khớp count/checksum. HTTP loopback qua UI thật đạt14nhóm gồm mobile/PDF/revoke/IDOR/CORS/rate-limit. Thêm job CI MySQL cách ly; test launcher nằm test-source, không đóng gói production. Gate vẫn OFF; V34–V39 không auto-approve, JavaV37 vẫn chặn tự deploy theo chính sách hiện hữu. Chưa nghiệm thu Fedora/Cloudflare/pilot hoặc công bố thật. [Bàn giao Phase8](EMPLOYEE_HEALTH_PHASE8_DEV.md).
+
+### Sổ sức khỏe — chuẩn bị2026 và nghiệm thu dev18/11/2026
+
+Người dùng xác nhận chưa có file2026. Đã hoàn thiện review ánh xạ toàn cột/chỉ tiêu thiếu/bỏ qua và demo riêng trong shell CFCBase,6test nhập–so sánh2024/2025/2026–xuất–công bố–bổ sung trên H2/MySQL. Test launcher chỉ test-source, không ghi baseline/server. Phản hồi401/403 nội bộ health được ghi JSON trực tiếp để giữ403 qua servlet error dispatch; không đổi fallback các phân hệ khác. Full433test/0lỗi,38MySQL riêng và114nhómMCP đạt. Dữ liệu thật Phase3/pilot Phase8/file2026 Phase9 còn nghiệm thu. [Bàn giaoPhase9](EMPLOYEE_HEALTH_PHASE9_DEV.md).

@@ -330,18 +330,26 @@ Tham khảo cách tách báo cáo khỏi từng kết quả đo của [HL7 FHIR 
 ### Phase 8 — Nghiệm thu và rollout
 
 - [x] Nghiệm thu kỹ thuật dev: full backend, frontend lint/build, API quyền, E2E HTTP thực, MySQL và restore riêng; chi tiết [Phase 8 dev](EMPLOYEE_HEALTH_PHASE8_DEV.md).
-- [ ] Bộ ba demo tối thiểu: dữ liệu đúng; sai lệch cần xác nhận; dữ liệu lỗi/thiếu. Thêm bổ sung muộn và thu hồi sau công bố.
+- [x] Bộ ba demo tối thiểu: dữ liệu đúng; sai lệch cần xác nhận; dữ liệu lỗi/thiếu. Thêm bổ sung muộn và thu hồi sau công bố.
 - [ ] Kiểm thử mobile, tải file, Back/Forward, request đảo thứ tự, performance import/export/search trên fixture lớn không chứa dữ liệu thật.
 - [ ] Diễn tập backup/restore DB+tệp+khóa nếu có; review migration với gate CI/CD, flag health tắt mặc định lúc lên release.
 - [ ] Pilot ADMIN/MANAGER → nhập đã duyệt → công bố nhóm nhỏ → người dùng kiểm chứng → mở rộng phạm vi.
 - [ ] Nếu lỗi, tắt cổng tra cứu/thu hồi đúng phạm vi và giữ chức năng HR cũ; rollback JAR không được hứa khôi phục DB hoặc file đã tải.
-- [ ] Hướng dẫn import, đối chiếu, công bố, hỗ trợ tra cứu và checklist bàn giao có ảnh giả lập/được phép.
+- [x] Hướng dẫn import, đối chiếu, công bố, hỗ trợ tra cứu và checklist bàn giao có ảnh giả lập; xem [Phase9/dev](EMPLOYEE_HEALTH_PHASE9_DEV.md).
 
 **Trạng thái 12/11/2026:** phần kỹ thuật dev đã kiểm tra; các ô còn lại cần nghiệm thu trọn phạm vi, không đánh dấu thay cho pilot thật. Đã có demo đúng/sai lệch/thiếu ở các phase trước, mobile/PDF/revoke HTTP và restore DB giả ở Phase8. Chưa kiểm tra HTTPS/Cloudflare thực, backup tệp/khóa vận hành, desktop Excel hoặc pilot.
 
 **Cổng review:** kiểm tra quyền/đúng người/công bố/tải file đạt; số liệu đối chiếu được; người dùng nghiệm thu. Báo riêng đã xong source, test local, pilot hay production, không dùng một dấu Done cho mọi môi trường.
 
 ### Phase 9 — Đợt khám 2026 và mở rộng sau pilot
+
+**18/11/2026:** người dùng xác nhận chưa có file2026. Phần chuẩn bị dev đã hoàn thiện và kiểm thử; các ô nghiệm thu dữ liệu thật bên dưới tiếp tục chờ file, không yêu cầu bịa kết quả để hoàn tất phase.
+
+- [x] Bộ5 file giả cho lịch sử2024/2025, mẫu2026 đổi cấu trúc/thêm chỉ tiêu, bổ sung muộn và dữ liệu lỗi.
+- [x] Kiểm tra ánh xạ toàn bộ cột trước nhập, kể cả cột ngoài trang đang xem; giữ backend validation.
+- [x] Luồng nhập → so sánh2024–2026 → xuất cá nhân/tập thể → review/công bố → bổ sung/công bố lại chạy bằng dịch vụ thật trên H2 và MySQL.
+- [x] Demo trong khung CFCBase gọi API HTTP thật, một lệnh chạy riêng và ảnh MCP; không ghi baseline/server.
+
 
 - [ ] Khi có mẫu bệnh viện thực tế 2026: dry-run, nhận diện thay đổi, duyệt profile mới và chỉ tiêu bổ sung.
 - [ ] Tạo đợt thật, xác nhận ngày/nguồn/nhóm, nhập từng phần và rà soát, công bố có kiểm soát.
@@ -365,3 +373,7 @@ Tham khảo cách tách báo cáo khỏi từng kết quả đo của [HL7 FHIR 
 | Retention và bảo vệ lưu trữ | Chốt theo chính sách công ty, backup, dữ liệu thô/phiên/log tách biệt | Rollout production |
 
 Không có yêu cầu phải trả lời mọi điểm trước khi làm phần độc lập. Thứ tự review đề xuất: **duyệt luồng và Phase 0–2 → duyệt baseline/so sánh/xuất → duyệt công bố và xác minh cá nhân → nghiệm thu pilot**.
+
+### Kết quả kiểm tra cập nhật18/11/2026
+
+Đã chạy12 bộ MCP/114 nhóm tương tác, full backend433test/0lỗi(43skip:38MySQL chạy riêng,5skipcũ), MySQL38/38 và restore79bảng, frontend build/lint đạt. Phần code/dev Phase1–9 đã có triển khai hoặc chuẩn bị tương ứng; baseline thật Phase3, pilot/production Phase8 và mẫu thật Phase9 còn nghiệm thu. [Bàn giao mới nhất](EMPLOYEE_HEALTH_PHASE9_DEV.md).

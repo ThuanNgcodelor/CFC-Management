@@ -1,0 +1,49 @@
+{
+  "date": "2026-11-18",
+  "environment": "dev-only; synthetic HTTP fixtures; no production writes",
+  "browserSuites": {
+    "phase1": 7,
+    "phase2": 13,
+    "phase3": 5,
+    "phase4": 12,
+    "phase5": 9,
+    "phase6": 11,
+    "phase7Personal": 12,
+    "phase7Access": 7,
+    "twoLookupModes": 10,
+    "mappingReview": 6,
+    "phase9Http": 8,
+    "phase8Http": 14
+  },
+  "backend": {
+    "total": 433,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 43,
+    "skipBreakdown": {
+      "mysqlOptInRunSeparately": 38,
+      "existing": 5
+    }
+  },
+  "mysql": {
+    "version": "8.0.46",
+    "testsPassed": 38,
+    "restoredTables": 79,
+    "countsAndChecksumsEqual": true
+  },
+  "nodePassed": 29,
+  "deploymentPythonPassed": 45,
+  "qaPythonPassed": 3,
+  "frontend": {
+    "build": "passed",
+    "lintErrors": 0,
+    "existingWarnings": 10
+  },
+  "pending": [
+    "manager validation of historical identity links and conflicts",
+    "hospital 2026 workbook",
+    "desktop export approval",
+    "Fedora/Cloudflare and pilot acceptance"
+  ],
+  "browserGroupsPassed": 114
+}

@@ -13,3 +13,7 @@ No browser-test dependency was added. These checks currently run via MCP, not au
 ## Health Phase8 HTTP acceptance
 
 `health-phase8-http.playwright.js` uses the real `/health-lookup` route on loopback5196 and the test-source fake HTTP backend on18086. Unlike the earlier UI harnesses it does not intercept API responses. Restart the isolated fixture before every run: the runner deliberately revokes a publication and exercises the limiter. Fourteen groups passed locally. See [Phase8 setup and safety boundaries](../../documents/EMPLOYEE_HEALTH_PHASE8_DEV.md). Never point this runner at production.
+
+## Health readiness2026
+
+Start `python3 scripts/health/run_dev_preview.py --maven <mvn-path> --java-home <jdk21-path>` from repo root. The script runs6 synthetic import workflow tests, generates5 fake workbooks and starts real health APIs on18086 plus Vite5196. Run `health-phase9.playwright.js` with MCP for8 end-to-end groups and desktop/mobile screenshots; `health-mapping-review.playwright.js` uses the existing5195 Phase2 UI fixture for6 mapping checks. The shell user is synthetic; health requests in Phase9 are not mocked. See [Phase9 handoff](../../documents/EMPLOYEE_HEALTH_PHASE9_DEV.md). Legacy Phase8 HTTP runner requires its original fresh fixture, not the2026 fixture. No browser tests automatically run in GitHub Actions.

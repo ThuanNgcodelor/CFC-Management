@@ -227,3 +227,7 @@ H2 EXPLAIN đã chạy cho V39: `SELECT employee_id FROM hr_health_access_grants
 Runner MySQL chỉ nhận image mysql:8.0/8.4, loopback cổng động, schema cố định health_qa_acceptance/health_qa_upgrade/health_qa_restore, tmpfs768MiB, RAM1GiB/2CPU; đợi tối đa120giây. HEALTH_MYSQL_QA_PASSWORD chỉ dùng cho test opt-in và không log. Test JVM đọc health.mysql.qa.url chỉ khi đúng loopback/schema QA; không đưa biến này vào .env production. Container/env tự dọn, proof/log/dump private cần dọn sau review. Không cache mới.
 
 EXPLAIN MySQL8.0.46 đã xác nhận V39 dùng unique hash index (const/1dòng), expiry dùng range index; không thay index/gate deployment. HTTP pilot giả bind127.0.0.1:18086, CORS chỉ127.0.0.1:5196, H2 memory và test JWT chỉ ở test-source. Không sử dụng launcher này làm backend thật. [Bàn giao Phase8](EMPLOYEE_HEALTH_PHASE8_DEV.md).
+
+### Demo chuẩn bị2026 —18/11/2026
+
+`scripts/health/run_dev_preview.py` chỉ chạy offline dev, Java21/Maven/npm; kiểm tra cổng127.0.0.1:18086 và5196 còn trống, H2 memory riêng, thư mục /tmp/cfc-health-2026-*0700 và log/mã/file giả0600. Đợi backend tối đa120giây, dừng process riêng khi Ctrl+C, không đọc .env production. VITE_API_URL/HEALTH_ENABLED chỉ truyền cho process Vite con; không lưu cấu hình mới vào máy chủ. [Cách chạy](EMPLOYEE_HEALTH_PHASE9_DEV.md). Runner MySQL nay chạy38test thay32; schema/memory/gate như Phase8, không cache mới.

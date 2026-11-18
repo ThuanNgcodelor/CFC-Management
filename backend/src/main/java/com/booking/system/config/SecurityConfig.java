@@ -1,6 +1,7 @@
 package com.booking.system.config;
 
 import com.booking.system.security.JwtAuthFilter;
+import com.booking.system.health.config.HealthSecurityResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -106,10 +107,16 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/v1/**").hasAnyRole("ADMIN", "MANAGER")
                                                 .anyRequest().authenticated())
                                 .exceptionHandling(exceptions -> exceptions
-                                                .authenticationEntryPoint((request, response, exception) -> response
-                                                                .sendError(HttpServletResponse.SC_UNAUTHORIZED))
-                                                .accessDeniedHandler((request, response, exception) -> response
-                                                                .sendError(HttpServletResponse.SC_FORBIDDEN)));
+                                                .authenticationEntryPoint((request, response, exception) -> {
+                                                        if (!HealthSecurityResponse.writeIfHealth(request, response, HttpServletResponse.SC_UNAUTHORIZED)) {
+                                                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                                                        }
+                                                })
+                                                .accessDeniedHandler((request, response, exception) -> {
+                                                        if (!HealthSecurityResponse.writeIfHealth(request, response, HttpServletResponse.SC_FORBIDDEN)) {
+                                                                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                                                        }
+                                                }));
 
                 http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
