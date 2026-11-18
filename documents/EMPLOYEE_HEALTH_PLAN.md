@@ -329,13 +329,15 @@ Tham khảo cách tách báo cáo khỏi từng kết quả đo của [HL7 FHIR 
 
 ### Phase 8 — Nghiệm thu và rollout
 
-- [ ] Full backend tests, frontend lint/build, API quyền và E2E các luồng quan trọng; ghi baseline thực tế.
+- [x] Nghiệm thu kỹ thuật dev: full backend, frontend lint/build, API quyền, E2E HTTP thực, MySQL và restore riêng; chi tiết [Phase 8 dev](EMPLOYEE_HEALTH_PHASE8_DEV.md).
 - [ ] Bộ ba demo tối thiểu: dữ liệu đúng; sai lệch cần xác nhận; dữ liệu lỗi/thiếu. Thêm bổ sung muộn và thu hồi sau công bố.
 - [ ] Kiểm thử mobile, tải file, Back/Forward, request đảo thứ tự, performance import/export/search trên fixture lớn không chứa dữ liệu thật.
 - [ ] Diễn tập backup/restore DB+tệp+khóa nếu có; review migration với gate CI/CD, flag health tắt mặc định lúc lên release.
 - [ ] Pilot ADMIN/MANAGER → nhập đã duyệt → công bố nhóm nhỏ → người dùng kiểm chứng → mở rộng phạm vi.
 - [ ] Nếu lỗi, tắt cổng tra cứu/thu hồi đúng phạm vi và giữ chức năng HR cũ; rollback JAR không được hứa khôi phục DB hoặc file đã tải.
 - [ ] Hướng dẫn import, đối chiếu, công bố, hỗ trợ tra cứu và checklist bàn giao có ảnh giả lập/được phép.
+
+**Trạng thái 12/11/2026:** phần kỹ thuật dev đã kiểm tra; các ô còn lại cần nghiệm thu trọn phạm vi, không đánh dấu thay cho pilot thật. Đã có demo đúng/sai lệch/thiếu ở các phase trước, mobile/PDF/revoke HTTP và restore DB giả ở Phase8. Chưa kiểm tra HTTPS/Cloudflare thực, backup tệp/khóa vận hành, desktop Excel hoặc pilot.
 
 **Cổng review:** kiểm tra quyền/đúng người/công bố/tải file đạt; số liệu đối chiếu được; người dùng nghiệm thu. Báo riêng đã xong source, test local, pilot hay production, không dùng một dấu Done cho mọi môi trường.
 

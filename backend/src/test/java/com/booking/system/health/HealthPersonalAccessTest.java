@@ -43,7 +43,7 @@ class HealthPersonalAccessTest extends HealthPublicationTest {
     @Test void wrongCitizenWrongCodeUnknownPersonAndExpiredGrantHaveSameMessage() {
         var issued=issue();String expected="Không thể xác minh thông tin hoặc phiên đã hết hạn. Vui lòng kiểm tra lại hoặc liên hệ nhân sự.";
         for(var request:List.of(new Lookup("000000000002","PUBLICDEV01",null,LookupMode.IDENTITY),new Lookup(CITIZEN,"PUBLICDEV01","X".repeat(32)),new Lookup(CITIZEN,"MISSING",null,LookupMode.IDENTITY)))assertThatThrownBy(()->personal.lookup(request,"127.0.0.2")).hasMessage(expected);
-        jdbc.update("UPDATE hr_health_access_grants SET expires_at=DATEADD('DAY',-1,CURRENT_TIMESTAMP)");
+        jdbc.update("UPDATE hr_health_access_grants SET expires_at=?",java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).minusDays(1));
         assertThatThrownBy(()->session(issued)).hasMessage(expected);
     }
     @Test void revokedCodesAndExpiredSessionsAndLogoutAreRejected() {
@@ -86,7 +86,7 @@ class HealthPersonalAccessTest extends HealthPublicationTest {
         issue();var request=new Lookup(CITIZEN,"PUBLICDEV01","X".repeat(32));
         for(int i=0;i<10;i++)assertThatThrownBy(()->personal.lookup(request,"127.0.0.3")).hasMessageContaining("Không thể xác minh");
         assertThatThrownBy(()->personal.lookup(request,"127.0.0.4")).hasMessageContaining("15 phút");
-        String plan=jdbc.queryForObject("EXPLAIN DELETE FROM hr_health_access_sessions WHERE expires_at<CURRENT_TIMESTAMP",String.class);
+        String plan=jdbc.queryForList("EXPLAIN DELETE FROM hr_health_access_sessions WHERE expires_at<CURRENT_TIMESTAMP").toString();
         assertThat(plan).containsIgnoringCase("idx_health_access_session_expiry");System.out.println("HEALTH_SELF_H2_EXPLAIN="+plan.replace('\n',' '));
     }
     @Test void personalPdfContainsPublishedResultsButNoInternalReviewReason() throws Exception {
@@ -148,7 +148,7 @@ class HealthPersonalAccessTest extends HealthPublicationTest {
         jdbc.update("DELETE FROM hr_employee_identity WHERE employee_id=?",employeeId);
         mvc.perform(post("/api/v1/health-self/session").contentType("application/json").content(json(new Lookup(null,null,issued.code(),LookupMode.ACCESS_CODE))))
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.token").isString()).andExpect(header().string("Cache-Control","no-store, private"));
-        String plan=jdbc.queryForObject("EXPLAIN SELECT employee_id FROM hr_health_access_grants WHERE secret_hash=?",String.class,"a".repeat(64));
+        String plan=jdbc.queryForList("EXPLAIN SELECT employee_id FROM hr_health_access_grants WHERE secret_hash=?",hash(issued.code())).toString();
         assertThat(plan).containsIgnoringCase("uk_health_access_secret_hash");System.out.println("HEALTH_PRIVATE_LOOKUP_H2_EXPLAIN="+plan.replace('\n',' '));
     }
     @Test void conditionalLookupValidationRequiresOnlyFieldsForTheSelectedMethod() throws Exception {

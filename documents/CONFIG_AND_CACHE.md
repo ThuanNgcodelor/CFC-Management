@@ -221,3 +221,9 @@ Không thêm cache/env/dependency/index. V38 không đưa vào auto-migrations m
 - H2 test EXPLAIN truy vấn `SELECT employee_id FROM hr_health_access_grants WHERE secret_hash=?` phải dùng `uk_health_access_secret_hash`. Chưa EXPLAIN MySQL hoặc chạy migration trên server/baseline thật. Mọi giới hạn phiên, cổng mặc địnhOFF, no-store và không persistence vẫn giữ nguyên.
 
 H2 EXPLAIN đã chạy cho V39: `SELECT employee_id FROM hr_health_access_grants /* public.uk_health_access_secret_hash: secret_hash = ?1 */ WHERE secret_hash = ?1`. Chưa có bằng chứng EXPLAIN MySQL; không thay gate triển khai/pilot Phase8.
+
+### Phase8 — cấu hình kiểm thử cách ly, không đổi runtime production
+
+Runner MySQL chỉ nhận image mysql:8.0/8.4, loopback cổng động, schema cố định health_qa_acceptance/health_qa_upgrade/health_qa_restore, tmpfs768MiB, RAM1GiB/2CPU; đợi tối đa120giây. HEALTH_MYSQL_QA_PASSWORD chỉ dùng cho test opt-in và không log. Test JVM đọc health.mysql.qa.url chỉ khi đúng loopback/schema QA; không đưa biến này vào .env production. Container/env tự dọn, proof/log/dump private cần dọn sau review. Không cache mới.
+
+EXPLAIN MySQL8.0.46 đã xác nhận V39 dùng unique hash index (const/1dòng), expiry dùng range index; không thay index/gate deployment. HTTP pilot giả bind127.0.0.1:18086, CORS chỉ127.0.0.1:5196, H2 memory và test JWT chỉ ở test-source. Không sử dụng launcher này làm backend thật. [Bàn giao Phase8](EMPLOYEE_HEALTH_PHASE8_DEV.md).

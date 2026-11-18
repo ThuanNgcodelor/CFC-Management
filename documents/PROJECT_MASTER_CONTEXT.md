@@ -494,3 +494,7 @@ Trang `/health-lookup` độc lập menu quản trị, CCCD + mã nhân viên + 
 Cập nhật tiếp Phase7 ngày12/11: người dùng duyệt hai cách tra cứu. UI chọn CCCD+mã nhân viên hoặc thêm mã riêng; backend chỉ cho hai trường khi ADMIN/MANAGER bật `allow_identity_only` trên grant còn hiệu lực. V38 mặc địnhFALSE, không tự đổi hồ sơ cũ; thao tác policy có lý do/generation, kết thúc phiên cũ; cấp lại mã resetFALSE và thu hồi chặn cả hai. Cổng vẫn dev-only/defaultOFF, không ghi baseline thật/server. Tổng hợp trạng thái và giới hạn: [bản tổng hợp triển khai sức khỏe](EMPLOYEE_HEALTH_IMPLEMENTATION_SUMMARY.md).
 
 Hiệu chỉnh Phase7 cùng ngày12/11 theo lời làm rõ: hai phương thức độc lập, **CCCD+mã nhân viên** hoặc **chỉ mã tra cứu riêng**. ACCESS_CODE resolve grant theo hash mã qua unique indexV39, không yêu cầu/không chọn owner bằng hai định danh; DTO validate theo mode, UI chỉ gửi trường của mode được chọn. Cách hai trường vẫn cần quản trị cho phép. Không đổi gate/mã/phiên/công bố thật hoặc deploy.
+
+### Sổ sức khỏe Phase 8 — nghiệm thu kỹ thuật dev 12/11/2026
+
+Đã kiểm thử MySQL8.0.46 riêng, upgrade V33→V39/backfill giữ snapshot, API quyền/phiên/công bố và backup/restore79 bảng khớp count/checksum. HTTP loopback qua UI thật đạt14nhóm gồm mobile/PDF/revoke/IDOR/CORS/rate-limit. Thêm job CI MySQL cách ly; test launcher nằm test-source, không đóng gói production. Gate vẫn OFF; V34–V39 không auto-approve, JavaV37 vẫn chặn tự deploy theo chính sách hiện hữu. Chưa nghiệm thu Fedora/Cloudflare/pilot hoặc công bố thật. [Bàn giao Phase8](EMPLOYEE_HEALTH_PHASE8_DEV.md).
