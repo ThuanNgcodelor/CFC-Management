@@ -235,3 +235,17 @@ EXPLAIN MySQL8.0.46 đã xác nhận V39 dùng unique hash index (const/1dòng),
 ### Bật quản trị sức khỏe mặc định —20/11/2026
 
 Theo yêu cầu người dùng, backend và frontend nội bộ bật sẵn từ code, không yêu cầu tạo file.env trên Fedora. Sau merge main, build/deploy bản mới sẽ có menu Sổ sức khỏe cho ADMIN/MANAGER. Cấu hình false đã khai báo rõ vẫn được giữ ưu tiên. HEALTH_SELF_SERVICE_ENABLED tiếp tục mặc địnhfalse; không tự công bố, cấp mã, import hay seed dữ liệu. Không đổi migration hoặc cơ chế backup/deploy.
+
+### Tự nhập gói sức khỏe lịch sử —20/11/2026
+
+| Thiết lập | Mặc định / giới hạn | Vòng đời |
+| --- | --- | --- |
+| `cfc.health.history.enabled` | true; chỉ hoạt động khi health nội bộ bật | ApplicationReady chạy nền; false dừng tự chạy, không xóa dữ liệu |
+| `cfc.health.history.key-file` | `${user.home}/.local/share/cfcbase/health/history-import.key` | ADMIN/MANAGER upload32byte một lần; file0600/thư mục0700 ngoài Git/JAR; phải backup riêng |
+| `health/history/company-history-v1.bundle` | AES256GCM +gzip; tối đa32MiB ciphertext và JSON giải nén; tối đa10 nguồn | Hash gói +ID lô trong receipt private cùng thư mục khóa; không cache kết quả |
+| Worker lịch sử | Một executor daemon/instance | Chạy sau startup hoặc thao tác web; lỗi giữ lô đã ghi; shutdown khi context đóng |
+| `history-import-receipt.json` | Tối đa8192byte/20 ID lô;0600 | Skip gói cũ khi đủ lô; DB restore thiếu lô sẽ xử lý lại an toàn |
+| UI trạng thái lịch sử | Refetch1500ms chỉ khi RUNNING | Dừng polling ở trạng thái khác; no-store API, Query invalidation prefix health sau thao tác |
+| Backup khi đổi bundle | So Gitdiff ở wrapper và so bytes trong JAR ở build script | Backup thành công trước kích hoạt, kể cả wrapper cũ; giữ nguyên migration gate |
+
+Không thêm cache, dependency hoặc yêu cầu.env mới. Khóa không nằm trong backup SQL, không trả từ API/log; không tự xoay khóa. [Cách vận hành](EMPLOYEE_HEALTH_AUTO_IMPORT.md).

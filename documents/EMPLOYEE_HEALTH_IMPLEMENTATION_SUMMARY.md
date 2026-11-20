@@ -68,3 +68,7 @@ Backend toàn bộ: **420 test, 0 failure/error, 37 skip** (32 MySQL opt-in ch�
 Người dùng yêu cầu bật từ code để push feat/fedora-deploy rồi PR main. Menu và backend Sổ sức khỏe được bật mặc định cho ADMIN/MANAGER; không cần thêm.env server. Cấu hình false nếu có vẫn có hiệu lực. Cổng cá nhân vẫn mặc định tắt; dữ liệu không tự import/công bố/cấp mã. Các ghi chú gate nội bộ OFF ở các bản bàn giao trước là lịch sử trước thay đổi này.
 
 Kiểm tra thay đổi mặc định20/11: backend434test/0lỗi/43skip(38MySQL opt-in và5skipcũ),30Nodeđạt,frontend buildđạt/lint0lỗi10warningcũ. MCP không truyền VITE_HEALTH_ENABLED xác nhận mặc địnhtrue, menuADMIN/MANAGERhiện vàHR_STAFFẩn.
+
+## Bổ sung tự nhập lịch sử —20/11/2026
+
+Đã bổ sung gói mã hóa 1.019 dòng nguồn2023–2025 đi kèm release và màn ADMIN/MANAGER cấp khóa một lần. Sau đó startup tự nhập các dòng khớp chắc chắn; chống trùng, không ghi đè xung đột/ánh xạ thủ công, không tự công bố hoặc tạo dữ liệu2026. Đây là khả năng mới thay việc ánh xạ lại lịch sử bằng tay, không phải đã nhập production. [Cách dùng, bảo quản khóa và kiểm chứng](EMPLOYEE_HEALTH_AUTO_IMPORT.md).

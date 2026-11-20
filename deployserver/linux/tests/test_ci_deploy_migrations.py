@@ -50,6 +50,16 @@ class MigrationPolicyTest(unittest.TestCase):
         self.write(policy.MANIFEST, "local uncommitted text must not authorize/reject a release")
         self.assertTrue(policy.require_auto_migrations(self.root, self.baseline, candidate))
 
+    def test_encrypted_history_changes_require_data_backup_but_not_schema_approval(self):
+        self.write(policy.HEALTH_HISTORY_PATH + "/company-history-v1.bundle", "ciphertext fixture")
+        candidate = self.commit()
+        self.assertTrue(policy.health_history_changed(self.root, self.baseline, candidate))
+        self.assertFalse(policy.require_auto_migrations(self.root, self.baseline, candidate))
+
+    def test_unchanged_history_does_not_trigger_extra_backup(self):
+        self.write("app.txt", "new code")
+        self.assertFalse(policy.health_history_changed(self.root, self.baseline, self.commit()))
+
     def test_no_schema_changes_need_no_manifest_or_backup(self):
         self.write("app.txt", "new app")
         self.assertFalse(policy.require_auto_migrations(self.root, self.baseline, self.commit()))

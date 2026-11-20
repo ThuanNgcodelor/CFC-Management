@@ -1,3 +1,4 @@
+import { healthHistoryApi } from '../src/api/healthHistoryApi';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
@@ -27,3 +28,5 @@ healthApi.save = async ({ type, item }) => {
   return next;
 };
 createRoot(document.getElementById('root')).render(<MemoryRouter><HrHealth /></MemoryRouter>);
+
+healthHistoryApi.status = async () => ({ state: 'UNAVAILABLE', batches: [], imported: 0, pending: 0 });

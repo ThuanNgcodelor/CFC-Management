@@ -283,7 +283,7 @@ class HealthPhase2Test {
         assertThatThrownBy(()->imports.preview(batch.id(),0,20,"WRONG",ADMIN)).hasMessageContaining("không hợp lệ");
     }
     @Configuration(proxyBeanMethods=false)
-    @Import({HealthPhase1Test.Config.class,HealthPersonalAccessController.class,HealthSelfController.class,com.booking.system.health.config.HealthSelfPrivacyFilter.class,
+    @Import({HealthPhase1Test.Config.class,HealthHistoryController.class,HealthPersonalAccessController.class,HealthSelfController.class,com.booking.system.health.config.HealthSelfPrivacyFilter.class,
         com.booking.system.health.repository.HealthPersonalAccessRepository.class,com.booking.system.health.service.HealthPersonalAccessService.class,com.booking.system.health.service.HealthLookupLimiter.class,HealthImportController.class,HealthRecordController.class,HealthReportController.class,HealthPublicationController.class,
         com.booking.system.health.repository.HealthPublicationReadRepository.class,
         com.booking.system.health.service.HealthPublicationDrafts.class,com.booking.system.health.service.HealthPublicationReader.class,

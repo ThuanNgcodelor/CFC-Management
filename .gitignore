@@ -72,3 +72,6 @@ yarn-error.log*
 /So sánh kết quả sức khỏe gián tiếp 2023 - 2024.md
 /bo sung thong tin SK 2024.xlsx
 /bo sung thong tin SK 2024.md
+
+# Private decryption keys for packaged health history must never be committed
+**/history-import.key

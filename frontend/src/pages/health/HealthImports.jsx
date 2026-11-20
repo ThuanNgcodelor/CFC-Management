@@ -7,6 +7,7 @@ import HealthCatalogPicker from './HealthCatalogPicker';
 import { healthError } from './healthImportUi';
 import HealthImportMapping from './HealthImportMapping';
 import HealthImportReview from './HealthImportReview';
+import HealthHistoryImport from './HealthHistoryImport';
 
 export default function HealthImports() {
   const [campaign, setCampaign] = useState(null);
@@ -18,6 +19,7 @@ export default function HealthImports() {
     queryFn: ({ signal }) => healthImportApi.batches(campaign.id, page, signal) });
   const changed = async (value) => { setBatch(value); await client.invalidateQueries({ queryKey: ['health', 'import-batches', campaign.id] }); };
   return <div className="space-y-4">
+    <HealthHistoryImport onReview={(item) => { setCampaign({ id: item.campaignId, code: `HISTORY_${item.year}`, name: item.campaign, reportYear: item.year, provider: 'Nguồn lịch sử công ty' }); setBatch({ ...item, campaignId: item.campaignId, sheet: item.sheet, totalRows: item.rows, importedRows: item.imported, pendingRows: item.pending }); setPage(0); }} />
     <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
       <p className="flex-1 text-sm">{campaign ? <><strong>{campaign.code} — {campaign.name}</strong><span className="block text-slate-500">Năm {campaign.reportYear} · {campaign.provider}</span></> : 'Chọn hoặc tạo đợt khám trước khi nhập file.'}</p>
       <Button variant="secondary" onClick={() => setPicker(true)}>Chọn đợt khám</Button>

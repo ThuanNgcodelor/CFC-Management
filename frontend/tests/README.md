@@ -17,3 +17,7 @@ No browser-test dependency was added. These checks currently run via MCP, not au
 ## Health readiness2026
 
 Start `python3 scripts/health/run_dev_preview.py --maven <mvn-path> --java-home <jdk21-path>` from repo root. The script runs6 synthetic import workflow tests, generates5 fake workbooks and starts real health APIs on18086 plus Vite5196. Run `health-phase9.playwright.js` with MCP for8 end-to-end groups and desktop/mobile screenshots; `health-mapping-review.playwright.js` uses the existing5195 Phase2 UI fixture for6 mapping checks. The shell user is synthetic; health requests in Phase9 are not mocked. See [Phase9 handoff](../../documents/EMPLOYEE_HEALTH_PHASE9_DEV.md). Legacy Phase8 HTTP runner requires its original fresh fixture, not the2026 fixture. No browser tests automatically run in GitHub Actions.
+
+## Health packaged history HTTP acceptance
+
+`health-history.playwright.js` runs9 groups against Vite5198 and the test-source `HealthHistoryPreview` backend on127.0.0.1:18088. Health APIs are real; the shell user and bundled data are synthetic. Start a fresh preview for every run (it deliberately installs its fixture key). The32zero-byte fixture key is test-only and must never replace the real private key. Covers locked/wrong-key, unlock/import, restart-view/retry dedupe, review navigation, mobile and HR_STAFF403. Screenshots contain synthetic data only. See [history handoff](../../documents/EMPLOYEE_HEALTH_AUTO_IMPORT.md).

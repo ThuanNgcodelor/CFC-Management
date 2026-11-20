@@ -46,9 +46,13 @@ public class HealthBaselinePreparation {
                 if(campaignId==null) {unknown+=group.getValue().size();continue;}
                 String sourceHash=hash(source.fileHash()+"|"+source.sheet());
                 var previous=batches.findByCampaignIdAndSourceHash(campaignId,sourceHash);
-                if(previous.isPresent()) {created.add(staging.summary(previous.get()));if(primary(source)) primaryIds.add(previous.get().getId());continue;}
+                if(previous.isPresent()&&!previous.get().getSourceNamespace().equals(namespace.trim().toUpperCase(Locale.ROOT)))throw invalid("File/sheet lịch sử đã có lô với mã nguồn khác; không tự xác nhận hoặc đổi nguồn của lô thủ công.");
                 var mapping=source.mapping().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,e -> remap(e.getValue(),targets.indicators())));
                 var request=new StageRequest(campaignId,source.sheet(),source.headerRow(),1,namespace,false,null,mapping,null);
+                if(previous.isPresent()) {
+                    if(!read(previous.get().getMappingJson(),StageRequest.class).equals(request)) throw invalid("Lô lịch sử đã có ánh xạ khác; cần rà soát thủ công, không tự xác nhận.");
+                    created.add(staging.summary(previous.get()));if(primary(source)) primaryIds.add(previous.get().getId());continue;
+                }
                 var rows=group.getValue().stream().map(row -> remap(row,targets.indicators(),source.kind(),year,sidYearsConfirmed)).toList();
                 String fingerprint=hash(json(source.mapping()));
                 var batch=staging.stage(new HealthParsedData.Parsed(source.fileHash(),fingerprint,request,rows),actor);created.add(batch);if(primary(source)) primaryIds.add(batch.id());

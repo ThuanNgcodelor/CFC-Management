@@ -4,5 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Collection;
 import java.util.List;
 public interface HealthVisitRepository extends JpaRepository<HealthVisit,String> {
+    List<HealthVisit> findBySourceSidIn(Collection<String> sids);
     List<HealthVisit> findBySourceNamespaceAndSourceSidIn(String namespace, Collection<String> sids);
 }
