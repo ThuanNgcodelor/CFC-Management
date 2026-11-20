@@ -103,8 +103,8 @@ Cấu hình mặc định hạ tầng được đóng gói trong `infrastructure
 
 | Setting | Default / scope | Invalidation / note |
 | --- | --- | --- |
-| `cfc.health.enabled` / `HEALTH_ENABLED` | `false`, shipped `health-defaults.properties` loaded by module configuration | Opt-in backend nghiệp vụ; capabilities chỉ trả boolean. Tắt trả 404 cho nghiệp vụ; không mở tra cứu công khai. Không sửa env/server trong lần triển khai này |
-| `VITE_HEALTH_ENABLED` | `false` nếu không có giá trị `true` | Chỉ hiện menu/route khi bật; backend vẫn kiểm tra role/flag riêng. Dev cần restart Vite, production cần build mới nếu sau này rollout |
+| `cfc.health.enabled` / `HEALTH_ENABLED` | `true` từ20/11/2026, đóng gói trong `health-defaults.properties` | Quản trị nội bộ ADMIN/MANAGER bật sẵn, không cần `.env`. Vẫn có thể ghi đè `false` để tắt; tắt trả404. Cổng cá nhân có flag riêng mặc địnhfalse |
+| `VITE_HEALTH_ENABLED` | `true` khi không khai báo từ20/11/2026; giá trị khai báo phải đúng `true` mới bật | Menu/route nội bộ bật sẵn cho ADMIN/MANAGER; backend kiểm tra quyền riêng. `false` vẫn ẩn; frontend nhận cấu hình lúc build, không đổi bằng restart backend đơn thuần |
 | Health Query client | Provider riêng màn, `staleTime=0`, `gcTime=0`, retry=false; không refetch focus/reconnect/polling | Invalidate đúng campaign/indicator sau save; abort request cũ; clear khi rời màn; không persist, không thêm cache backend |
 | Health list | 20 dòng/page, backend chấp nhận 1–100, page 0–10000; keyword tối đa 100; debounce dùng hook chung 350 ms | Lọc tại DB trước pagination, sort ổn định có ID; không trả unbounded list |
 | Indicator aliases | Tối đa 30 tên, 255 ký tự/tên | NFC + lowercase + collapse whitespace; trùng giữa chỉ tiêu trả conflict. Alias-only edit cũng tăng aggregate rowVersion |
@@ -231,3 +231,7 @@ EXPLAIN MySQL8.0.46 đã xác nhận V39 dùng unique hash index (const/1dòng),
 ### Demo chuẩn bị2026 —18/11/2026
 
 `scripts/health/run_dev_preview.py` chỉ chạy offline dev, Java21/Maven/npm; kiểm tra cổng127.0.0.1:18086 và5196 còn trống, H2 memory riêng, thư mục /tmp/cfc-health-2026-*0700 và log/mã/file giả0600. Đợi backend tối đa120giây, dừng process riêng khi Ctrl+C, không đọc .env production. VITE_API_URL/HEALTH_ENABLED chỉ truyền cho process Vite con; không lưu cấu hình mới vào máy chủ. [Cách chạy](EMPLOYEE_HEALTH_PHASE9_DEV.md). Runner MySQL nay chạy38test thay32; schema/memory/gate như Phase8, không cache mới.
+
+### Bật quản trị sức khỏe mặc định —20/11/2026
+
+Theo yêu cầu người dùng, backend và frontend nội bộ bật sẵn từ code, không yêu cầu tạo file.env trên Fedora. Sau merge main, build/deploy bản mới sẽ có menu Sổ sức khỏe cho ADMIN/MANAGER. Cấu hình false đã khai báo rõ vẫn được giữ ưu tiên. HEALTH_SELF_SERVICE_ENABLED tiếp tục mặc địnhfalse; không tự công bố, cấp mã, import hay seed dữ liệu. Không đổi migration hoặc cơ chế backup/deploy.
