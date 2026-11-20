@@ -9,10 +9,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 class HealthDefaultsTest {
     private final ApplicationContextRunner runner = new ApplicationContextRunner().withUserConfiguration(HealthConfiguration.class)
             .withBean(HealthAccess.class);
-    @Test void shippedDefaultsDisableHealthWithoutLoadingServerConfiguration() {
+    @Test void shippedDefaultsEnableInternalHealthButKeepPersonalLookupClosed() {
+        runner.run(context -> {
+            assertThat(context.getBean(HealthAccess.class).enabled()).isTrue();
+            assertThat(context.getEnvironment().getProperty("cfc.health.self-service.enabled",Boolean.class)).isFalse();
+        });
+    }
+    @Test void explicitEnvironmentFlagCanDisableInternalHealth() {
         runner.withPropertyValues("HEALTH_ENABLED=false").run(context -> assertThat(context.getBean(HealthAccess.class).enabled()).isFalse());
     }
-    @Test void localEnvironmentOptInEnablesHealth() {
+    @Test void explicitEnvironmentFlagCanEnableInternalHealth() {
         runner.withPropertyValues("HEALTH_ENABLED=true").run(context -> assertThat(context.getBean(HealthAccess.class).enabled()).isTrue());
     }
 }

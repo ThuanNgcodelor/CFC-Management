@@ -502,3 +502,7 @@ Hiệu chỉnh Phase7 cùng ngày12/11 theo lời làm rõ: hai phương thức 
 ### Sổ sức khỏe — chuẩn bị2026 và nghiệm thu dev18/11/2026
 
 Người dùng xác nhận chưa có file2026. Đã hoàn thiện review ánh xạ toàn cột/chỉ tiêu thiếu/bỏ qua và demo riêng trong shell CFCBase,6test nhập–so sánh2024/2025/2026–xuất–công bố–bổ sung trên H2/MySQL. Test launcher chỉ test-source, không ghi baseline/server. Phản hồi401/403 nội bộ health được ghi JSON trực tiếp để giữ403 qua servlet error dispatch; không đổi fallback các phân hệ khác. Full433test/0lỗi,38MySQL riêng và114nhómMCP đạt. Dữ liệu thật Phase3/pilot Phase8/file2026 Phase9 còn nghiệm thu. [Bàn giaoPhase9](EMPLOYEE_HEALTH_PHASE9_DEV.md).
+
+### Sổ sức khỏe — bật quản trị nội bộ mặc định20/11/2026
+
+Theo yêu cầu người dùng, code đóng gói bật sẵn backend và menu/route Sổ sức khỏe cho ADMIN/MANAGER; không cần tạo.env khi build/deploy bản mới. Các mô tả opt-in OFF trước đây là trạng thái lịch sử và được thay thế cho phần nội bộ. Khai báo false rõ ràng vẫn tắt được. HR_STAFF không được mở API/menu health; cổng cá nhân HEALTH_SELF_SERVICE_ENABLED vẫn mặc địnhfalse, không tự công bố/cấp mã/nhập dữ liệu.

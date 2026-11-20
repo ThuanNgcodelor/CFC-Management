@@ -61,3 +61,10 @@ Backend toàn bộ: **420 test, 0 failure/error, 37 skip** (32 MySQL opt-in ch�
 ## Hoàn thiện dev và kiểm tra MCP18/11/2026
 
 Đã hoàn thiện bảng kiểm tra ánh xạ (cột mới/chỉ tiêu thiếu/cột bỏ qua), demo một lệnh và bộ nguồn giả2024–2026. Sửa lỗi403 của API health bị đổi401 qua servlet error dispatch, có regression HTTP thật. Full backend433test/0lỗi/43skip (38MySQL chạy riêng và5skipcũ); MySQL38/38 +restore79bảng;29Node;45deploy+3Python;build/lint đạt(10warningcũ). MCP12bộ/114nhóm đạt, có ảnh desktop/mobile. Xem [bàn giaoPhase9](EMPLOYEE_HEALTH_PHASE9_DEV.md). Không sửa/duyệt936dòng pending thay quản trị; chưa deploy/server hoặc công bố thật.
+
+
+## Bật chức năng nội bộ mặc định —20/11/2026
+
+Người dùng yêu cầu bật từ code để push feat/fedora-deploy rồi PR main. Menu và backend Sổ sức khỏe được bật mặc định cho ADMIN/MANAGER; không cần thêm.env server. Cấu hình false nếu có vẫn có hiệu lực. Cổng cá nhân vẫn mặc định tắt; dữ liệu không tự import/công bố/cấp mã. Các ghi chú gate nội bộ OFF ở các bản bàn giao trước là lịch sử trước thay đổi này.
+
+Kiểm tra thay đổi mặc định20/11: backend434test/0lỗi/43skip(38MySQL opt-in và5skipcũ),30Nodeđạt,frontend buildđạt/lint0lỗi10warningcũ. MCP không truyền VITE_HEALTH_ENABLED xác nhận mặc địnhtrue, menuADMIN/MANAGERhiện vàHR_STAFFẩn.

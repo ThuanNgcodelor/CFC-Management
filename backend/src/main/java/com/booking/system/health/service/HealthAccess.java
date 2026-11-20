@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class HealthAccess {
     private final boolean enabled;
-    public HealthAccess(@Value("${cfc.health.enabled:false}") boolean enabled) { this.enabled = enabled; }
+    public HealthAccess(@Value("${cfc.health.enabled:true}") boolean enabled) { this.enabled = enabled; }
     public boolean enabled() { return enabled; }
     public void requireEnabled() {
         if (!enabled) throw HrApiException.notFound("HEALTH_DISABLED", "Sổ sức khỏe chưa được bật.");
