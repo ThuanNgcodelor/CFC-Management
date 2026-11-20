@@ -1,0 +1,14 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import DashboardLayout from '../src/layouts/DashboardLayout';
+import HrHealth from '../src/pages/health/HrHealth';
+import { authApi } from '../src/api/authApi';
+import { userApi } from '../src/api/userApi';
+import '../src/index.css';
+if (location.hostname !== '127.0.0.1' || import.meta.env.VITE_API_URL !== 'http://127.0.0.1:18088/api/v1') throw new Error('Chỉ dùng backend QA loopback riêng.');
+const user = { id: 'history-user-ADMIN', role: 'ADMIN', email: 'ADMIN@example.test', fullName: 'Quản trị giả lập' };
+authApi.setAuthData({ accessToken: 'ADMIN', user });
+userApi.getMe = async () => user;
+userApi.getPendingRegistrationCount = async () => 0;
+createRoot(document.getElementById('root')).render(<BrowserRouter><Routes><Route element={<DashboardLayout />}><Route path="*" element={<><p className="mb-3 text-sm text-amber-800">Thử nghiệm gói dữ liệu GIẢ; không dùng khóa hoặc hồ sơ thật.</p><HrHealth /></>} /></Route></Routes></BrowserRouter>);

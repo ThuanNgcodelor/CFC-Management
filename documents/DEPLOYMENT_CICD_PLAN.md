@@ -176,3 +176,9 @@ Hiện backend và frontend được phục vụ chung qua ứng dụng Java t�
 - Runner production cũ đã dừng/gỡ khỏi repo public; cơ chế pull không nhận lệnh từ workflow PR.
 - Chốt rõ việc migration database nào được phép chạy tự động và phương án xử lý migration lỗi.
 - Thử ít nhất một lần deploy lỗi có chủ ý trên môi trường thử để chứng minh bản cũ vẫn phục hồi được.
+
+## Gói dữ liệu sức khỏe lịch sử —20/11/2026
+
+Release có thể mang ciphertext lịch sử, không mang Excel/khóa. Khi bundle đổi, ci-deploy yêu cầu backup; build-prod còn so resource trong JAR staging và JAR đang chạy trước kích hoạt để bảo vệ lần đầu từ wrapper cũ. Thiếu resource dự kiến hoặc backup lỗi chặn kích hoạt, giữ JAR phục vụ. Không thêm migration hoặc nới duyệt migration Java.
+
+ADMIN/MANAGER cần cấp khóa riêng một lần trên web sau release đầu; các lần sau tự xử lý gói sau ApplicationReady. Tác vụ nhập chạy nền, thất bại không làm chết backend và không tự rollback DB; health-check deploy thành công không thay việc kiểm tra trạng thái nhập. Khóa/receipt nằm ngoài checkout, backup SQL không chứa khóa. [Handoff](EMPLOYEE_HEALTH_AUTO_IMPORT.md).

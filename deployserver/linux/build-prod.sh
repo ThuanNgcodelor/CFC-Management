@@ -120,6 +120,14 @@ if [[ "$BUILD_ONLY" == true ]]; then
   exit 0
 fi
 
+# A previous checkout's deploy wrapper may not know this new data resource yet.
+# Compare the actual JARs as well so the first history rollout also takes a backup.
+if [[ -f "$BACKEND_DIR/src/main/resources/health/history/company-history-v1.bundle" ]]; then
+  history_change="$(python3 "$SCRIPT_DIR/check-health-history.py" "$STAGING_JAR" "$TARGET_JAR")" \
+    || fail "Khong kiem tra duoc goi lich su; chua kich hoat JAR moi."
+  if [[ "$history_change" == changed ]]; then BACKUP_BEFORE_ACTIVATE=true; fi
+fi
+
 if [[ "$BACKUP_BEFORE_ACTIVATE" == true ]]; then
   log "Backup database truoc khi kich hoat migration; ban cu van dang phuc vu..."
   bash "$SCRIPT_DIR/backup-database.sh" || fail "Backup khong thanh cong; giu nguyen JAR/dich vu cu."

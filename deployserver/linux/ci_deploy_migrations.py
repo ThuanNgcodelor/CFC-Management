@@ -51,3 +51,10 @@ def require_auto_migrations(root, baseline, candidate):
                 or not entry["reason"].strip()):
             raise RuntimeError(f"Migration {PurePosixPath(path).name} chưa được khai báo tương thích ngược đúng nội dung SHA256; chưa đổi release.")
     return True
+
+
+HEALTH_HISTORY_PATH = "backend/src/main/resources/health/history"
+
+def health_history_changed(root, baseline, candidate):
+    """Encrypted history packages can write data after startup, so require a pre-activation backup."""
+    return bool(git_output(root, "diff", "--name-only", baseline, candidate, "--", HEALTH_HISTORY_PATH).strip())

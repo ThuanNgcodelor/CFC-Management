@@ -506,3 +506,7 @@ Người dùng xác nhận chưa có file2026. Đã hoàn thiện review ánh x�
 ### Sổ sức khỏe — bật quản trị nội bộ mặc định20/11/2026
 
 Theo yêu cầu người dùng, code đóng gói bật sẵn backend và menu/route Sổ sức khỏe cho ADMIN/MANAGER; không cần tạo.env khi build/deploy bản mới. Các mô tả opt-in OFF trước đây là trạng thái lịch sử và được thay thế cho phần nội bộ. Khai báo false rõ ràng vẫn tắt được. HR_STAFF không được mở API/menu health; cổng cá nhân HEALTH_SELF_SERVICE_ENABLED vẫn mặc địnhfalse, không tự công bố/cấp mã/nhập dữ liệu.
+
+### Tự nhập lịch sử sức khỏe theo release —20/11/2026
+
+Theo yêu cầu giảm thao tác import, release kèm gói mã hóa 1.019 dòng nguồn 2023–2025; ADMIN/MANAGER cấp khóa private một lần qua web, sau đó ApplicationReady tự xử lý nền và dùng receipt/hash cùng staging chống nhập trùng. Đây là ngoại lệ có chủ đích thay ghi chú cũ “không tự import” cho đúng gói lịch sử này; không tự nhập file tùy ý, không sửa HR, không công bố hay bật cổng cá nhân. Nguồn Tổng hợp/2025 chỉ tự xác nhận khi khớp mã/tên/thông tin sinh; sheet phụ, thiếu định danh, SID nguồn khác, xung đột và ánh xạ thủ công khác giữ/chặn rà soát. Không có khám2026. Khóa ngoài Git/JAR, chỉ ciphertext vào repo public; backup trước đổi gói kể cả wrapper cũ nhờ kiểm tra JAR trước kích hoạt. [Hướng dẫn và giới hạn](EMPLOYEE_HEALTH_AUTO_IMPORT.md).

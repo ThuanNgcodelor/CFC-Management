@@ -87,6 +87,9 @@ class AutoDeployTest(unittest.TestCase):
         policy = patch.object(deploy, "require_auto_migrations", return_value=False)
         self.policy = policy.start()
         self.addCleanup(policy.stop)
+        health = patch.object(deploy, "health_history_changed", return_value=False)
+        self.health_policy = health.start()
+        self.addCleanup(health.stop)
 
     def test_unchanged_release_never_calls_api_or_restarts(self):
         with patch.object(deploy, "require_services"), patch.object(deploy, "prepare", return_value=(self.old, self.old)), \
@@ -116,6 +119,14 @@ class AutoDeployTest(unittest.TestCase):
 
     def test_approved_migration_requests_backup_before_activation(self):
         self.policy.return_value = True
+        with patch.object(deploy, "require_services"), patch.object(deploy, "prepare", return_value=(self.old, self.new)), \
+                patch.object(deploy, "verify_ci", return_value={"html_url": "https://github.com/test"}), \
+                patch.object(deploy, "deploy_release") as build:
+            deploy.auto_deploy(self.root, self.state_path, self.state)
+        self.assertTrue(build.call_args.kwargs["backup_required"])
+
+    def test_encrypted_health_history_requests_backup_without_a_schema_migration(self):
+        self.health_policy.return_value = True
         with patch.object(deploy, "require_services"), patch.object(deploy, "prepare", return_value=(self.old, self.new)), \
                 patch.object(deploy, "verify_ci", return_value={"html_url": "https://github.com/test"}), \
                 patch.object(deploy, "deploy_release") as build:

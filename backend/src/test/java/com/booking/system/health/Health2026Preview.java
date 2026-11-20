@@ -26,7 +26,7 @@ public final class Health2026Preview {
             "--spring.datasource.url=jdbc:h2:mem:health_2026_preview;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
             "--spring.datasource.driver-class-name=org.h2.Driver","--spring.datasource.username=sa","--spring.datasource.password=",
             "--spring.jpa.hibernate.ddl-auto=validate","--spring.jpa.show-sql=false","--spring.jpa.open-in-view=false","--spring.flyway.enabled=true",
-            "--cfc.health.enabled=true","--cfc.health.self-service.enabled=true","--app.cors.allowed-origins=http://127.0.0.1:5196",
+            "--cfc.health.enabled=true","--cfc.health.history.enabled=false","--cfc.health.self-service.enabled=true","--app.cors.allowed-origins=http://127.0.0.1:5196",
             "--logging.level.root=WARN","--logging.level.org.springframework.jdbc=INFO","--logging.level.org.springframework.boot.security.autoconfigure=ERROR");
         var fixture=new Health2026ReadinessTest();context.getAutowireCapableBeanFactory().autowireBean(fixture);fixture.setup();fixture.importHistory();
         fixture.confirmAll(fixture.stage(2026,true,List.of(Health2026WorkbookFixtures.entry(2026,"HEALTHDEV01","24","<0.5"),Health2026WorkbookFixtures.entry(2026,"HEALTHDEV02","25",""))));

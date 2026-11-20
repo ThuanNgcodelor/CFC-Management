@@ -15,7 +15,7 @@ from ci_deploy_state import (
     require_retry_acknowledgement, save_state,
 )
 
-from ci_deploy_migrations import changed_migrations, require_auto_migrations
+from ci_deploy_migrations import changed_migrations, require_auto_migrations, health_history_changed
 
 REPOSITORY = "ThuanNgcodelor/CFC-Management"
 REQUIRED_JOBS = {"Frontend lint and build", "Backend tests", "Deployment script checks"}
@@ -108,7 +108,7 @@ def deploy_release(root, previous, candidate, state_path, state, backup_required
         command = ["bash", str(root / "deployserver/linux/build-prod.sh")]
         if backup_required:
             command.append("--backup-before-activate")
-            print("Có migration: build/smoke trước, backup database đạt mới kích hoạt; database không tự rollback.", flush=True)
+            print("Có thay đổi schema/gói lịch sử: build/smoke trước, backup database đạt mới kích hoạt; database không tự rollback.", flush=True)
         subprocess.run(command, cwd=root, check=True)
         require_services()
         require_ready({"phase": "success", "last_success_sha": candidate}, root)
@@ -133,7 +133,7 @@ def auto_deploy(root, state_path, state):
         print(str(error))
         return
     print(f"CI đạt: {run['html_url']}", flush=True)
-    backup_required = require_auto_migrations(root, state["last_success_sha"], candidate)
+    backup_required = require_auto_migrations(root, state["last_success_sha"], candidate) or health_history_changed(root, state["last_success_sha"], candidate)
     deploy_release(root, previous, candidate, state_path, state, backup_required=backup_required)
 
 
@@ -176,7 +176,7 @@ def main():
             return
         require_services(check_running=False)
         baseline = state.get("last_success_sha")
-        backup_required = not baseline or bool(changed_migrations(root, baseline, candidate))
+        backup_required = not baseline or bool(changed_migrations(root, baseline, candidate)) or health_history_changed(root, baseline, candidate)
         deploy_release(root, previous, candidate, state_path, state, backup_required=backup_required)
 
 
