@@ -3,6 +3,8 @@ name: architecture-domain
 description: Giải thích các khái niệm kiến trúc cấp cao (Domain Knowledge) của hệ thống Booking, dựa trên tài liệu Base Booking.
 ---
 
+> Tài liệu Booking/notification lịch sử. Phạm vi Booking hiện frozen; không dùng làm roadmap HR hoặc ghi đè AGENTS.md. Trạng thái hiện hành: [Master Context](../documents/PROJECT_MASTER_CONTEXT.md), [mục lục](../documents/README.md).
+
 # Kiến trúc và Nghiệp vụ (Domain Architecture)
 
 Đây là kim chỉ nam giúp AI hiểu hệ thống Booking này đang phục vụ ai, giải quyết bài toán gì và mô hình dữ liệu (Data model) vận hành như thế nào. Tránh việc suy diễn sai lệch so với logic kinh doanh ban đầu.

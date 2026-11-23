@@ -1,6 +1,18 @@
 # Tự nhập dữ liệu khám lịch sử khi deploy
 
-Cập nhật 20/11/2026. Thay thao tác ánh xạ lại từng cột của ba workbook lịch sử bằng một gói dữ liệu mã hóa đi kèm release. Chỉ ADMIN/MANAGER xem trạng thái, cài khóa và tiếp tục rà soát. Chưa chạy hoặc sửa dữ liệu production trong quá trình phát triển này.
+Cập nhật23/11/2026. Thay thao tác ánh xạ lại từng cột của ba workbook lịch sử bằng một gói dữ liệu mã hóa đi kèm release. Chỉ ADMIN/MANAGER xem trạng thái, cài khóa và tiếp tục rà soát. Phần phát triển20/11 chỉ test dev; đến23/11, người dùng đã cung cấp log deploy thành công và ảnh nhập lịch sử83/936 trên server. Đợt tổng hợp tài liệu này không thao tác production.
+
+## Đã kích hoạt rồi thì chọn gì?
+
+Ảnh ngày23/11 xác nhận **83 dòng đã nhập,936 dòng nguồn còn chờ**. Không cần upload khóa lại hoặc tạo thêm đợt để nhập lại cùng bộ nguồn.
+
+1. **Hồ sơ sức khỏe:** xem kết quả đã nhập nội bộ. Không cần công bố mới thấy ở màn quản trị.
+2. **2025 · Gián tiếp → Mở lô rà soát:** xử lý2 dòng còn chờ.
+3. **2024 · Tổng hợp → Mở lô rà soát:** nguồn chính256 dòng chờ; ghép đúng nhân sự và xem lỗi trước xác nhận.
+4. **2023 · Tổng hợp → Mở lô rà soát:** nguồn chính208 dòng chờ, cách xử lý tương tự.
+5. Sheet4/Sheet5/Gián tiếp/Trực tiếp/KẾT QUẢ SK còn lại để đối chiếu, bổ sung ô thiếu và giải quyết chênh lệch sau; không xác nhận tất cả sheet chỉ vì tên giống nhau.
+
+Các số trên là ảnh chụp trạng thái theo thời điểm, không phải số cố định trong code. Còn chờ không đồng nghĩa mất dữ liệu; chúng đã nằm staging. Công bố cho cá nhân là bước riêng sau rà soát.
 
 ## Cách dùng lần đầu
 

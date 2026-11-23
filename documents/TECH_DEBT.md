@@ -1,6 +1,6 @@
 # Technical Debt (BookingBase / HR)
 
-Source: codebase audit on 2026-10-16. Read this file only when a task touches an item below. Do not fix unrelated items while working on another task. Line numbers may have moved; search by file and symbol.
+Source: codebase audit on 2026-10-16. Documentation reconciliation23/11/2026: old unverified test statements below are historical; latest recorded20/11 suite460/0errors/55skip and50 MySQL tests passed separately, not rerun23/11. Documentation-link item17d resolved (9 broken links corrected). Other source debts are not re-audited or implicitly closed by this docs task. Read this file only when a task touches an item below. Do not fix unrelated items while working on another task. Line numbers may have moved; search by file and symbol.
 
 ## Group 1: Do first (small, low risk)
 
@@ -33,12 +33,11 @@ Source: codebase audit on 2026-10-16. Read this file only when a task touches an
 
 | 17b | Two attendance tests depend on missing local `CongXn.xlsx`; full suite cannot pass on this checkout | `HrProductionAttendanceServiceTest`, `HrProductionShiftMatcherTest` | Supply a sanitized, versioned fixture or generate representative workbook data; do not commit real employee data |
 | 17c | Styled Excel library is loaded on demand but its `xlsx.min` chunk is still about 863 kB, above the 500 kB target | `utils/nightRewardReconcile.js` parse/export | Evaluate a smaller reader and a styled export path that preserves the current workbook formatting |
-| 17d | Master Context contains 8 relative links to documents absent from this checkout, found during the 2026-11-04 plan review | `documents/PROJECT_MASTER_CONTEXT.md`: older phase guides, Attendance plans/source docs, salary-raise plan and Telegram guide | Locate the canonical documents or correct/remove outdated links in a documentation maintenance task; new reporting-plan links were checked separately |
 | 17e | Pending employee records with draft movements cannot be deleted, and the generic reference error provides no resolution workflow | `HrWorkforceService.deleteDraftEmployee`, employee detail/delete UI | Add precise reference diagnostics and an approved stop-reception/archive workflow that preserves audit and confirmed history; planned in `HR_REPORTING_UX_PLAN.md`, not implemented |
 | 17f | Full backend suite has a reproducible unused Mockito stub in `previewLoadsQualificationAndEntitlementDetailsInBatches` | `HrNightRewardServiceTest.setUp`, entitlement repository stub at line 122 in the 04/11/2026 checkout | Scope the stub to tests that consume it; reproduced in isolation during HR UX Phase 0–3. Outside this change's business scope; full suite is not green even with the two attendance fixtures supplied. |
 | 17g | Workforce report projection and correction filtering load the full confirmed movement timeline before filtering | `HrReportService`, `HrRosterProjectionService.projectedItemsForPeriods` | Add date-bounded movement queries plus a correction lookup that still removes replacements outside the requested year; measure on MySQL before sign-off. |
 
-| 17i | Health staging/revision retention và MySQL production chưa nghiệm thu | `health` import Phase 2 | Chốt TTL/purge/backup trước dữ liệu thật trên server; chạy V34/V35 và EXPLAIN MySQL dev. Phase 3 đã được phép nhập thật vào H2 dev riêng, có backup/restore nhưng /tmp không là lưu trữ dài hạn. Cancel xóa pending payload; không tự purge imported/history. Xem EMPLOYEE_HEALTH_PHASE3_DEV.md. |
+| 17i | Health staging/revision retention và MySQL production chưa nghiệm thu | `health` import Phase 2 | Đến23/11, quản trị và lịch sử83/936 đã lên server theo bằng chứng người dùng. Vẫn cần chốt TTL/purge, backup khóa và kiểm tra EXPLAIN/tải dữ liệu production; MySQL QA riêng đã có nghiệm thu, không coi là chưa test dialect. Phase 3 đã được phép nhập thật vào H2 dev riêng, có backup/restore nhưng /tmp không là lưu trữ dài hạn. Cancel xóa pending payload; không tự purge imported/history. Xem EMPLOYEE_HEALTH_PHASE3_DEV.md. |
 
 ## Group 3: Needs an owner decision (do not change on your own)
 

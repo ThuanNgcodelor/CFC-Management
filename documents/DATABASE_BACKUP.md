@@ -4,9 +4,9 @@ Baseline lịch sử: **2026-09-01** (Production Baseline: 35 Bảng Master CSDL
 
 ## 1. Chính sách hiện tại
 
-- Backup logical toàn bộ MySQL `booking_db` (35 bảng + 12 Flyway migrations) mỗi giờ vào phút `05`.
+- Backup logical toàn bộ MySQL `booking_db`; số bảng/migration phụ thuộc phiên bản, không giới hạn ở35bảng/12migration của baseline cũ. Lịch backup đã thiết kế mỗi giờ phút05; kiểm tra timer thực tế bằng lệnh bên dưới.
 - Systemd user linger đã bật cho `david-nguyen` / user vận hành, nên timer tiếp tục hoạt động sau logout và được khởi tạo lại sau reboot.
-- Mỗi file backup chứa database/schema, tables, indexes, foreign keys, triggers, routines, events và toàn bộ data dạng INSERT (gồm cả 338 nhân sự chính thức, 3 ứng viên thử việc, cấu hình AI OCR, và binary HĐTV/HĐLĐ).
+- Mỗi file backup chứa database/schema, tables, indexes, foreign keys, triggers, routines, events và toàn bộ data dạng INSERT (gồm nhân sự, thử việc, cấu hình, hợp đồng và các bảng module hiện có; không cố định số hồ sơ theo baseline).
 - Dùng `--single-transaction` để không dừng website và giữ snapshot nhất quán cho InnoDB.
 - File được gzip, kiểm tra hợp lệ rồi atomic rename; bản cũ chỉ bị xóa sau khi bản mới thành công.
 - Giữ đúng 24 bản gần nhất trong `backups/database/`; thư mục này bị Git ignore.
@@ -63,3 +63,9 @@ Các số liệu bảng/nhân sự/version phía trên là baseline lịch sử,
 Dump bắt buộc gzip hợp lệ, có schema/table và footer mysqldump hoàn tất; pipeline lỗi hoặc dump thiếu footer bị loại, không kích hoạt ứng dụng mới và không xóa backup cũ. File mới có tên dạng `booking_db_YYYY-MM-DD_HH-MM-SS_NANOSECONDS.sql.gz`; script restore vẫn nhận cả tên cũ và mới qua đường dẫn tệp. Quyền 0600 được đặt từ lúc tạo; retention và lock dùng chung với backup định kỳ.
 
 Backup khi ứng dụng cũ còn chạy là snapshot InnoDB; không tự khôi phục snapshot đó khi deploy lỗi vì có thể mất dữ liệu phát sinh sau snapshot. Rollback tự động chỉ áp dụng JAR; schema phải tương thích ngược và restore vẫn là thao tác chủ động theo quy trình. Với credential MikroTik mã hóa, phải backup riêng tệp khóa ngoài checkout cùng DB; dump không chứa khóa giải mã. Chưa xác minh dump/restore thực tế cho luồng mới trên Fedora.
+
+## 6. Bằng chứng23/11/2026 và khóa ngoài CSDL
+
+Log người dùng xác nhận backup trước release04a663be thành công, gzip18MB và đang giữ24bản. Không đồng nghĩa đã thử restore trên production; restore/checksum79bảng đã kiểm tra trên MySQL QA riêng trong health acceptance.
+
+Backup SQL không chứa khóa ngoài checkout. Cần sao lưu riêng file khóa lịch sử sức khỏe và khóa credential MikroTik qua kênh riêng tư; xem đường dẫn/giới hạn trong [registry cấu hình](CONFIG_AND_CACHE.md) và [tự nhập lịch sử](EMPLOYEE_HEALTH_AUTO_IMPORT.md). Không đưa khóa hoặc dump lên repo public.

@@ -52,4 +52,4 @@ Nếu chọn sai tháng khi import, hệ thống đọc tháng trong file, tự 
 
 Nếu cần quay về luồng cũ trong thời gian shadow, chọn tab **Hành chính**; hai pipeline được lưu riêng và không ghi đè dữ liệu của nhau.
 
-Các biến bật/tắt, lệnh deploy Linux, checklist nghiệm thu và rollback: [WORKER_ATTENDANCE_PHASE7_ROLLOUT.md](WORKER_ATTENDANCE_PHASE7_ROLLOUT.md).
+Các biến bật/tắt, lệnh deploy Linux, checklist nghiệm thu và rollback: [CI/CD và phục hồi hiện hành](DEPLOYMENT_CICD_PLAN.md) (tài liệu rollout Phase7 cũ không có trong checkout).

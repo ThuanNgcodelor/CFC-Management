@@ -21,7 +21,7 @@ Read this file before changing code in this repository. Rules are written in Eng
 ## 2. Source Of Truth
 
 1. Current code and config.
-2. Current schema: entities + Flyway migrations (`db/migration/`, V1 to V29 at the time of writing; V29 is a Java migration for the users role enum). `clean_database_master.sql` does not exist.
+2. Current schema: entities + Flyway migrations (`db/migration/`, V1 to V39 as of 2026-11-23; V29 and V37 are Java migrations). `clean_database_master.sql` does not exist.
 3. Master architecture and business flow: `documents/PROJECT_MASTER_CONTEXT.md`.
 
 ## 3. Stack And Commands
@@ -99,7 +99,7 @@ Commands (run from the matching directory):
 - Server state: new screens use TanStack Query (cache, dedupe, cancellation). Existing screens migrate only when the task touches them; do not mass-migrate.
 - Existing sequence guards (`shiftsSeq`, `summariesSeq` with `useRef`) in `HrProductionAttendance` / `HrNightRewards` must be kept until that screen is migrated to Query. When adding a fetch to one of these screens, follow the same sequence-guard pattern; do not mix in `AbortController` there.
 - In new screens and new files, cancel stale requests with TanStack Query or `AbortController`, not `useRef` sequences.
-- Heavy libraries: never statically import `xlsx` or `xlsx-js-style` at module top. Use `await import(...)` when the user triggers the feature. A new chunk must not exceed 500 kB; `HrNightRewards` is currently 914 kB because of a static import (see TECH_DEBT).
+- Heavy libraries: never statically import `xlsx` or `xlsx-js-style` at module top. Use `await import(...)` when the user triggers the feature. A new chunk must not exceed 500 kB; the older audit measured `HrNightRewards` at 914 kB; the 2026-11-23 production build log measured it at about 32.42 kB, with the separately loaded styled Excel chunk still about 863 kB (see TECH_DEBT).
 - Memoization: use `useMemo` / `useCallback` / `React.memo` only with a reason (large lists, context values, props passed to memoized children). Do not wrap trivial values. Do not recompute large filters/maps inline in JSX.
 - Large lists: more than ~200 rows must use `@tanstack/react-virtual` or server pagination. Search/filter inputs must be debounced.
 - Shared UI: use `HrLoading`, `HrError`, `HrEmpty`, `HrPagination`, `HrDrawer` from `HrUi.jsx`. Do not hand-write inline loading/error states.
@@ -208,8 +208,8 @@ Before changing booking, approval, cancel, dashboard, or admin code:
 
 ## 14. Current Known Baseline
 
-- Frontend build passes; lint passes with 0 errors and 10 warnings (`oxlint`). Main bundles: `HrNightRewards` 914 kB (over the 500 kB goal), precache about 5.1 MB.
-- Backend tests: not verified in the last audit (no `JAVA_HOME`). Do not assume they pass.
-- Frontend has 3 small test files and no test runner configured.
-- Main P0 risks: client-trusted identity and committed secret defaults.
-- Rules currently violated by existing code (fix only when the task touches them): long transactions around Excel parsing in `upload()`; `.save()` in loops; `HrApiExceptionHandler` missing some controllers; `show-sql: true`; no debounce/virtualization on large HR tables.
+- Latest recorded development checks (2026-11-20): frontend build passed, lint 0 errors / 10 existing warnings; backend 460 tests, 0 failures/errors, 55 skipped, including 50 opt-in MySQL tests that passed separately. Deployment Python 52 and frontend Node 30 tests passed. These checks were not rerun during the 2026-11-23 documentation reconciliation.
+- Production evidence supplied by the user on 2026-11-23: release `04a663be4bd8e4a670a2a3da0fb7653c9fb5e52a`, deploy status success, backend/tunnel active, MySQL/Redis running; health history UI shows 83 imported rows / 936 pending source rows. This is point-in-time evidence, not proof every module or the personal portal is accepted.
+- Production build log measured `HrNightRewards` about 32.42 kB and the styled Excel chunk about 862.98 kB; the old 914 kB page figure is historical. Keep heavy Excel imports on demand.
+- Tests and documentation entry points: `frontend/tests/README.md`, `scripts/verification/README.md`, and `documents/README.md`. Do not claim old audit blockers are current without reproducing them.
+- Existing security, transaction, pagination and query debt still requires focused source review; see `documents/TECH_DEBT.md`. Do not fix unrelated items as part of another task.

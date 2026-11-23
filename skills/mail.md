@@ -1,5 +1,7 @@
 # Kế hoạch Triển khai (Phân tách Dashboard, Hoàn thiện Notifications, Cập nhật Calendar & Menu)
 
+> Tài liệu Booking/notification lịch sử. Booking hiện frozen; không dùng làm roadmap HR hoặc ghi đè AGENTS.md. Xem [Master Context](../documents/PROJECT_MASTER_CONTEXT.md) và [mục lục](../documents/README.md).
+
 Tài liệu này trình bày các bước giải quyết 4 yêu cầu chính: Tách Dashboard Admin/Client, Hoàn thiện hệ thống Thông báo, Fix hiển thị người đặt trên Calendar, và Bố trí lại menu "Tài nguyên".
 
 ## Quyết định Kiến trúc: Email & Notification Queue

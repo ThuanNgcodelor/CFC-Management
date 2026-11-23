@@ -1,5 +1,7 @@
 # Sổ sức khỏe — bàn giao Phase 7 ở dev
 
+> Bàn giao theo mốc của phase, không phải trạng thái production hiện tại. Cập nhật23/11/2026: quản trị đã deploy, gói lịch sử đã kích hoạt83dòng nhập/936dòng nguồn chờ theo ảnh người dùng. Gate nội bộOFF hoặc “chưa deploy” bên dưới là lịch sử; cổng cá nhân/công bố không tự bật. Xem [trạng thái hiện hành](EMPLOYEE_HEALTH_IMPLEMENTATION_SUMMARY.md), [hướng dẫn nhập và chọn lô](EMPLOYEE_HEALTH_AUTO_IMPORT.md), [mục lục](README.md).
+
 Ngày 12/11/2026. Cổng cá nhân và quản lý mã tra cứu đã triển khai dev theo lựa chọn người dùng: **hai lựa chọn: CCCD + mã nhân viên, hoặc chỉ nhập mã riêng do ADMIN/MANAGER cấp/thu hồi**. Không cần tài khoản CFCBase, Telegram hoặc SMS. Không deploy/server/Fedora; không lấy thêm CCCD thật, không cấp mã/công bố kết quả thật. Baseline dev riêng không bị nạp fixture.
 
 ## Dùng và review
