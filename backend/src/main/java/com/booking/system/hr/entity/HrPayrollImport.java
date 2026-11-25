@@ -23,6 +23,9 @@ public class HrPayrollImport extends HrBaseEntity {
     private long fileSize;
     @Column(name = "source_sheet_name", nullable = false, length = 100)
     private String sourceSheetName;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payroll_type", nullable = false, length = 24)
+    private com.booking.system.hr.enums.HrPayrollType payrollType = com.booking.system.hr.enums.HrPayrollType.STANDARD;
     @Column(name = "payroll_month", nullable = false, length = 7)
     private String payrollMonth;
     @Enumerated(EnumType.STRING)

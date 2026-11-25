@@ -1,0 +1,1 @@
+ALTER TABLE hr_payroll_imports ADD COLUMN payroll_type VARCHAR(24) NOT NULL DEFAULT 'STANDARD';

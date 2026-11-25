@@ -11,7 +11,7 @@ Source: codebase audit on 2026-10-16. Documentation reconciliation23/11/2026: ol
 | 4 | Missing index for night-shift scan | `hr_attendance_shifts` | New migration: index `(import_id, counts_toward_night_reward)` |
 | 5 | Missing index for ledger lookup | `hr_night_reward_ledger` | New migration: index `(qualification_id, track_code, entry_type)` |
 | 6 | Missing index for cross-file duplicate check | `hr_attendance_source_days` | New migration: index `(employee_code, work_date)` |
-| 7 | `.save()` in loops | `HrAttendanceService.java:222`, `HrProductionAttendanceService.java:727`, `HrPayrollService.java:73` | Collect into a list and `saveAll(...)` |
+| 7 | `.save()` in loops | `HrAttendanceService.java:222`, `HrProductionAttendanceService.java:727` | Collect into a list and `saveAll(...)` |
 | 8 | Swallowed exceptions when parsing date/time | `HrAttendanceService.java:683, 693` (11 empty catches in total) | `log.warn` with row context |
 
 ## Group 2: Do next
@@ -19,7 +19,7 @@ Source: codebase audit on 2026-10-16. Documentation reconciliation23/11/2026: ol
 | # | Issue | Where | Fix |
 | --- | --- | --- | --- |
 | 9 | N+1 queries when finalizing night rewards (SELECT + INSERT per employee per track) | `HrNightRewardService.java:420-436` | `findByQualificationIdIn(...)` + `saveAll(...)` |
-| 10 | Long transaction around Excel parsing and SHA256 | `HrProductionAttendanceService.upload` (:219), `HrAttendanceService` (:171), `HrPayrollService` (:39) | Parse outside the transaction; open `@Transactional` only for persistence |
+| 10 | Long transaction around Excel parsing and SHA256 | `HrProductionAttendanceService.upload` (:219), `HrAttendanceService` (:171) | Parse outside the transaction; open `@Transactional` only for persistence |
 | 11 | Per-file `existsByImportIdAndEmployeeCodeIn` loop | `HrProductionAttendanceService.java:302` | One query across active imports of the month |
 | 12 | `existsActiveAfter` called per row | `HrSalaryRaiseService.java:337` | Batch query |
 | 13 | Entitlement generation at 12/24 months still lacks direct tests | `HrNightRewardServiceTest.java` | Threshold 9/10, accrued months after NOT_QUALIFIED (FAILED), ADMIN/HR_STAFF finalize and reopen to STALE covered on 2026-11-02; add entitlement boundary tests |
@@ -61,3 +61,5 @@ Source: codebase audit on 2026-10-16. Documentation reconciliation23/11/2026: ol
 
 - Health cập nhật18/11/2026: MySQL8.0.46 QA đã đạt38test, V33→V39 và restore79bảng; các mục nghiệm thu MySQL ở trên còn áp dụng cho cấu hình/dữ liệu production, không phải thiếu kiểm tra dialect trên dev. Còn retention, proxy/IPthật, khóa/tệp backup vận hành và pilot.
 - Security ngoài phạm vi health: cấu hình fallback vẫn dùng `sendError(401/403)`, chưa có regression HTTP thật cho từng phân hệ. Health đã sửa lỗi403 bị servlet error dispatch đổi401; cần kiểm chứng các API khác trước khi quyết định đổi fallback chung, không mở rộng thay đổi login/role trong task này.
+
+- Payroll25/11: đường upload đã tách parse/hash khỏi transaction và ghi saveAll; refresh cũng saveAll. Các save-loop/transaction ở campaign gửi và các service khác chưa được xử lý trong tính năng lãnh đạo. Luồng số/parserSTANDARD vẫn có quy tắc cũ; không suy rằng đã harden toàn bộ payroll.

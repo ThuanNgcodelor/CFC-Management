@@ -29,7 +29,6 @@ import java.util.Locale;
 @Service
 @RequiredArgsConstructor
 public class HrPayrollService {
-    private final HrPayrollWorkbookParser parser;
     private final HrPayrollImportRepository importRepository;
     private final HrPayrollImportRowRepository rowRepository;
     private final HrEmployeeRepository employeeRepository;
@@ -37,8 +36,7 @@ public class HrPayrollService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
-    public HrPayrollDtos.ImportResponse upload(String fileName, byte[] bytes, HrImportActor actor) {
-        HrPayrollWorkbookParser.ParsedWorkbook parsed = parser.parse(bytes);
+    public HrPayrollDtos.ImportResponse persist(String fileName, HrPayrollWorkbookParser.ParsedWorkbook parsed, com.booking.system.hr.enums.HrPayrollType type, HrImportActor actor) {
         if (importRepository.findByFileSha256(parsed.sha256()).isPresent()) {
             throw HrApiException.conflict("PAYROLL_FILE_DUPLICATE", "File lương này đã được tải lên trước đó.");
         }
@@ -46,6 +44,7 @@ public class HrPayrollService {
         payrollImport.setSourceFileName(fileName == null || fileName.isBlank() ? "payroll.xlsx" : fileName);
         payrollImport.setFileSha256(parsed.sha256()); payrollImport.setFileSize(parsed.fileSize());
         payrollImport.setSourceSheetName(parsed.sheetName()); payrollImport.setPayrollMonth(parsed.payrollMonth());
+        payrollImport.setPayrollType(type);
         payrollImport.setStatus(HrPayrollImportStatus.PREVIEWED); payrollImport.setTotalRows(parsed.rows().size());
         payrollImport.setValidRows(parsed.rows().size()); payrollImport.setCreatedByActor(actor.subject()); payrollImport.setUpdatedByActor(actor.subject());
         payrollImport = importRepository.save(payrollImport);
@@ -56,7 +55,8 @@ public class HrPayrollService {
         Map<String, HrEmployeeTelegramBinding> bindings = new HashMap<>();
         if (!employees.isEmpty()) bindingRepository.findAllByEmployeeIdIn(employees.values().stream().map(HrEmployee::getId).toList())
                 .forEach(binding -> bindings.put(binding.getEmployee().getId(), binding));
-        int ready = 0, skipped = 0;
+        int ready = 0, skipped = 0, invalid = 0;
+        var staged = new java.util.ArrayList<HrPayrollImportRow>();
         for (HrPayrollWorkbookParser.PayrollRow value : parsed.rows()) {
             HrEmployee employee = employees.get(value.employeeCode());
             HrEmployeeTelegramBinding binding = employee == null ? null : bindings.get(employee.getId());
@@ -64,14 +64,18 @@ public class HrPayrollService {
             row.setPayrollImport(payrollImport); row.setSourceRowNumber(value.rowNumber()); row.setEmployee(employee);
             row.setEmployeeCode(value.employeeCode()); row.setEmployeeName(value.employeeName()); row.setStatus(HrPayrollRowStatus.SKIPPED);
             row.setTelegramChatId(null); row.setTelegramUserId(null);
-            if (employee == null) row.setErrorMessage("Không tìm thấy Mã nhân viên trong CFCBase.");
+            if (value.values().containsKey("validationErrors")) {
+                row.setStatus(HrPayrollRowStatus.INVALID); row.setErrorMessage(value.values().get("validationErrors").toString()); invalid++;
+            } else if (employee == null) row.setErrorMessage("Không tìm thấy Mã nhân viên trong CFCBase.");
             else if (binding == null || binding.getStatus() != com.booking.system.hr.enums.HrTelegramBindingStatus.ACTIVE || binding.getTelegramChatId() == null) row.setErrorMessage("Chưa xác minh Telegram.");
             else { row.setStatus(HrPayrollRowStatus.READY); row.setTelegramChatId(binding.getTelegramChatId()); row.setTelegramUserId(binding.getTelegramUserId()); ready++; }
             if (row.getStatus() == HrPayrollRowStatus.SKIPPED) skipped++;
             try { row.setPayloadJson(objectMapper.writeValueAsString(value.values())); }
             catch (JsonProcessingException exception) { throw new IllegalStateException("Không lưu được dữ liệu lương.", exception); }
-            row.setCreatedByActor(actor.subject()); row.setUpdatedByActor(actor.subject()); rowRepository.save(row);
+            row.setCreatedByActor(actor.subject()); row.setUpdatedByActor(actor.subject()); staged.add(row);
         }
+        rowRepository.saveAll(staged);
+        payrollImport.setInvalidRows(invalid); payrollImport.setValidRows(parsed.rows().size() - invalid);
         payrollImport.setReadyRows(ready); payrollImport.setSkippedRows(skipped); payrollImport.setUpdatedByActor(actor.subject());
         return toImportResponse(importRepository.save(payrollImport));
     }
@@ -102,6 +106,7 @@ public class HrPayrollService {
         int ready = 0;
         int skipped = 0;
         for (HrPayrollImportRow row : rows) {
+            if (row.getStatus() == HrPayrollRowStatus.INVALID) continue;
             HrEmployee employee = employees.get(row.getEmployeeCode().toUpperCase());
             HrEmployeeTelegramBinding binding = employee == null ? null : bindings.get(employee.getId());
             row.setEmployee(employee);
@@ -124,8 +129,8 @@ public class HrPayrollService {
                 ready++;
             }
             row.setUpdatedByActor(actor.subject());
-            rowRepository.save(row);
         }
+        rowRepository.saveAll(rows);
         payrollImport.setReadyRows(ready);
         payrollImport.setSkippedRows(skipped);
         payrollImport.setUpdatedByActor(actor.subject());
@@ -140,7 +145,7 @@ public class HrPayrollService {
     HrPayrollImport requireImport(String id) { return importRepository.findById(id).orElseThrow(() -> HrApiException.notFound("PAYROLL_IMPORT_NOT_FOUND", "Không tìm thấy lần nhập lương.")); }
 
     private HrPayrollDtos.ImportResponse toImportResponse(HrPayrollImport value) {
-        return new HrPayrollDtos.ImportResponse(value.getId(), value.getSourceFileName(), value.getPayrollMonth(), value.getStatus(), value.getTotalRows(), value.getValidRows(), value.getReadyRows(), value.getSkippedRows(), value.getInvalidRows(), value.getLastError(), value.getCreatedAt());
+        return new HrPayrollDtos.ImportResponse(value.getId(), value.getSourceFileName(), value.getPayrollMonth(), value.getStatus(), value.getTotalRows(), value.getValidRows(), value.getReadyRows(), value.getSkippedRows(), value.getInvalidRows(), value.getLastError(), value.getCreatedAt(), value.getPayrollType());
     }
     private HrPayrollDtos.PayrollRowResponse toRowResponse(HrPayrollImportRow row) {
         Map<String, Object> values;

@@ -76,7 +76,7 @@ flowchart TB
     Security --> Legacy[Legacy booking/auth/notification controllers]
     HR --> MySQL[(MySQL 8 booking_db)]
     HR --> Redis[(Redis 7 token + OTP/session data)]
-    Backend --> Flyway[Flyway V1..V39]
+    Backend --> Flyway[Flyway V1..V40]
     HR --> Gemini[Google Gemini REST]
     HR --> Groq[Groq OpenAI-compatible REST]
     HR --> Telegram[Telegram Bot API/webhook]
@@ -91,7 +91,7 @@ flowchart TB
 
 - Backend: Spring Boot **4.0.0**, Java **21**, Spring MVC, JPA/Hibernate, Security, WebSocket/STOMP, Redis, Mail, Actuator.
 - Database: MySQL 8; các đối tượng HR do Flyway sở hữu. `LegacySchemaFilterProvider` ngăn Hibernate tự tạo/sửa/xóa bảng `hr_*`.
-- Migration trong source hiện có: **V1 đến V39** (V29 vàV37 là Java). Con số55 bảng `hr_*` là mốc HR trước các module hạ tầng/sức khỏe, không phải tổng schema hiện tại. V27 thêm lịch sử nâng lương, snapshot bậc/ngạch/chu kỳ/ngày hiệu lực và import type `SALARY_RAISE`; V28 thêm trạng thái rà soát, ngày theo dõi lại và index danh sách tới hạn. V29 mở rộng role HR_STAFF trên bảng users legacy. Màn hình Mẫu Word và ONLYOFFICE đã tắt: menu/route không truy cập được, API editor không đăng ký khi flag tắt, script triển khai không khởi động Document Server và dừng container cũ. Việc xuất/xem/tải hợp đồng DOCX và dữ liệu mẫu đã có vẫn hoạt động. [Ghi chú vận hành](HR_WORD_EDITOR_SETUP.md).
+- Migration trong source hiện có: **V1 đến V40** (V29 vàV37 là Java). Con số55 bảng `hr_*` là mốc HR trước các module hạ tầng/sức khỏe, không phải tổng schema hiện tại. V27 thêm lịch sử nâng lương, snapshot bậc/ngạch/chu kỳ/ngày hiệu lực và import type `SALARY_RAISE`; V28 thêm trạng thái rà soát, ngày theo dõi lại và index danh sách tới hạn. V29 mở rộng role HR_STAFF trên bảng users legacy. Màn hình Mẫu Word và ONLYOFFICE đã tắt: menu/route không truy cập được, API editor không đăng ký khi flag tắt, script triển khai không khởi động Document Server và dừng container cũ. Việc xuất/xem/tải hợp đồng DOCX và dữ liệu mẫu đã có vẫn hoạt động. [Ghi chú vận hành](HR_WORD_EDITOR_SETUP.md).
 - File Excel/DOCX: Apache POI 5.4.1; hợp đồng DOCX dùng mẫu classpath mặc định hoặc phiên bản active trong kho DB. `HrDocxEngine` thay biến xuyên qua các Word run. Hướng dẫn cài đặt Document Server: [ONLYOFFICE Setup](HR_WORD_EDITOR_SETUP.md).
 - Frontend: React **19.2**, React Router **7**, Vite **8**, Tailwind CSS **4**, Axios, `react-datepicker`, `xlsx`, Lucide, PWA Workbox.
 - Token: access JWT ngắn hạn, refresh JWT lưu cookie/Redis; API HR phân quyền theo ADMIN/MANAGER và phạm vi giới hạn của HR_STAFF (mục 6), trừ các route được permit riêng.
@@ -532,3 +532,7 @@ Theo yêu cầu người dùng, code đóng gói bật sẵn backend và menu/ro
 ### Tự nhập lịch sử sức khỏe theo release —20/11/2026
 
 Theo yêu cầu giảm thao tác import, release kèm gói mã hóa 1.019 dòng nguồn 2023–2025; ADMIN/MANAGER cấp khóa private một lần qua web, sau đó ApplicationReady tự xử lý nền và dùng receipt/hash cùng staging chống nhập trùng. Đây là ngoại lệ có chủ đích thay ghi chú cũ “không tự import” cho đúng gói lịch sử này; không tự nhập file tùy ý, không sửa HR, không công bố hay bật cổng cá nhân. Nguồn Tổng hợp/2025 chỉ tự xác nhận khi khớp mã/tên/thông tin sinh; sheet phụ, thiếu định danh, SID nguồn khác, xung đột và ánh xạ thủ công khác giữ/chặn rà soát. Không có khám2026. Khóa ngoài Git/JAR, chỉ ciphertext vào repo public; backup trước đổi gói kể cả wrapper cũ nhờ kiểm tra JAR trước kích hoạt. [Hướng dẫn và giới hạn](EMPLOYEE_HEALTH_AUTO_IMPORT.md).
+
+### Lương lãnh đạo — triển khai dev25/11/2026
+
+Thêm lựa chọn Nhập file lương lãnh đạo trong trang Gửi phiếu lương, đọc mẫu Ban điều hành riêng với lương cơ bản/bù đầu năm/thuế và các khoản thu, không yêu cầu Công/Số tài khoản. Tái sử dụng ghép mã nhân sự, liên kết Telegram, preview và snapshot gửi hiện hành; không gửi khi import. Công thức chỉ đọc cached result, không đọc nguồn ngoài; dòng lỗiINVALID không được refresh thànhREADY hoặc render/gửi thử. V40 additive phân loạiSTANDARD/LEADERSHIP, giữ file và snapshot cũ. Parse/hash ngoài transaction, ghi batch theo tập. Đã bổ sung kiểm thử dev và MCP giả; chưa deploy/ghi production/gửi thật. [Hướng dẫn](HR_LEADERSHIP_PAYROLL_IMPORT.md).

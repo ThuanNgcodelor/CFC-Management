@@ -249,3 +249,15 @@ Theo yêu cầu người dùng, backend và frontend nội bộ bật sẵn từ
 | Backup khi đổi bundle | So Gitdiff ở wrapper và so bytes trong JAR ở build script | Backup thành công trước kích hoạt, kể cả wrapper cũ; giữ nguyên migration gate |
 
 Không thêm cache, dependency hoặc yêu cầu.env mới. Khóa không nằm trong backup SQL, không trả từ API/log; không tự xoay khóa. [Cách vận hành](EMPLOYEE_HEALTH_AUTO_IMPORT.md).
+
+### Reader lương lãnh đạo —25/11/2026
+
+| Thiết lập | Giới hạn / hành vi | Vòng đời |
+| --- | --- | --- |
+| `payrollType` multipart | STANDARD mặc định; LEADERSHIP khi chọn nhập lãnh đạo | V40 lưu loại import; không đổi quyền payroll |
+| File/ZIP lãnh đạo |15MiB input,40MiB tổng giải nén,256entries, không macro | Kiểm tra trước POI, không giải nén ra filesystem |
+| Sheet/tiêu đề/dòng |20sheet, quét30dòng đầu/64cột, sheet tối đa2.000dòng | Không giới hạn cứng5người, không cache |
+| Công thức | Chỉ cached result; lỗi/thiếu kết quả thànhINVALID | Không gọi evaluator/nguồn ngoài; phải sửa file rồi nhập lại |
+| Upload frontend | Mutation với QueryClient riêng, không retry tự động upload | Không thêm polling; reset file sau thành công; không lưu workbook trình duyệt lâu dài |
+
+Không thêm.env/dependency/cache. V40 nằm manifest auto-migration tương thích ngược, backup trước kích hoạt; không tự đổi các migration cũ. [Hướng dẫn](HR_LEADERSHIP_PAYROLL_IMPORT.md).

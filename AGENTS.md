@@ -21,7 +21,7 @@ Read this file before changing code in this repository. Rules are written in Eng
 ## 2. Source Of Truth
 
 1. Current code and config.
-2. Current schema: entities + Flyway migrations (`db/migration/`, V1 to V39 as of 2026-11-23; V29 and V37 are Java migrations). `clean_database_master.sql` does not exist.
+2. Current schema: entities + Flyway migrations (`db/migration/`, V1 to V40 as of 2026-11-25; V29 and V37 are Java migrations). `clean_database_master.sql` does not exist.
 3. Master architecture and business flow: `documents/PROJECT_MASTER_CONTEXT.md`.
 
 ## 3. Stack And Commands

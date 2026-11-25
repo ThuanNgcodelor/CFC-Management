@@ -48,7 +48,7 @@ class HealthMysqlAcceptanceTest extends HealthPersonalAccessTest {
             try(var insert=connection.prepareStatement("INSERT INTO hr_health_publications(id,visit_id,revision,status,snapshot,content_hash,created_by_actor,updated_by_actor) VALUES('qa-release','qa-visit',1,'PUBLISHED',?,?,'QA','QA')")){insert.setString(1,payload);insert.setString(2,"a".repeat(64));insert.executeUpdate();}
         }
         var flyway=org.flywaydb.core.Flyway.configure().dataSource(url,"health_qa",password).load();
-        org.assertj.core.api.Assertions.assertThat(flyway.migrate().migrationsExecuted).isEqualTo(3);flyway.validate();
+        org.assertj.core.api.Assertions.assertThat(flyway.migrate().migrationsExecuted).isEqualTo(4);flyway.validate();
         org.assertj.core.api.Assertions.assertThat(flyway.migrate().migrationsExecuted).isZero();
         try(var connection=java.sql.DriverManager.getConnection(url,"health_qa",password);var statement=connection.createStatement()) {
             try(var rows=statement.executeQuery("SELECT COUNT(*) FROM hr_employees")){rows.next();org.assertj.core.api.Assertions.assertThat(rows.getLong(1)).isEqualTo(before+1);}

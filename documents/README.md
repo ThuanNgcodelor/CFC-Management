@@ -46,6 +46,7 @@ Bằng chứng là log Fedora/ảnh người dùng gửi ngày 23/11; lần cậ
 | [Cẩm nang ca sản xuất](WORKER_ATTENDANCE_USAGE_GUIDE.md) | Import → ghép ca → rà soát → chốt → xuất Excel; giữ bất biến giờ gốc |
 | [Thử nghiệm chấm công](HR_ATTENDANCE_SANDBOX.md) | Dùng chung logic/UI chính, kết quả thử không ghi bảng công; có xuất đối chiếu |
 | [Audit search/filter](ATTENDANCE_SEARCH_AUDIT.md) | Race URL/debounce/response; bỏ polling 30 giây; bằng chứng hồi quy |
+| [Nhập lương lãnh đạo](HR_LEADERSHIP_PAYROLL_IMPORT.md) | Mẫu Ban điều hành, số/cached formula, preview/PDF riêng, chặn dòng lỗi; dev25/11 |
 | [OCR điện thoại](HR_GENERAL_LABOR_OCR_CAPTURE.md) | Chụp CCCD từ điện thoại cho LĐPT, phiên/khôi phục/bảo vệ dữ liệu |
 | [Mẫu Word/ONLYOFFICE](HR_WORD_EDITOR_SETUP.md) | Editor tắt/ẩn, DocumentServer không khởi động; xuất hợp đồng có sẵn vẫn dùng |
 

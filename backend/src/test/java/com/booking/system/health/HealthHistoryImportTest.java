@@ -118,13 +118,13 @@ class HealthHistoryImportTest {
         assertThat(fixture.results.findAll()).extracting(r->r.getRawValue()).doesNotContain("22");
     }
     @Test void aManuallyStagedBatchWithAnotherNamespaceIsNotAutomaticallyConfirmed() throws Exception {
-        var data=fixture.dataset("II");fixture.preparation.prepare(data,fixture.analyzer.analyze(data,fixture.preparation.identities()),"OTHER_SOURCE",Policy.TOTAL_FIRST,true,HealthBaselineIntegrationTest.ADMIN);
+        var data=fixture.dataset("II");bundle(data);fixture.preparation.prepare(data,fixture.analyzer.analyze(data,fixture.preparation.identities()),"OTHER_SOURCE",Policy.TOTAL_FIRST,true,HealthBaselineIntegrationTest.ADMIN);
         store.install(KEY);
         assertThatThrownBy(()->history.execute(HealthBaselineIntegrationTest.ADMIN,true,"Không đổi nguồn của lô thủ công.")).hasMessageContaining("mã nguồn khác");
         assertThat(fixture.results.count()).isZero();
     }
     @Test void anExistingManualMappingIsNotAutomaticallyConfirmedEvenWithTheSameNamespace() throws Exception {
-        var data=fixture.dataset("II");
+        var data=fixture.dataset("II");bundle(data);
         var prepared=fixture.preparation.prepare(data,fixture.analyzer.analyze(data,fixture.preparation.identities()),"CFC_HISTORY",Policy.TOTAL_FIRST,true,HealthBaselineIntegrationTest.ADMIN);
         var batchId=prepared.batches().getFirst().id();
         String saved=fixture.jdbc.queryForObject("SELECT mapping_json FROM hr_health_imports WHERE id=?",String.class,batchId);

@@ -8,6 +8,7 @@ import com.booking.system.hr.importer.HrImportActor;
 import com.booking.system.hr.enums.HrPayrollRowStatus;
 import com.booking.system.hr.service.HrPayrollCampaignService;
 import com.booking.system.hr.service.HrPayrollService;
+import com.booking.system.hr.service.HrPayrollUploadService;
 import com.booking.system.hr.service.HrPayrollTestRecipientService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class HrPayrollController {
     private final HrPayrollService payrollService;
+    private final HrPayrollUploadService uploadService;
     private final HrPayrollCampaignService campaignService;
     private final HrPayrollTestRecipientService testRecipientService;
     private final HrActorResolver actorResolver;
@@ -37,13 +39,14 @@ public class HrPayrollController {
     @PostMapping(value = "/imports", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<HrPayrollDtos.ImportResponse>> upload(
             @AuthenticationPrincipal User principal,
-            @RequestPart("file") MultipartFile file) throws java.io.IOException {
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(defaultValue = "STANDARD") com.booking.system.hr.enums.HrPayrollType payrollType) throws java.io.IOException {
         if (file == null || file.isEmpty()) {
             throw HrApiException.badRequest("PAYROLL_FILE_EMPTY", "Vui lòng chọn file Excel lương.");
         }
         HrImportActor actor = actorResolver.fromPrincipal(principal);
         return ResponseEntity.ok(ApiResponse.success(
-                payrollService.upload(file.getOriginalFilename(), file.getBytes(), actor),
+                uploadService.upload(file.getOriginalFilename(), file.getBytes(), payrollType, actor),
                 "Đã đọc file lương, vui lòng kiểm tra bản xem trước"));
     }
 
