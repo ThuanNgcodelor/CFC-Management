@@ -69,3 +69,9 @@ Khi nghi lộ quyền/sai dữ liệu, tắt self-service ở môi trường tri
 Rollback JAR chỉ khôi phục code, không hoàn tác Flyway/DB hoặc tệp đã tải. Trước khi restore thật phải dừng ghi theo phạm vi, xác minh bản backup và môi trường đích, restore thử riêng, review quyền/phiên còn hiệu lực, đối chiếu số liệu rồi mới mở lại. Không chạy lệnh restore QA vào DB thật. Nếu revoke xảy ra sau backup, restore có thể khôi phục grant cũ: cần rà soát/thu hồi phiên và mã trước khi mở cổng.
 
 Các bước production là checklist bàn giao, **không phải xác nhận đã triển khai**. Chi tiết toàn module: [tổng hợp](EMPLOYEE_HEALTH_IMPLEMENTATION_SUMMARY.md), [plan](EMPLOYEE_HEALTH_PLAN.md).
+
+## Sửa độ sẵn sàng MySQL QA —26/11/2026
+
+CI báo thất bại CREATE/GRANT schema nâng cấp trước khi chạyJava. Runner cũ chờSELECT1 qua socketroot có thể nhận server khởi tạo tạm trước userQA; đã đổi sang TCP/user/schemaQA, deadline120giây, mỗi lệnh tối đa10giây. Khi lỗi chỉ báo mãSQLSTATE/MySQL và bước thực hiện, không rawSQL/secret. Thêm regression cho chờ auth/TCP, timeout, không chạyMaven khi readiness lỗi và cleanup; không thay môi trường production hoặc gatehealth.
+
+Kiểm tra bản sửa26/11:8Python regression đạt; runnerMySQL8.0 khởi động container mới,51testJava đạt/0skip và backup/restore79bảng khớp count/checksum. Container và envQA được dọn. AST graph local đã refresh, chưa tái trích xuất semanticdocs. Chưa chạy lạiCI trênGitHub hoặc tác độngproduction.

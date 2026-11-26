@@ -261,3 +261,9 @@ Không thêm cache, dependency hoặc yêu cầu.env mới. Khóa không nằm t
 | Upload frontend | Mutation với QueryClient riêng, không retry tự động upload | Không thêm polling; reset file sau thành công; không lưu workbook trình duyệt lâu dài |
 
 Không thêm.env/dependency/cache. V40 nằm manifest auto-migration tương thích ngược, backup trước kích hoạt; không tự đổi các migration cũ. [Hướng dẫn](HR_LEADERSHIP_PAYROLL_IMPORT.md).
+
+### MySQL QA readiness —26/11/2026
+
+Runner health/MySQL chờ tối đa120giây bằng TCP127.0.0.1 bên trong container, đăng nhập `health_qa` vào schemaQA, không dùng socketroot để xác định sẵn sàng. ImageMySQL chính thức chạy server tạm `--skip-networking` trước khi tạo tài khoản/CSDL; SELECT1 qua socket có thể thành công quá sớm. Mỗi lệnh readiness/SQL helper giới hạn10giây, timeout probe không vượt thời gian còn lại và retry cách tối đa1giây. Tổng deadline vẫn120giây, không thêm env hoặc đổi MySQL production.
+
+Khi SQL/helper thất bại, chỉ hiện tên bước/mãMySQL/SQLSTATE hoặc exitcode/timeout; không đưa rawstderr,SQLbody/password/containerenv vào log. Testcredentials vẫn file0600 và chỉ cấp cho DBQA loopback tạm. Chỉ sau readiness đạt mới tạo schema nâng cấp/chạyMaven; failure vẫn dọncontainer/env theo flow cũ.

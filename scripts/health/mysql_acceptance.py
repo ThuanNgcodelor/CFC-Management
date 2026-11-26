@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import secrets
 import shutil
@@ -14,18 +15,58 @@ import uuid
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = "health_qa_acceptance"
 RESTORE = "health_qa_restore"
+MYSQL_READY_TIMEOUT = 120
+MYSQL_COMMAND_TIMEOUT = 10
 
 
 def run(args, **kwargs):
     return subprocess.run(args, check=True, **kwargs)
 
 
-def mysql(container, sql, database=None):
+def mysql_failure(error):
+    """Publish only error codes, never SQL, credential values or raw container output."""
+    detail = getattr(error, "stderr", b"") or b""
+    if isinstance(detail, bytes):
+        detail = detail.decode("utf-8", errors="replace")
+    match = re.search(r"ERROR\s+(\d+)\s+\(([A-Z0-9]+)\)", detail)
+    if match:
+        return f"MySQL ERROR {match[1]}, SQLSTATE {match[2]}"
+    if isinstance(error, subprocess.TimeoutExpired):
+        return "hết thời gian chờ lệnh MySQL"
+    return f"lệnh MySQL/Docker thoát với mã {error.returncode}"
+
+
+def mysql(container, sql, database=None, operation="thực thi SQL QA"):
     args = ["docker", "exec", "-i", container, "sh", "-c",
             'export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"; exec mysql -uroot --batch --skip-column-names "$@"', "qa"]
     if database:
         args.append(database)
-    return run(args, input=sql.encode(), stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
+    try:
+        return run(args, input=sql.encode(), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                   timeout=MYSQL_COMMAND_TIMEOUT).stdout
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+        raise RuntimeError(f"Không hoàn tất bước {operation}: {mysql_failure(error)}.") from None
+
+
+def wait_for_mysql(container, timeout=MYSQL_READY_TIMEOUT):
+    # The official image starts a temporary socket-only server while creating users/DBs.
+    # TCP + the application user/schema proves final initialization has completed.
+    args = ["docker", "exec", "-i", container, "sh", "-c",
+            'export MYSQL_PWD="$MYSQL_PASSWORD"; exec mysql --protocol=TCP --host=127.0.0.1 '
+            '--connect-timeout=2 --user=health_qa --batch --skip-column-names health_qa_acceptance']
+    deadline = time.monotonic() + timeout
+    last_error = "chưa nhận được kết nối TCP"
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError(f"QA MySQL chưa sẵn sàng qua TCP/tài khoản QA sau {timeout} giây: {last_error}.")
+        try:
+            run(args, input=b"SELECT 1", stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                timeout=min(MYSQL_COMMAND_TIMEOUT, remaining))
+            return
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+            last_error = mysql_failure(error)
+        time.sleep(min(1, max(0, deadline - time.monotonic())))
 
 
 def digest(container, database):
@@ -77,15 +118,9 @@ def main():
              "--env-file", str(env_file), "-p", "127.0.0.1::3306", "--tmpfs", "/var/lib/mysql:rw,nosuid,size=768m",
              "--memory=1g", "--cpus=2", args.image], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         started = True
-        deadline = time.monotonic() + 120
-        while True:
-            try:
-                mysql(container, "SELECT 1"); break
-            except subprocess.CalledProcessError:
-                if time.monotonic() > deadline:
-                    raise RuntimeError("QA MySQL chưa sẵn sàng sau 120 giây")
-                time.sleep(1)
-        mysql(container, "CREATE DATABASE health_qa_upgrade CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci; GRANT ALL PRIVILEGES ON health_qa_upgrade.* TO 'health_qa'@'%'")
+        wait_for_mysql(container)
+        mysql(container, "CREATE DATABASE health_qa_upgrade CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci; GRANT ALL PRIVILEGES ON health_qa_upgrade.* TO 'health_qa'@'%'",
+              operation="tạo schema và cấp quyền QA nâng cấp")
         binding = run(["docker", "port", container, "3306/tcp"], capture_output=True, text=True).stdout.strip()
         if not binding.startswith("127.0.0.1:") or not binding.split(':')[-1].isdigit():
             raise RuntimeError("QA MySQL must bind loopback only")
