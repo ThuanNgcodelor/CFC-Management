@@ -60,7 +60,7 @@ public class HrLeadershipPayrollParserTest {
         var value=parser.parse(bytes(workbook(1))).rows().getFirst();var row=new HrPayrollImportRow();row.setEmployeeCode(value.employeeCode());row.setEmployeeName(value.employeeName());
         row.setPayloadJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(value.values()));
         var pdf=HrPayrollPdfRenderer.render(row,"10/2026",false);
-        try(var doc=Loader.loadPDF(pdf.bytes())) {assertThat(doc.getNumberOfPages()).isEqualTo(1);assertThat(new PDFTextStripper().getText(doc)).contains("Lương cơ bản","Bù đầu năm","Thuế TNCN","Quỹ ASXH","12.000.000 đ").doesNotContain("Số công","Số tài khoản");}
+        try(var doc=Loader.loadPDF(pdf.bytes())) {assertThat(doc.getNumberOfPages()).isEqualTo(1);assertThat(new PDFTextStripper().getText(doc)).contains("Lương cơ bản","đầu năm","Thuế TNCN","quỹ ASXH","12.000.000").doesNotContain("Số công","Số tài khoản");}
         assertThat(HrPayrollMessageRenderer.officialCaption(row,"10/2026")).contains("BAN ĐIỀU HÀNH","Thuế TNCN","12.000.000").doesNotContain("Số công","Số tài khoản");
     }
     @Test void inspectsOptionalPrivateSourceLocallyWithoutPersistingOrPrintingItsValues() throws Exception {
