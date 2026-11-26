@@ -3,9 +3,10 @@ import { unwrapApiData } from './hrApiUtils';
 
 export const hrPayrollApi = {
   listImports: async (params, options = {}) => unwrapApiData(await baseApi.get('/hr/payroll/imports', { params, signal: options.signal })),
-  upload: async (file) => {
+  upload: async (file, payrollType = 'STANDARD') => {
     const body = new FormData();
     body.append('file', file);
+    body.append('payrollType', payrollType);
     return unwrapApiData(await baseApi.post('/hr/payroll/imports', body));
   },
   preview: async (id, params, options = {}) => unwrapApiData(await baseApi.get(`/hr/payroll/imports/${id}/preview`, { params, signal: options.signal })),

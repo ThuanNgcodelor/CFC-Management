@@ -1,5 +1,19 @@
 # Kế hoạch CI/CD cho server Fedora
 
+## Vận hành đã xác nhận23/11/2026
+
+Người dùng cung cấp log: backup18MB đạt, release `04a663be4bd8e4a670a2a3da0fb7653c9fb5e52a` deploy thành công; status `success`, timer nhận cùng SHA và bỏ qua build/restart. Backend/tunnel active, MySQL/Redis đang chạy. Đây là trạng thái ở lần kiểm tra, không phải kiểm tra HEAD hoặc Settings GitHub trực tiếp trong lần tài liệu này.
+
+**Luồng thường ngày:** máy dev push nhánh tính năng → PR vào main → CI đạt/merge → Fedora timer fetch main, kiểm tra CI/migration và tự build/backup/kích hoạt khi đủ điều kiện. Dùng cùng checkout Fedora; không dùng self-hosted runner production nhận workflow từ repo public. Không cần chạy `--deploy` thủ công cho mọi thay đổi thông thường.
+
+**Ba tình huống dễ nhầm:**
+
+- `Một lệnh kiểm tra/deploy khác đang chạy`: khóa đang có process giữ. Xem `journalctl --user -u bookingbase-deploy.service -n20 --no-pager`, đợi xong rồi chạy `python3 deployserver/linux/ci-deploy.py --status`. Không xóa lock để ép chạy đồng thời.
+- Backup báo `booking_db` không chạy: dừng timer, kiểm tra container/dịch vụ. Sự cố23/11 cho thấy DB/Redis đã dừng và backend inactive; chưa xác định nguyên nhân dừng. Người dùng phục hồi bằng `flock -n .git/cfcbase-deploy.lock bash deployserver/linux/run.sh`, sau đó retry deploy. “Giữ JAR cũ” không đảm bảo dịch vụ cũ đang active.
+- Lần deploy trước failed: chỉ sau xử lý nguyên nhân mới dùng `python3 deployserver/linux/ci-deploy.py --deploy --retry-failed`; thành công thì `systemctl --user start bookingbase-deploy.timer`, kiểm tra `--status`.
+
+Chưa có bằng chứng thử reboot/restore production hoặc cưỡng bức lỗi rollback trong đợt này. Các chặng bên dưới giữ lịch sử thiết kế và kiểm thử. [Tự nhập sức khỏe sau deploy](EMPLOYEE_HEALTH_AUTO_IMPORT.md) · [Backup/restore](DATABASE_BACKUP.md).
+
 ## Mục tiêu
 
 Giữ nguyên server Fedora, Docker/MySQL và Cloudflare Tunnel. Thay thao tác lặp `git pull` + chạy build bằng kiểm tra tự động và sau đó là deploy có kiểm soát, có health-check và đường quay lại phiên bản ứng dụng trước.

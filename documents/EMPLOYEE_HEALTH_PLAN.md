@@ -1,6 +1,8 @@
 # Kế hoạch Sổ sức khỏe nhân viên — CFCBase
 
-Ngày lập: **10/11/2026**. Trạng thái: **Phase 1–7 có bản triển khai dev; Phase 3 đã nạp thử lịch sử vào H2 riêng, còn hồ sơ chờ quản trị xác minh. Phase 4 có hồ sơ/timeline/so sánh nội bộ; Phase 5 có báo cáo và xuất Excel/PDF; Phase 6 có rà soát/công bố/thu hồi theo phiên bản. Phase 7 có cổng tra cứu dev theo mã riêng đã duyệt; chưa deploy/mở dữ liệu thật**. Bàn giao: [Phase 1](EMPLOYEE_HEALTH_PHASE1_DEV.md), [Phase 2](EMPLOYEE_HEALTH_PHASE2_DEV.md), [Phase 3](EMPLOYEE_HEALTH_PHASE3_DEV.md), [Phase 4](EMPLOYEE_HEALTH_PHASE4_DEV.md), [Phase 5](EMPLOYEE_HEALTH_PHASE5_DEV.md), [Phase 6](EMPLOYEE_HEALTH_PHASE6_DEV.md), [Phase 7](EMPLOYEE_HEALTH_PHASE7_DEV.md).
+Ngày lập10/11/2026; tổng hợp trạng thái23/11/2026. **Phase1–9 có bản triển khai/kiểm thử dev, quản trị nội bộ đã deploy và kích hoạt lịch sử83 dòng nhập/936 dòng nguồn chờ theo ảnh người dùng.** Nghiệm thu dữ liệu lịch sử, file2026, mẫu xuất desktop và pilot/cổng cá nhân còn riêng. [Trạng thái hiện hành](EMPLOYEE_HEALTH_IMPLEMENTATION_SUMMARY.md), [tự nhập và chọn lô](EMPLOYEE_HEALTH_AUTO_IMPORT.md), [mục lục bàn giao từng phase](README.md#sổ-sức-khỏe).
+
+> Các thiết kế và checklist bên dưới giữ theo mốc lập kế hoạch. Khi có khác biệt về gate/deploy hoặc cách tra cứu, dùng trạng thái hiện hành và hai phương thức độc lập: CCCD+mã nhân viên (khi quản trị cho phép) hoặc chỉ mã riêng.
 
 Nguồn: sáu file Excel/Markdown người dùng cung cấp, các xác nhận trong cuộc trao đổi và source CFCBase. Chi tiết khảo sát: [EMPLOYEE_HEALTH_DATA_ANALYSIS.md](EMPLOYEE_HEALTH_DATA_ANALYSIS.md). Tài liệu này không chứa hồ sơ hay kết quả sức khỏe của người thật.
 

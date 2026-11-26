@@ -1,5 +1,7 @@
 # Phase 8 — Nghiệm thu kỹ thuật và chuẩn bị rollout
 
+> Bàn giao theo mốc của phase, không phải trạng thái production hiện tại. Cập nhật23/11/2026: quản trị đã deploy, gói lịch sử đã kích hoạt83dòng nhập/936dòng nguồn chờ theo ảnh người dùng. Gate nội bộOFF hoặc “chưa deploy” bên dưới là lịch sử; cổng cá nhân/công bố không tự bật. Xem [trạng thái hiện hành](EMPLOYEE_HEALTH_IMPLEMENTATION_SUMMARY.md), [hướng dẫn nhập và chọn lô](EMPLOYEE_HEALTH_AUTO_IMPORT.md), [mục lục](README.md).
+
 Ngày 12/11/2026. Hoàn tất phần kiểm chứng kỹ thuật **dev**, chưa hoàn tất pilot/production. Không kết nối Fedora, không ghi DB baseline lịch sử, không cấp mã hoặc công bố kết quả thật. Phase9 chưa bắt đầu.
 
 ## Bằng chứng kiểm thử

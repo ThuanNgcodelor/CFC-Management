@@ -1,5 +1,7 @@
 # Sổ sức khỏe — bàn giao Phase 3 ở dev
 
+> Bàn giao theo mốc của phase, không phải trạng thái production hiện tại. Cập nhật23/11/2026: quản trị đã deploy, gói lịch sử đã kích hoạt83dòng nhập/936dòng nguồn chờ theo ảnh người dùng. Gate nội bộOFF hoặc “chưa deploy” bên dưới là lịch sử; cổng cá nhân/công bố không tự bật. Xem [trạng thái hiện hành](EMPLOYEE_HEALTH_IMPLEMENTATION_SUMMARY.md), [hướng dẫn nhập và chọn lô](EMPLOYEE_HEALTH_AUTO_IMPORT.md), [mục lục](README.md).
+
 Ngày: **11/11/2026**. Đã triển khai công cụ baseline, nhập thử các file thật vào **H2 dev riêng**, có backup/restore và giao diện rà soát. **Chưa nghiệm thu toàn bộ baseline; không ghi nghiệp vụ production, không deploy và chưa công bố.**
 
 ## Xem ngay trên máy dev

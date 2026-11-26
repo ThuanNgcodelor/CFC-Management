@@ -1,6 +1,6 @@
 # Technical Debt (BookingBase / HR)
 
-Source: codebase audit on 2026-10-16. Read this file only when a task touches an item below. Do not fix unrelated items while working on another task. Line numbers may have moved; search by file and symbol.
+Source: codebase audit on 2026-10-16. Documentation reconciliation23/11/2026: old unverified test statements below are historical; latest recorded20/11 suite460/0errors/55skip and50 MySQL tests passed separately, not rerun23/11. Documentation-link item17d resolved (9 broken links corrected). Other source debts are not re-audited or implicitly closed by this docs task. Read this file only when a task touches an item below. Do not fix unrelated items while working on another task. Line numbers may have moved; search by file and symbol.
 
 ## Group 1: Do first (small, low risk)
 
@@ -11,7 +11,7 @@ Source: codebase audit on 2026-10-16. Read this file only when a task touches an
 | 4 | Missing index for night-shift scan | `hr_attendance_shifts` | New migration: index `(import_id, counts_toward_night_reward)` |
 | 5 | Missing index for ledger lookup | `hr_night_reward_ledger` | New migration: index `(qualification_id, track_code, entry_type)` |
 | 6 | Missing index for cross-file duplicate check | `hr_attendance_source_days` | New migration: index `(employee_code, work_date)` |
-| 7 | `.save()` in loops | `HrAttendanceService.java:222`, `HrProductionAttendanceService.java:727`, `HrPayrollService.java:73` | Collect into a list and `saveAll(...)` |
+| 7 | `.save()` in loops | `HrAttendanceService.java:222`, `HrProductionAttendanceService.java:727` | Collect into a list and `saveAll(...)` |
 | 8 | Swallowed exceptions when parsing date/time | `HrAttendanceService.java:683, 693` (11 empty catches in total) | `log.warn` with row context |
 
 ## Group 2: Do next
@@ -19,7 +19,7 @@ Source: codebase audit on 2026-10-16. Read this file only when a task touches an
 | # | Issue | Where | Fix |
 | --- | --- | --- | --- |
 | 9 | N+1 queries when finalizing night rewards (SELECT + INSERT per employee per track) | `HrNightRewardService.java:420-436` | `findByQualificationIdIn(...)` + `saveAll(...)` |
-| 10 | Long transaction around Excel parsing and SHA256 | `HrProductionAttendanceService.upload` (:219), `HrAttendanceService` (:171), `HrPayrollService` (:39) | Parse outside the transaction; open `@Transactional` only for persistence |
+| 10 | Long transaction around Excel parsing and SHA256 | `HrProductionAttendanceService.upload` (:219), `HrAttendanceService` (:171) | Parse outside the transaction; open `@Transactional` only for persistence |
 | 11 | Per-file `existsByImportIdAndEmployeeCodeIn` loop | `HrProductionAttendanceService.java:302` | One query across active imports of the month |
 | 12 | `existsActiveAfter` called per row | `HrSalaryRaiseService.java:337` | Batch query |
 | 13 | Entitlement generation at 12/24 months still lacks direct tests | `HrNightRewardServiceTest.java` | Threshold 9/10, accrued months after NOT_QUALIFIED (FAILED), ADMIN/HR_STAFF finalize and reopen to STALE covered on 2026-11-02; add entitlement boundary tests |
@@ -33,12 +33,11 @@ Source: codebase audit on 2026-10-16. Read this file only when a task touches an
 
 | 17b | Two attendance tests depend on missing local `CongXn.xlsx`; full suite cannot pass on this checkout | `HrProductionAttendanceServiceTest`, `HrProductionShiftMatcherTest` | Supply a sanitized, versioned fixture or generate representative workbook data; do not commit real employee data |
 | 17c | Styled Excel library is loaded on demand but its `xlsx.min` chunk is still about 863 kB, above the 500 kB target | `utils/nightRewardReconcile.js` parse/export | Evaluate a smaller reader and a styled export path that preserves the current workbook formatting |
-| 17d | Master Context contains 8 relative links to documents absent from this checkout, found during the 2026-11-04 plan review | `documents/PROJECT_MASTER_CONTEXT.md`: older phase guides, Attendance plans/source docs, salary-raise plan and Telegram guide | Locate the canonical documents or correct/remove outdated links in a documentation maintenance task; new reporting-plan links were checked separately |
 | 17e | Pending employee records with draft movements cannot be deleted, and the generic reference error provides no resolution workflow | `HrWorkforceService.deleteDraftEmployee`, employee detail/delete UI | Add precise reference diagnostics and an approved stop-reception/archive workflow that preserves audit and confirmed history; planned in `HR_REPORTING_UX_PLAN.md`, not implemented |
 | 17f | Full backend suite has a reproducible unused Mockito stub in `previewLoadsQualificationAndEntitlementDetailsInBatches` | `HrNightRewardServiceTest.setUp`, entitlement repository stub at line 122 in the 04/11/2026 checkout | Scope the stub to tests that consume it; reproduced in isolation during HR UX Phase 0–3. Outside this change's business scope; full suite is not green even with the two attendance fixtures supplied. |
 | 17g | Workforce report projection and correction filtering load the full confirmed movement timeline before filtering | `HrReportService`, `HrRosterProjectionService.projectedItemsForPeriods` | Add date-bounded movement queries plus a correction lookup that still removes replacements outside the requested year; measure on MySQL before sign-off. |
 
-| 17i | Health staging/revision retention và MySQL production chưa nghiệm thu | `health` import Phase 2 | Chốt TTL/purge/backup trước dữ liệu thật trên server; chạy V34/V35 và EXPLAIN MySQL dev. Phase 3 đã được phép nhập thật vào H2 dev riêng, có backup/restore nhưng /tmp không là lưu trữ dài hạn. Cancel xóa pending payload; không tự purge imported/history. Xem EMPLOYEE_HEALTH_PHASE3_DEV.md. |
+| 17i | Health staging/revision retention và MySQL production chưa nghiệm thu | `health` import Phase 2 | Đến23/11, quản trị và lịch sử83/936 đã lên server theo bằng chứng người dùng. Vẫn cần chốt TTL/purge, backup khóa và kiểm tra EXPLAIN/tải dữ liệu production; MySQL QA riêng đã có nghiệm thu, không coi là chưa test dialect. Phase 3 đã được phép nhập thật vào H2 dev riêng, có backup/restore nhưng /tmp không là lưu trữ dài hạn. Cancel xóa pending payload; không tự purge imported/history. Xem EMPLOYEE_HEALTH_PHASE3_DEV.md. |
 
 ## Group 3: Needs an owner decision (do not change on your own)
 
@@ -62,3 +61,5 @@ Source: codebase audit on 2026-10-16. Read this file only when a task touches an
 
 - Health cập nhật18/11/2026: MySQL8.0.46 QA đã đạt38test, V33→V39 và restore79bảng; các mục nghiệm thu MySQL ở trên còn áp dụng cho cấu hình/dữ liệu production, không phải thiếu kiểm tra dialect trên dev. Còn retention, proxy/IPthật, khóa/tệp backup vận hành và pilot.
 - Security ngoài phạm vi health: cấu hình fallback vẫn dùng `sendError(401/403)`, chưa có regression HTTP thật cho từng phân hệ. Health đã sửa lỗi403 bị servlet error dispatch đổi401; cần kiểm chứng các API khác trước khi quyết định đổi fallback chung, không mở rộng thay đổi login/role trong task này.
+
+- Payroll25/11: đường upload đã tách parse/hash khỏi transaction và ghi saveAll; refresh cũng saveAll. Các save-loop/transaction ở campaign gửi và các service khác chưa được xử lý trong tính năng lãnh đạo. Luồng số/parserSTANDARD vẫn có quy tắc cũ; không suy rằng đã harden toàn bộ payroll.

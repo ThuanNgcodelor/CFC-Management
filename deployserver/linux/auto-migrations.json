@@ -5,6 +5,11 @@
       "sha256": "94994f89e7180a9817a4b950947e9f6846ad338ccfec0cc075794edc42c00ccf",
       "backwardCompatible": true,
       "reason": "Chỉ tạo bảng cấu hình RouterOS độc lập; không sửa dữ liệu/bảng hiện có. JAR cũ không đọc bảng này và vẫn chạy được khi bảng tồn tại."
+    },
+    "backend/src/main/resources/db/migration/V40__add_payroll_import_type.sql": {
+      "sha256": "0a5d79df4235dcd04cbcf2de3882958ecb49b1d34e362e8021436a4cf08252a9",
+      "backwardCompatible": true,
+      "reason": "Chỉ thêm cột payroll_type VARCHAR mặc định STANDARD; dữ liệu cũ giữ nguyên và JAR cũ không đọc cột mới. Không đổi ENUM hoặc xóa/sửa cột hiện có; backup trước kích hoạt theo policy."
     }
   }
 }

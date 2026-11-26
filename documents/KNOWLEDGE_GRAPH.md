@@ -25,3 +25,5 @@ Khi MCP chưa có trong phiên, vẫn có thể dùng CLI:
 Bản đồ chỉ mô tả các tệp đã được phân tích, không đọc trạng thái DB production hoặc toàn bộ hệ điều hành. Một số tham chiếu chưa phân giải và cạnh bị gộp được ghi trong `graphify-out/DIAGNOSTICS.md`; luôn đối chiếu code cho kết luận chính xác. Artifact và cache được `.gitignore` bỏ qua.
 
 Đã kiểm tra bắt tay stdio, danh sách tool, `graph_stats` và `query_graph` bằng MCP client thực tế. Kiểm tra trong sandbox bị timeout; cùng kiểm tra chạy thành công bên ngoài sandbox. Không chạy build/test ứng dụng vì chỉ thay đổi cấu hình công cụ và tài liệu.
+
+Tổng hợp tài liệu23/11/2026 có điểm vào mới ở [mục lục](README.md). Đồ thị là snapshot trước đợt tổng hợp này; chưa tái trích xuất semantic các tài liệu/ảnh mới. Không chạy AST refresh để giả định đã cập nhật semantic hoặc trạng thái production; khi cần số liệu vận hành, dùng bảng bằng chứng có ngày trong Master Context.

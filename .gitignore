@@ -75,3 +75,6 @@ yarn-error.log*
 
 # Private decryption keys for packaged health history must never be committed
 **/history-import.key
+
+# Private leadership payroll source workbook
+/Thu luong ban dieu hanh *.xlsx

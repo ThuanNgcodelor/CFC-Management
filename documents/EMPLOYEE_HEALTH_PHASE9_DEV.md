@@ -1,5 +1,7 @@
 # Phase 9 — Sẵn sàng tiếp nhận đợt khám 2026
 
+> Bàn giao theo mốc của phase, không phải trạng thái production hiện tại. Cập nhật23/11/2026: quản trị đã deploy, gói lịch sử đã kích hoạt83dòng nhập/936dòng nguồn chờ theo ảnh người dùng. Gate nội bộOFF hoặc “chưa deploy” bên dưới là lịch sử; cổng cá nhân/công bố không tự bật. Xem [trạng thái hiện hành](EMPLOYEE_HEALTH_IMPLEMENTATION_SUMMARY.md), [hướng dẫn nhập và chọn lô](EMPLOYEE_HEALTH_AUTO_IMPORT.md), [mục lục](README.md).
+
 Cập nhật 18/11/2026. Người dùng xác nhận **chưa có file khám 2026, sẽ bổ sung sau**. Phần chuẩn bị phần mềm đã được kiểm thử bằng dữ liệu giả. Không tạo đợt/kết quả 2026 trong DB baseline lịch sử hoặc production.
 
 ## Phần đã hoàn thiện

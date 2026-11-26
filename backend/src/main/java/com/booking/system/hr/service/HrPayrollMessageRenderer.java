@@ -36,6 +36,8 @@ public final class HrPayrollMessageRenderer {
         } catch (Exception exception) {
             throw HrApiException.badRequest("PAYROLL_PAYLOAD_INVALID", "Không đọc được dữ liệu lương của " + row.getEmployeeCode());
         }
+        HrLeadershipPayrollFields.requireValid(value);
+        if (HrLeadershipPayrollFields.isLeadership(value)) return HrLeadershipPayrollFields.caption(row, payrollMonth, value);
         String caDemLine = hasValue(value, "soCaDem") ? "\n" + quantityLine("Số ca đêm", text(value, "soCaDem")) : "";
         return "PHIẾU LƯƠNG THÁNG " + displayMonth(payrollMonth)
                 + "\n────────────────────"

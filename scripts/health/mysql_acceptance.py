@@ -97,7 +97,7 @@ def main():
         with log.open("w") as output:
             log.chmod(0o600)
             run([args.maven, "--offline", "-B", "-ntp", "-f", str(ROOT / "backend/pom.xml"),
-                 f"-Dbooking.build.directory={folder / 'target'}", "-Dtest=HealthMysqlAcceptanceTest,Health2026MysqlReadinessTest,HealthHistoryMysqlImportTest",
+                 f"-Dbooking.build.directory={folder / 'target'}", "-Dtest=HealthMysqlAcceptanceTest,Health2026MysqlReadinessTest,HealthHistoryMysqlImportTest,HealthLeadershipPayrollMysqlTest",
                  f"-Dhealth.mysql.qa.url={url}", "test"], cwd=ROOT, env=env, stdout=output, stderr=subprocess.STDOUT)
         proof = restore_drill(container, folder)
         proof.update({"image": args.image, "mysqlVersion": mysql(container, "SELECT VERSION()").decode().strip(),

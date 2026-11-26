@@ -1,6 +1,15 @@
 # Tổng hợp triển khai Sổ sức khỏe nhân viên
 
-Cập nhật 18/11/2026. **Phase1–7 có bản triển khai dev**, bao gồm hai cách tra cứu vừa được người dùng duyệt. Phân biệt hoàn tất chức năng với nghiệm thu dữ liệu: baseline Phase3 còn dòng chờ; mẫu xuất Phase5 còn cần mở Excel/LibreOffice duyệt; Phase8 đã nghiệm thu kỹ thuật dev/MySQL/HTTP; Phase9 có phần chuẩn bị tiếp nhận2026 bằng dữ liệu giả. Rollout/pilot thật và file2026 chưa nghiệm thu. Không commit/push/deploy server hoặc công bố kết quả thật trong lần này.
+Cập nhật23/11/2026. Phase1–9 đã có các phần chức năng/kiểm thử dev mô tả trong bảng; **quản trị nội bộ đã lên production**, gói lịch sử đã kích hoạt và ảnh người dùng xác nhận83dòng nhập/936dòng nguồn chờ. Không đồng nghĩa hoàn tất xác minh lịch sử, công bố hoặc nghiệm thu cổng cá nhân. File2026 chưa có. [Mục lục dự án](README.md), [hướng xử lý lịch sử](EMPLOYEE_HEALTH_AUTO_IMPORT.md).
+
+## Trạng thái production ngày 23/11/2026
+
+- Log Fedora do người dùng gửi xác nhận release `04a663be…` deploy thành công, backup trước kích hoạt đạt và timer tự kiểm tra cùng SHA. [Chi tiết vận hành](DEPLOYMENT_CICD_PLAN.md).
+- Ảnh Nhập dữ liệu xác nhận **83 dòng đã nhập / 936 dòng nguồn chờ rà soát**. Lô 2025 · Gián tiếp còn 2 dòng; nguồn chính 2024 · Tổng hợp còn 256 dòng, 2023 · Tổng hợp còn 208 dòng. Không phải 936 người.
+- Mở Hồ sơ sức khỏe để xem kết quả đã nhập; mở lô để xác minh các dòng chờ. Không cần cấp khóa hoặc import lại bộ nguồn. [Hướng dẫn chọn lô](EMPLOYEE_HEALTH_AUTO_IMPORT.md).
+- Chưa có bằng chứng công bố kết quả thật hoặc mở cổng cá nhân; file khám 2026 chưa có. Lần cập nhật docs này không truy cập hay ghi production.
+
+> Bảng và số test bên dưới ghi lại các mốc triển khai dev; các câu “chưa deploy” ở phần ngày cũ không còn là trạng thái quản trị nội bộ ngày23/11. Không có lần chạy test mới trong đợt tổng hợp tài liệu.
 
 ## Toàn bộ phần đã làm
 
@@ -9,7 +18,7 @@ Cập nhật 18/11/2026. **Phase1–7 có bản triển khai dev**, bao gồm ha
 | 0 — Phân tích | Đọc6nguồn Excel/Markdown 2023–2025; phân biệt trực tiếp/công nhân và gián tiếp/văn phòng; chọn Tổng hợp làm nguồn đầu, giữ chênh lệch; chốt ADMIN/MANAGER và hai cách tra cứu | Retention/backup/policy vận hành và nghiệm thu lịch sử |
 | 9 — Sẵn sàng 2026 | Review ánh xạ trước nhập; bộ5 file giả, demo một lệnh trong khung CFCBase;6 bài kiểm tra luồng2026 trên H2/MySQL; so sánh và xuất cá nhân/tập thể | Người dùng xác nhận chưa có file2026; chờ cấu trúc/dữ liệu bệnh viện thật |
 | 8 — Nghiệm thu kỹ thuật dev | MySQL 8.0.46: 32 bài API/migration, nâng V33→V39, restore 79 bảng; HTTP thật 14 nhóm, bộ test gate OFF, CI job MySQL | HTTPS/Cloudflare/Fedora, chính sách lưu trữ, file desktop và pilot thật chưa nghiệm thu |
-| 1 — Nền tảng | Module backend health riêng, danh mục đợt/chỉ tiêu/alias, schema, API, menu trong khung CFCBase, phân quyền/audit riêng, feature flags defaultOFF | MySQL dev đã kiểm tra ở Phase8; production chưa nghiệm thu |
+| 1 — Nền tảng | Module backend health riêng, danh mục đợt/chỉ tiêu/alias, schema, API, menu trong khung CFCBase, phân quyền/audit riêng, nội bộ mặc địnhON từ20/11; cổng cá nhânOFF | MySQL dev đã kiểm tra ở Phase8; production chưa nghiệm thu |
 | 2 — Import | Sheet/tiêu đề nhiều hàng, ánh xạ cột và profile theo cấu trúc, staging/preview phân trang, ghép nhân viên, hash/SID chống trùng, xác nhận từng phần/tiếp tục lô, KEEP/REPLACE có lý do và lịch sử, hủy pending | Không hứa đọc được mọi định dạng bệnh viện; mẫu2026 cần dry-run |
 | 3 — Lịch sử | Công cụ dry-run/phân tích và H2 riêng, clone nhân sự tối thiểu đã được phép, xác nhận năm2023/2024 theoSID không suy ngày, nhập83lượt2025 khớp chắc chắn | 936dòng nguồn pending không phải936người; tên/mã/xung đột còn chờ quản trị duyệt |
 | 4 — Hồ sơ nội bộ | Tìm mã/tên, lọc/năm/nhóm/phân trang, Back/Forward giữ trạng thái; timeline/nhiều lượt cùng năm, raw/nguồn/tham chiếu; so sánh2–6lượt và biểu đồ số học đủ điều kiện | Dữ liệu thật2023–2024 chưa đủ hồ sơ đã ghép; không có kho ảnh/PDF bệnh viện nếu nguồn chưa cung cấp |

@@ -14,7 +14,7 @@ public final class HrPayrollDtos {
     private HrPayrollDtos() {}
     public record ImportResponse(String id, String fileName, String payrollMonth, HrPayrollImportStatus status,
                                  int totalRows, int validRows, int readyRows, int skippedRows, int invalidRows,
-                                 String lastError, LocalDateTime createdAt) {}
+                                 String lastError, LocalDateTime createdAt, com.booking.system.hr.enums.HrPayrollType payrollType) {}
     public record PayrollRowResponse(String id, int rowNumber, String employeeCode, String employeeName,
                                      HrPayrollRowStatus status, String errorMessage,
                                      Map<String, Object> values) {}

@@ -1,8 +1,29 @@
 # CFCBase — Master Context hiện hành
 
-> **Ngày cập nhật theo source:** 02/10/2026 (Asia/Ho_Chi_Minh)
+> **Ngày tổng hợp:** 23/11/2026 (Asia/Ho_Chi_Minh); trạng thái source và production được phân biệt bên dưới.
 > **Mục đích:** bản đồ duy nhất để hiểu, vận hành và tiếp tục phát triển repository CFCBase.
 > **Nguyên tắc:** code, migration và cấu hình hiện tại là nguồn sự thật; tài liệu cũ hoặc ảnh giao diện chỉ dùng để đối chiếu.
+
+[Mục lục toàn bộ tài liệu](README.md) · [Tổng hợp sức khỏe](EMPLOYEE_HEALTH_IMPLEMENTATION_SUMMARY.md) · [Vận hành CI/CD](DEPLOYMENT_CICD_PLAN.md)
+
+## Trạng thái được xác nhận ngày 23/11/2026
+
+Nguồn bằng chứng: log Fedora và ảnh giao diện do người dùng gửi trong phiên; lần tổng hợp này không đăng nhập hoặc ghi production.
+
+| Hạng mục | Đã xác nhận | Giới hạn |
+| --- | --- | --- |
+| Production | Release `04a663be4bd8e4a670a2a3da0fb7653c9fb5e52a`, backend/tunnel active, MySQL/Redis chạy | Trùng main tại lần kiểm tra 07:41 ngày23/11, không phải cam kết luôn là HEAD mới nhất |
+| CI/CD | Deploy `success`; timer đã kiểm tra và bỏ qua build/restart khi SHA không đổi | CI/migration gate và khóa chống chạy đồng thời vẫn áp dụng |
+| Backup | Backup trước kích hoạt thành công, gzip18MB, đang giữ24bản theo log | Không phải bằng chứng đã thử restore trên production |
+| Sổ sức khỏe | Quản trị nội bộ đã lên server; đã kích hoạt gói lịch sử:83 dòng nhập,936 dòng nguồn chờ | Số dòng nguồn có lặp giữa sheet, không phải số người; chưa có bằng chứng công bố thật |
+| Lịch sử2023/2024 | Có lô Tổng hợp lần lượt208/256 dòng chờ | Ghép người/xung đột cần rà soát; không xác nhận toàn bộ bằng tên |
+| Kết quả2025 | Lô Gián tiếp83 dòng đã nhập,2 dòng chờ | Dữ liệu còn lại nằm các lô lịch sử; không phải mất dữ liệu |
+| Khám2026/cổng cá nhân | Chưa có file khám2026; cổng cá nhân mặc địnhOFF trong source | Deploy quản trị không tự công bố/cấp mã/bật cổng |
+| Hạ tầng mạng | Đã có source nền tảng, màn nhập credential MikroTik | Chưa có bằng chứng mới kết nối router/Ruijie/syslog/Wi-Fi/camera thật |
+
+**Bước nghiệp vụ tiếp theo:** Hồ sơ sức khỏe để xem83 dòng đã nhập; Nhập dữ liệu →2025 Gián tiếp để xử lý2 dòng chờ; sau đó2024 Tổng hợp và2023 Tổng hợp. Các sheet con dùng đối chiếu/bổ sung. Không cần upload lại khóa khi đã thấy số dòng.
+
+> Các phần ghi ngày cũ và bàn giao dev bên dưới là bằng chứng theo thời điểm; trạng thái23/11 ở trên được ưu tiên khi có mô tả “chưa deploy”, gate nội bộOFF hoặc số test cũ.
 
 ## 1. Phạm vi sản phẩm
 
@@ -18,7 +39,7 @@ CFCBase là hệ thống web nội bộ của CFC. Từ 27/07/2026, phạm vi ph
 | Google Apps Script ngày phép | API đọc đã có | `/api/v1/hr/sync/leave-roster` hiện được permit trong Security; cần bổ sung cơ chế secret/API key khi harden |
 | Booking phòng/xe | Đóng băng | Không xóa code/bảng/route legacy; frontend cũ đã redirect các URL chính về HR |
 
-Không có xác nhận deploy production trong tài liệu này. Các con số nhân sự trong migration hoặc file Excel chỉ là dữ liệu fixture/seed, không được hiểu là số liệu production hiện tại nếu chưa kiểm tra DB thật.
+Đã có xác nhận release và nhập lịch sử sức khỏe như bảng23/11 ở trên. Những con số nhân sự trong migration/Excel và kết quả dev bên dưới không tự trở thành số liệu production.
 
 Kế hoạch ngày 04/11/2026: [hoàn thiện Tổng quan, tra cứu, điều hướng và hai báo cáo nhân sự](HR_REPORTING_UX_PLAN.md). **Phase 0–3 đã triển khai local**: Tổng quan đếm riêng ứng viên `IN_PROBATION`, Tổng hồ sơ vẫn chỉ đếm employee; các nhãn Chờ tiếp nhận/Chờ xác nhận/Đã nghỉ việc phân biệt đúng ngữ cảnh. Thẻ thử việc chỉ dẫn vào phân hệ khi vai trò được phép.
 
@@ -55,7 +76,7 @@ flowchart TB
     Security --> Legacy[Legacy booking/auth/notification controllers]
     HR --> MySQL[(MySQL 8 booking_db)]
     HR --> Redis[(Redis 7 token + OTP/session data)]
-    Backend --> Flyway[Flyway V1..V31]
+    Backend --> Flyway[Flyway V1..V40]
     HR --> Gemini[Google Gemini REST]
     HR --> Groq[Groq OpenAI-compatible REST]
     HR --> Telegram[Telegram Bot API/webhook]
@@ -70,7 +91,7 @@ flowchart TB
 
 - Backend: Spring Boot **4.0.0**, Java **21**, Spring MVC, JPA/Hibernate, Security, WebSocket/STOMP, Redis, Mail, Actuator.
 - Database: MySQL 8; các đối tượng HR do Flyway sở hữu. `LegacySchemaFilterProvider` ngăn Hibernate tự tạo/sửa/xóa bảng `hr_*`.
-- Migration hiện có: **V1 đến V31**, tổng cộng **55 bảng `hr_*`**. V27 thêm lịch sử nâng lương, snapshot bậc/ngạch/chu kỳ/ngày hiệu lực và import type `SALARY_RAISE`; V28 thêm trạng thái rà soát, ngày theo dõi lại và index danh sách tới hạn. V29 mở rộng role HR_STAFF trên bảng users legacy. Màn hình Mẫu Word và ONLYOFFICE đã tắt: menu/route không truy cập được, API editor không đăng ký khi flag tắt, script triển khai không khởi động Document Server và dừng container cũ. Việc xuất/xem/tải hợp đồng DOCX và dữ liệu mẫu đã có vẫn hoạt động. [Ghi chú vận hành](HR_WORD_EDITOR_SETUP.md).
+- Migration trong source hiện có: **V1 đến V40** (V29 vàV37 là Java). Con số55 bảng `hr_*` là mốc HR trước các module hạ tầng/sức khỏe, không phải tổng schema hiện tại. V27 thêm lịch sử nâng lương, snapshot bậc/ngạch/chu kỳ/ngày hiệu lực và import type `SALARY_RAISE`; V28 thêm trạng thái rà soát, ngày theo dõi lại và index danh sách tới hạn. V29 mở rộng role HR_STAFF trên bảng users legacy. Màn hình Mẫu Word và ONLYOFFICE đã tắt: menu/route không truy cập được, API editor không đăng ký khi flag tắt, script triển khai không khởi động Document Server và dừng container cũ. Việc xuất/xem/tải hợp đồng DOCX và dữ liệu mẫu đã có vẫn hoạt động. [Ghi chú vận hành](HR_WORD_EDITOR_SETUP.md).
 - File Excel/DOCX: Apache POI 5.4.1; hợp đồng DOCX dùng mẫu classpath mặc định hoặc phiên bản active trong kho DB. `HrDocxEngine` thay biến xuyên qua các Word run. Hướng dẫn cài đặt Document Server: [ONLYOFFICE Setup](HR_WORD_EDITOR_SETUP.md).
 - Frontend: React **19.2**, React Router **7**, Vite **8**, Tailwind CSS **4**, Axios, `react-datepicker`, `xlsx`, Lucide, PWA Workbox.
 - Token: access JWT ngắn hạn, refresh JWT lưu cookie/Redis; API HR phân quyền theo ADMIN/MANAGER và phạm vi giới hạn của HR_STAFF (mục 6), trừ các route được permit riêng.
@@ -185,7 +206,7 @@ Danh sách file đầy đủ hơn theo package nằm trực tiếp trong các th
 
 `HrManagementController` + `HrManagementService` cung cấp overview, tìm kiếm/phân trang nhân sự, CRUD hồ sơ và CRUD ba danh mục: phòng ban, chức vụ, điều kiện lao động. `HrActorResolver` lấy actor từ principal JWT; audit lưu trong `hr_audit_events`.
 
-Phase 3 bổ sung tab Lịch sử trong hồ sơ: biến động theo nhân sự và nhật ký sửa `HR_EMPLOYEE`, có phân trang và trạng thái điều chỉnh. Tab thông tin nhắc các ô hồ sơ cơ bản còn thiếu. Phase 4 bổ sung tab Hợp đồng, nhắc thời hạn 30 ngày, danh sách/tải lại các bản Word bất biến và tạo bản Word mới. API do `HrEmployeeProfileController`/`HrEmployeeProfileQueryService` cung cấp, dùng schema V16 hiện có. Hướng dẫn và giới hạn cụ thể: [HR_PHASE_3_4_GUIDE.md](HR_PHASE_3_4_GUIDE.md).
+Phase 3 bổ sung tab Lịch sử trong hồ sơ: biến động theo nhân sự và nhật ký sửa `HR_EMPLOYEE`, có phân trang và trạng thái điều chỉnh. Tab thông tin nhắc các ô hồ sơ cơ bản còn thiếu. Phase 4 bổ sung tab Hợp đồng, nhắc thời hạn 30 ngày, danh sách/tải lại các bản Word bất biến và tạo bản Word mới. API do `HrEmployeeProfileController`/`HrEmployeeProfileQueryService` cung cấp, dùng schema V16 hiện có. Tài liệu `HR_PHASE_3_4_GUIDE.md` cũ không có trong checkout; tra cứu flow hiện hành ở mục4 này và [kế hoạch UX nhân sự](HR_REPORTING_UX_PLAN.md).
 
 ### 4.2 Import baseline/workforce và biến động
 
@@ -221,7 +242,7 @@ Phase 3 bổ sung tab Lịch sử trong hồ sơ: biến động theo nhân sự
 
 ## 5. Attendance hiện hành trong CFCBase
 
-Đối chiếu với [Attendance/TONG_HOP_DU_AN_ATTENDANCE.md](../Attendance/TONG_HOP_DU_AN_ATTENDANCE.md) và [Attendance/docs](../Attendance/docs/README.md):
+Nguồn đối chiếu lịch sử là dự án Attendance/Apps Script ngoài checkout này; không giả định có các tài liệu đó trong repository. Luồng CFCBase được mô tả bên dưới:
 
 1. UI `/manager/hr/attendance` tải cấu hình và lịch sử import; cấu hình có dòng tiêu đề, cột mã/tên/ngày, cột giờ G/H/I/J, khung check-in/out, giờ chuẩn, grace và danh sách mã miễn chấm.
 2. Có thể chọn nhiều `.xlsx/.xls/.xlsm` qua `/imports/batch`; SHA-256 chống import trùng.
@@ -233,7 +254,7 @@ Phase 3 bổ sung tab Lịch sử trong hồ sơ: biến động theo nhân sự
 8. `/export` sinh file sạch 8 cột (STT, mã, tên, phòng ban, ngày, thứ, lần 1, lần 2); `/cong-export` sinh bảng pivot nhân viên × ngày; `DELETE /imports/{id}` xóa batch và record liên quan.
 9. Batch phải được xác nhận trước khi vào tổng hợp tháng. `/summary` và `/summary/export` chỉ đọc batch `CONFIRMED`, khử trùng mã nhân viên/ngày và tính KPI đi trễ, về sớm, đúng giờ.
 
-Phần tổng hợp cốt lõi của Apps Script **Lateness → TONGHOP** đã có trong CFCBase; các dashboard biểu đồ chuyên sâu vẫn là phần mở rộng. Kế hoạch chi tiết nằm ở [ATTENDANCE_MIGRATION_PLAN.md](ATTENDANCE_MIGRATION_PLAN.md). Script `verify-hr-phase1.sh` đã được cập nhật để kiểm tra schema đầy đủ đến V28/55 bảng.
+Phần tổng hợp cốt lõi của Apps Script **Lateness → TONGHOP** đã có trong CFCBase; các dashboard biểu đồ chuyên sâu vẫn là phần mở rộng. Tài liệu `ATTENDANCE_MIGRATION_PLAN.md` cũ không có trong checkout; dùng mô tả hiện hành tại đây và [audit tìm kiếm](ATTENDANCE_SEARCH_AUDIT.md). Script `verify-hr-phase1.sh` đã được cập nhật để kiểm tra schema đầy đủ đến V28/55 bảng.
 
 ### 5.1 Chấm công ca sản xuất — Phase 1–7 local
 
@@ -246,15 +267,15 @@ V21 bổ sung pipeline độc lập cho Công nhân/KCS, không thay đổi lu�
 - Có tính lại theo revision, quyết định có lý do, history trước/sau, sự cố máy draft/analyze/confirm/cancel và miễn chấm tạo/hủy.
 - Tab **Ca sản xuất** nằm cạnh tab **Hành chính**, có KPI, bộ lọc Công nhân/KCS/cần kiểm tra/sự cố/đã xác nhận, bảng review responsive, cấu hình ca/ngưỡng công/chính sách nhân viên/miễn chấm và chi tiết read-only sau khi chốt.
 - Tổng hợp chỉ đọc import `CONFIRMED`; file Excel có sheet **Bảng công** đủ ngày 1–31 và sheet **Đối soát**. ADMIN/MANAGER/HR_STAFF có thể mở khóa chấm công với lý do; việc mở khóa vẫn kiểm tra phiên bản dữ liệu và đánh dấu kết quả thưởng liên quan cần tính lại.
-- Tổng quan nhân viên được phân trang/tìm kiếm tại database; tháng đang chọn được nhớ trên trình duyệt. Sau thao tác điều chỉnh, khi quay lại tab và theo chu kỳ 30 giây, UI tự tải lại các bảng liên quan. Chỉ số **Ca đêm + tăng ca** bằng số ca đêm cộng số ca có mức 2 công và cũng được ghi vào file Excel xuất.
+- Tổng quan nhân viên được phân trang/tìm kiếm tại database; tháng đang chọn được nhớ trên trình duyệt. Trạng thái tháng/tìm kiếm/bộ lọc được giữ trên URL; bản sửa tìm kiếm09/11 đã bỏ polling30giây, tải lại theo tháng và thao tác refresh/mutate (xem audit). Chỉ số **Ca đêm + tăng ca** bằng số ca đêm cộng số ca có mức 2 công và cũng được ghi vào file Excel xuất.
 - Thưởng ca đêm chốt theo nhân viên thuộc file đã xác nhận; file chờ cùng tháng chỉ chặn khi có MS trùng trong nhóm xét thưởng. File chờ khác MS được báo phạm vi và chốt tiếp sau. Tiến độ 12/24 trên màn hình là số tháng đã chốt thưởng, không phải số ca hợp lệ của tháng đang xem.
 - Modal đối soát Excel ca đêm đọc bảng xí nghiệp có `MS` hoặc `MV`, `Họ và tên`, `Công ca đêm` trong 30 dòng đầu; nếu cùng dòng có cả `MS` và `MV`, ưu tiên bảng `MS` bên trái. `Tích 12/24` là cột tùy chọn. Đây là đối soát trên trình duyệt, không import/chốt dữ liệu thưởng vào DB. Đóng modal bằng ESC hoặc nút đóng rồi mở lại trong cùng tháng vẫn giữ file và kết quả; thay tháng hoặc chọn file khác thì bắt đầu đối soát mới. Ở tab Thử nghiệm, kết quả đối soát tự tính lại khi quyết định chấm công thử thay đổi. Nút xuất tạo file `.xlsx` và giữ liên kết tải lại trong modal; khi dữ liệu đối soát đổi thì liên kết cũ hết hiệu lực. Trên màn nhỏ, modal dùng toàn màn hình và thẻ đối chiếu theo nhân viên; desktop giữ bảng nhiều cột.
-- Màn Thưởng ca đêm lấy lịch sử chốt và quyền lợi nháp theo lô cho các nhân viên của tháng, tránh truy vấn riêng từng người khi xem trước; bảng nhân viên chỉ render lại khi danh sách từ API đổi. Danh sách hiện vẫn chưa phân trang và cần đo thời gian API/render trên dữ liệu production nếu còn chậm.
+- Màn Thưởng ca đêm lấy lịch sử chốt và quyền lợi nháp theo lô cho các nhân viên của tháng, tránh truy vấn riêng từng người khi xem trước; bảng nhân viên chỉ render lại khi danh sách từ API đổi. Cách xem/lọc theo tháng và phân trang giao diện được mô tả ở mục tiếp; vẫn cần đo API/render trên dữ liệu production nếu còn chậm.
 - Trang Thưởng ca đêm có hai cách xem: Theo tháng tìm mã/tên, lọc trạng thái và phân trang 50 người trong dữ liệu tháng đã tải; Theo nhân viên tìm trên danh sách nhân sự toàn hệ thống rồi xem 12 hoặc 24 tháng gần nhất, tổng công/ca đêm từ file ca sản xuất `CONFIRMED`, kết quả đã chốt thưởng, nhãn tích lũy 12/24 sau từng tháng và chi tiết từng ngày. Tháng chưa có file đã chốt khác với tháng có file nhưng không có ngày công của người đó. Tổng công chỉ để xem số thực tế, không tự gắn nhãn “đủ công/chuyên cần”; nhãn tích lũy chỉ đếm tháng đã chốt đạt điều kiện thưởng. Tra cứu này chỉ đọc, không ghi vào công hay thưởng.
 - Đã kiểm thử local B124: đủ 31 ngày, tổng 45 công, đúng 5 ca đêm ngày 04–08 và phụ cấp 250.000 đồng. Ngày 18 là ca ngày thiếu lượt vào do mất điện; quyết định thủ công giữ lượt vào trống, dùng lượt ra 17:24 và tự ghép lại chuỗi ngày sau mà không ghi đè các mốc thủ công.
 - Phase 7 đã bổ sung feature flag, chế độ SHADOW có cảnh báo/watermark Excel, gate local một lệnh, healthcheck V21/schema/seed/API trong deploy Linux và rollback không xóa dữ liệu.
 
-API backend nằm dưới `/api/v1/hr/attendance/production`. Source và gate local Phase 7 đã hoàn tất; deploy SHADOW và nghiệm thu production vẫn chưa thực hiện. Chi tiết: [kế hoạch](WORKER_ATTENDANCE_IMPLEMENTATION_PLAN.md), [hướng sử dụng](WORKER_ATTENDANCE_USAGE_GUIDE.md) và [rollout Phase 7](WORKER_ATTENDANCE_PHASE7_ROLLOUT.md).
+API backend nằm dưới `/api/v1/hr/attendance/production`. Source và gate local Phase 7 đã hoàn tất; deploy SHADOW và nghiệm thu production vẫn chưa thực hiện. Tài liệu kế hoạch/rollout Phase7 cũ không có trong checkout. Dùng [hướng sử dụng](WORKER_ATTENDANCE_USAGE_GUIDE.md) và [runbook triển khai hiện hành](DEPLOYMENT_CICD_PLAN.md). Log23/11 đã xác nhận verifierV21 đạt và flag enabled/shadow=false; đây không thay nghiệm thu toàn bộ nghiệp vụ chấm công.
 
 ## 6. Phân quyền và đăng nhập
 
@@ -322,7 +343,7 @@ Room/car booking (`/api/v1/bookings/rooms`, `/cars`), approval (`/api/v1/approva
 
 ## 8. Database và migrations
 
-### 8.1 55 bảng HR hiện có trong V1–V28
+### 8.1 Mốc lịch sử55 bảng HR trong V1–V28
 
 `hr_excel_template_versions`, `hr_excel_import_batches`, `hr_excel_import_rows`, `hr_departments`, `hr_positions`, `hr_working_conditions`, `hr_employees`, `hr_employee_employment`, `hr_employee_identity`, `hr_employee_insurance`, `hr_employee_contacts`, `hr_employee_movements`, `hr_monthly_rosters`, `hr_monthly_roster_items`, `hr_audit_events`, `hr_probation_job_templates`, `hr_probation_candidates`, `hr_probation_contracts`, `hr_employee_leave_entitlements`, `hr_employment_contracts`, `hr_employment_contract_documents`, `hr_employee_documents`, `hr_system_settings`, `hr_telegram_registrations`, `hr_employee_telegram_bindings`, `hr_payroll_imports`, `hr_payroll_import_rows`, `hr_payroll_campaigns`, `hr_payroll_deliveries`, `hr_attendance_imports`, `hr_attendance_records`.
 
@@ -422,7 +443,7 @@ Không ghi token Cloudflare, Telegram, JWT, SMTP, VAPID hay database password v�
 - Thêm phân quyền chi tiết hơn MANAGER/ADMIN nếu nghiệp vụ yêu cầu; hiện MANAGER có quyền HR rộng.
 - Hoàn thiện trạng thái/monitoring Telegram, đổi bot an toàn (token + webhook + re-verify binding).
 - Cải thiện viewer Office nếu cần preview inline; hiện Word/Excel chủ động tải xuống, PDF/ảnh xem trực tiếp.
-- Rollout import **Nâng lương** lên môi trường kiểm thử/production sau backup và smoke test dữ liệu thật. Source local đã hoàn thành; chi tiết: [HR_SALARY_RAISE_IMPLEMENTATION_PLAN.md](HR_SALARY_RAISE_IMPLEMENTATION_PLAN.md).
+- Rollout import **Nâng lương** lên môi trường kiểm thử/production sau backup và smoke test dữ liệu thật. Source local đã hoàn thành; tài liệu kế hoạch nâng lương cũ không có trong checkout; cần nghiệm thu theo API/flow và dữ liệu thật trước mở rộng, không suy từ việc deploy module khác.
 
 ### P2 — chất lượng và trải nghiệm
 
@@ -450,12 +471,13 @@ Không ghi token Cloudflare, Telegram, JWT, SMTP, VAPID hay database password v�
 - [WORKER_ATTENDANCE_USAGE_GUIDE.md](WORKER_ATTENDANCE_USAGE_GUIDE.md) — cẩm nang sử dụng Chấm công ca sản xuất.
 - [HR_WORD_EDITOR_SETUP.md](HR_WORD_EDITOR_SETUP.md) — hướng dẫn ONLYOFFICE Document Server trên Linux.
 - [HR_GENERAL_LABOR_OCR_CAPTURE.md](HR_GENERAL_LABOR_OCR_CAPTURE.md) — đặc tả chụp ảnh CCCD qua điện thoại cho LĐ phổ thông.
-- [HUONG_DAN_CAI_TELEGRAM_NHAN_PHIEU_LUONG.md](../HUONG_DAN_CAI_TELEGRAM_NHAN_PHIEU_LUONG.md) — hướng dẫn worker đăng ký bot.
+- Hướng dẫn worker Telegram cũ chưa có trong checkout. Luồng payroll/Telegram hiện hành ở mục4.5; chưa tái tạo hướng dẫn chi tiết từ tài liệu thiếu.
 
 ## 15. Lịch sử cập nhật master
 
 | Ngày | Thay đổi |
 |---|---|
+| 23/11/2026 | Tổng hợp mục lục, sửa9liên kết thiếu; ghi bằng chứng release04a663be, timer success, backup và lịch sử sức khỏe83/936 từ log/ảnh người dùng. Không chạy lại test hoặc truy cập server trong lần tài liệu này. |
 | 02/10/2026 | Hoàn tất source/local import nâng lương theo MS: V27, preview/confirm/rollback, lịch sử theo ngày hiệu lực, future-effective, ngày tới hạn theo file, chặn mismatch toàn batch và export đúng kỳ. Chưa deploy production. |
 | 09/10/2026 | Bổ sung V28 và dashboard theo dõi tới hạn nâng lương: quá hạn/30/60/90 ngày, trạng thái rà soát/hoãn/kết thúc, audit và optimistic locking. Parser nhận file nghiệp vụ 78 MS, coi phụ cấp trống là 0, tự tính tổng trống và hỗ trợ `Hết` không có kỳ tiếp theo. Backend H2, MySQL 8.0.46, schema verifier V28 và frontend lint/build đạt; chưa deploy production. |
 | 07/09/2026 | Phase 3–4: lịch sử riêng theo nhân sự, nhắc hồ sơ thiếu, kho hợp đồng và lịch sử bản Word; hướng dẫn sử dụng. Không thay đổi schema V16. |
@@ -510,3 +532,7 @@ Theo yêu cầu người dùng, code đóng gói bật sẵn backend và menu/ro
 ### Tự nhập lịch sử sức khỏe theo release —20/11/2026
 
 Theo yêu cầu giảm thao tác import, release kèm gói mã hóa 1.019 dòng nguồn 2023–2025; ADMIN/MANAGER cấp khóa private một lần qua web, sau đó ApplicationReady tự xử lý nền và dùng receipt/hash cùng staging chống nhập trùng. Đây là ngoại lệ có chủ đích thay ghi chú cũ “không tự import” cho đúng gói lịch sử này; không tự nhập file tùy ý, không sửa HR, không công bố hay bật cổng cá nhân. Nguồn Tổng hợp/2025 chỉ tự xác nhận khi khớp mã/tên/thông tin sinh; sheet phụ, thiếu định danh, SID nguồn khác, xung đột và ánh xạ thủ công khác giữ/chặn rà soát. Không có khám2026. Khóa ngoài Git/JAR, chỉ ciphertext vào repo public; backup trước đổi gói kể cả wrapper cũ nhờ kiểm tra JAR trước kích hoạt. [Hướng dẫn và giới hạn](EMPLOYEE_HEALTH_AUTO_IMPORT.md).
+
+### Lương lãnh đạo — triển khai dev25/11/2026
+
+Thêm lựa chọn Nhập file lương lãnh đạo trong trang Gửi phiếu lương, đọc mẫu Ban điều hành riêng với lương cơ bản/bù đầu năm/thuế và các khoản thu, không yêu cầu Công/Số tài khoản. Tái sử dụng ghép mã nhân sự, liên kết Telegram, preview và snapshot gửi hiện hành; không gửi khi import. Công thức chỉ đọc cached result, không đọc nguồn ngoài; dòng lỗiINVALID không được refresh thànhREADY hoặc render/gửi thử. V40 additive phân loạiSTANDARD/LEADERSHIP, giữ file và snapshot cũ. Parse/hash ngoài transaction, ghi batch theo tập. Đã bổ sung kiểm thử dev và MCP giả; chưa deploy/ghi production/gửi thật. [Hướng dẫn](HR_LEADERSHIP_PAYROLL_IMPORT.md).

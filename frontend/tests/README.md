@@ -21,3 +21,7 @@ Start `python3 scripts/health/run_dev_preview.py --maven <mvn-path> --java-home 
 ## Health packaged history HTTP acceptance
 
 `health-history.playwright.js` runs9 groups against Vite5198 and the test-source `HealthHistoryPreview` backend on127.0.0.1:18088. Health APIs are real; the shell user and bundled data are synthetic. Start a fresh preview for every run (it deliberately installs its fixture key). The32zero-byte fixture key is test-only and must never replace the real private key. Covers locked/wrong-key, unlock/import, restart-view/retry dedupe, review navigation, mobile and HR_STAFF403. Screenshots contain synthetic data only. See [history handoff](../../documents/EMPLOYEE_HEALTH_AUTO_IMPORT.md).
+
+## Leadership payroll
+
+`payroll-leadership.playwright.js` runs7fixture groups on loopbackVite5199 at `/tests/payroll-leadership.html`. Mocked payroll APIs never send Telegram or use production. Covers separate upload type/history label, amount details, INVALID selection/test-send blocking and390px layout. Backend tests generate synthetic workbooks; optional `LEADERSHIP_PAYROLL_SOURCE` reads a private local workbook without persisting or logging values. [Handoff](../../documents/HR_LEADERSHIP_PAYROLL_IMPORT.md).

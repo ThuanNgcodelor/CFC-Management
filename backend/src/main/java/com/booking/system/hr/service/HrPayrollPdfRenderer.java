@@ -29,6 +29,8 @@ public final class HrPayrollPdfRenderer {
 
     public static PayrollPdf render(HrPayrollImportRow row, String payrollMonth, boolean testCopy) {
         Map<String, Object> payload = HrPayrollMessageRenderer.payload(row);
+        HrLeadershipPayrollFields.requireValid(payload);
+        boolean leadership = HrLeadershipPayrollFields.isLeadership(payload);
         try (PDDocument document = new PDDocument(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
@@ -49,6 +51,7 @@ public final class HrPayrollPdfRenderer {
                 canvas.setNonStrokingColor(GREEN);
                 canvas.addRect(58, y - 31, 92, 3);
                 canvas.fill();
+                if (leadership) text(canvas, semibold, 9, 58, y - 45, "BAN ĐIỀU HÀNH");
                 if (testCopy) badge(canvas, semibold, "BẢN GỬI THỬ", 426, y - 3);
 
                 y -= 65;
@@ -56,12 +59,14 @@ public final class HrPayrollPdfRenderer {
                 y -= 18;
                 y = infoRow(canvas, regular, semibold, "Họ và tên", row.getEmployeeName(), y);
                 y = infoRow(canvas, regular, semibold, "Mã nhân viên", row.getEmployeeCode(), y);
-                y = infoRow(canvas, regular, semibold, "Số tài khoản", HrPayrollMessageRenderer.value(payload, "stk"), y);
+                if (!leadership) y = infoRow(canvas, regular, semibold, "Số tài khoản", HrPayrollMessageRenderer.value(payload, "stk"), y);
 
                 y -= 12;
                 section(canvas, semibold, "CHI TIẾT LƯƠNG", 58, y);
                 y -= 18;
-                y = amountRow(canvas, regular, semibold, "Số công", HrPayrollMessageRenderer.value(payload, "cong"), y, false);
+                if (leadership) {
+                    for (var field : HrLeadershipPayrollFields.INCOME.entrySet()) y = amountRow(canvas, regular, semibold, field.getValue(), HrPayrollMessageRenderer.formattedMoney(payload, field.getKey()), y, true);
+                } else y = amountRow(canvas, regular, semibold, "Số công", HrPayrollMessageRenderer.value(payload, "cong"), y, false);
                 if (HrPayrollMessageRenderer.hasValue(payload, "soCaDem")) {
                     y = amountRow(canvas, regular, semibold, "Số ca đêm", HrPayrollMessageRenderer.value(payload, "soCaDem"), y, false);
                 }
@@ -70,6 +75,7 @@ public final class HrPayrollPdfRenderer {
                 y -= 12;
                 section(canvas, semibold, "KHOẢN THU TRONG LƯƠNG", 58, y);
                 y -= 18;
+                if (leadership) for (var field : HrLeadershipPayrollFields.DEDUCTIONS.entrySet()) y = amountRow(canvas, regular, semibold, field.getValue(), HrPayrollMessageRenderer.formattedMoney(payload, field.getKey()), y, true);
                 y = amountRow(canvas, regular, semibold, "Tổng khoản thu", HrPayrollMessageRenderer.formattedMoney(payload, "tongThu"), y, true);
 
                 y -= 10;
