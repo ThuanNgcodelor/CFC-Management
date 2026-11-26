@@ -536,3 +536,7 @@ Theo yêu cầu giảm thao tác import, release kèm gói mã hóa 1.019 dòng 
 ### Lương lãnh đạo — triển khai dev25/11/2026
 
 Thêm lựa chọn Nhập file lương lãnh đạo trong trang Gửi phiếu lương, đọc mẫu Ban điều hành riêng với lương cơ bản/bù đầu năm/thuế và các khoản thu, không yêu cầu Công/Số tài khoản. Tái sử dụng ghép mã nhân sự, liên kết Telegram, preview và snapshot gửi hiện hành; không gửi khi import. Công thức chỉ đọc cached result, không đọc nguồn ngoài; dòng lỗiINVALID không được refresh thànhREADY hoặc render/gửi thử. V40 additive phân loạiSTANDARD/LEADERSHIP, giữ file và snapshot cũ. Parse/hash ngoài transaction, ghi batch theo tập. Đã bổ sung kiểm thử dev và MCP giả; chưa deploy/ghi production/gửi thật. [Hướng dẫn](HR_LEADERSHIP_PAYROLL_IMPORT.md).
+
+### PDF lãnh đạo bảng ngang —26/11/2026
+
+Theo mẫu người dùng, phiếu PDF loạiLEADERSHIP có15cột ngang và một hàng số liệu của người nhận, headerxanh, không kèm dữ liệu lãnh đạo khác. MẫuSTANDARD vẫnA4dọc; loại phiếu, số tiền/nguồn và luồng gửi không thay đổi. Snapshot cũ giữ bất biến, chỉ phiếu mới tạo dùng mẫu mới. [Ảnh mẫu và hướng dẫn](HR_LEADERSHIP_PAYROLL_IMPORT.md#mẫu-pdf-bảng-ngang-26112026). Chưa deploy/gửi thật trong tác vụ này.

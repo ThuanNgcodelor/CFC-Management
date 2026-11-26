@@ -48,3 +48,19 @@ Giới hạn reader:15MiB file,40MiB tổng giải nén,256zipentries,20sheet,64
 Kết quả cuối25/11: full backend473test,0failure/error,58skipped (51testMySQL opt-in chạy riêng đạt;5testcũ và2sourceworkbook chưa bật). Test đọc mẫu lãnh đạo thật đã bật và đạt; không lưu số liệu thật. MySQL QA backup/restore79bảng khớp count/checksum. Bộ52testPython deploy đạt; frontend build đạt, lint0lỗi/10warningcũ; chunkHrPayroll33,12kB (trước32,42kB). MCP7nhóm fixture đạt, không có lỗi JavaScript; chỉ cófavicon404 của trang test. AST graph local được refresh; không tái trích xuất semantic tài liệu/ảnh. Chưa deploy hoặc gửiTelegram thật.
 
 Lượt MySQL cũng phát hiện fixture lịch sử sức khỏe tái tạo workbook ở các thời điểm khác nhau nên hash ZIP có thể khác; test đã được chỉnh dùng cùng dataset cho bundle và batch thủ công. Không đổi hành vi import sức khỏe.
+
+## Mẫu PDF bảng ngang —26/11/2026
+
+Theo yêu cầu người dùng, PDF lãnh đạo đổi sang một bảng ngang gồm15cột, thứ tự như Excel: M Số, Họ và Tên, Lương cơ bản,30% bù đầu năm,TổngTiền lương,Tổng thu,ThuếTNCN,BHXH10,5%,Bgiặt,HTKK,Đảng,quỹASXH,quỹHC,ThuĐP,NH chuyển. Header xanh lá/xanh ngọc, một hàng số liệu của đúng người nhận; không xuất bảng5người cho từng người. Số tiền dùng định dạng Việt Nam hiện có, đơn vịđồng ghi một lần; không tính lại lương hoặc thay payload.
+
+PDF dùng trang ngang rộng1660×300point, tên có thể xuống dòng; số tiền chỉ thu nhỏ font khi cần và không cắt mất chữ số. Đây là khổ xem bảng rộng, khi in khổA4 cần chọn thu vừa trang; trên điện thoại có thể phóng to/xoay ngang. Bản thử vẫn có dấu cảnh báo. Mẫu nhân viênSTANDARD vẫnA4dọc. Lời nhắnTelegram hiện hành giữ nguyên; thay đổi này dành cho PDF đính kèm. Không thêm schema/migration/dependency hoặc đổi cách chọn người nhận.
+
+**Áp dụng từ lúc tạo phiếu mới:** PDF/lời nhắn được đóng băng khi tạo đợt gửi hoặc bản gửi thử. Mở lại/gửi lại phiếu đã tạo trước thay đổi vẫn nhận snapshot cũ; không viết lại lịch sử hay tự gửi lần nữa. Dùng gửi thử sau deploy để kiểm tra mẫu mới trước khi tạo đợt chính thức.
+
+Test kiểm tra15tiêu đề theo tọa độ trái→phải, mã vàthựcnhận cùng hàng, một người/mộttrang, tên dài không mất chữ, bản thửcó dấu và hồi quy mẫu thường. Ảnh dưới là dữ liệu giả, không phải phiếu thật.
+
+![PDF lãnh đạo dạng bảng ngang](screenshots/payroll/leadership-horizontal.png)
+
+[Xem PDF mẫu dùng dữ liệu giả](screenshots/payroll/leadership-horizontal-demo.pdf).
+
+Kiểm tra26/11: full backend475test,0failure/error,59skipped theo điều kiện có sẵn/nguồn tùy chọn/MySQLopt-in; nhóm renderer và snapshot16test đạt(1source tùy chọn skip). Frontend build đạt/lint0lỗi10warningcũ. Đã mở ảnh render từPDF để kiểm tra hàng/cột, không gửiTelegram. MySQL không chạy lại vì thay đổi chỉ bố cụcPDF, không sửa schema hoặc persistence.

@@ -32,6 +32,7 @@ public final class HrPayrollPdfRenderer {
         HrLeadershipPayrollFields.requireValid(payload);
         boolean leadership = HrLeadershipPayrollFields.isLeadership(payload);
         try (PDDocument document = new PDDocument(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            if (leadership) return HrLeadershipPayrollPdf.render(row, payrollMonth, testCopy, payload);
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
             PDFont regular = loadFont(document, "/hr/fonts/BeVietnamPro-Regular.ttf");
@@ -51,7 +52,6 @@ public final class HrPayrollPdfRenderer {
                 canvas.setNonStrokingColor(GREEN);
                 canvas.addRect(58, y - 31, 92, 3);
                 canvas.fill();
-                if (leadership) text(canvas, semibold, 9, 58, y - 45, "BAN ĐIỀU HÀNH");
                 if (testCopy) badge(canvas, semibold, "BẢN GỬI THỬ", 426, y - 3);
 
                 y -= 65;
@@ -59,14 +59,12 @@ public final class HrPayrollPdfRenderer {
                 y -= 18;
                 y = infoRow(canvas, regular, semibold, "Họ và tên", row.getEmployeeName(), y);
                 y = infoRow(canvas, regular, semibold, "Mã nhân viên", row.getEmployeeCode(), y);
-                if (!leadership) y = infoRow(canvas, regular, semibold, "Số tài khoản", HrPayrollMessageRenderer.value(payload, "stk"), y);
+                y = infoRow(canvas, regular, semibold, "Số tài khoản", HrPayrollMessageRenderer.value(payload, "stk"), y);
 
                 y -= 12;
                 section(canvas, semibold, "CHI TIẾT LƯƠNG", 58, y);
                 y -= 18;
-                if (leadership) {
-                    for (var field : HrLeadershipPayrollFields.INCOME.entrySet()) y = amountRow(canvas, regular, semibold, field.getValue(), HrPayrollMessageRenderer.formattedMoney(payload, field.getKey()), y, true);
-                } else y = amountRow(canvas, regular, semibold, "Số công", HrPayrollMessageRenderer.value(payload, "cong"), y, false);
+                y = amountRow(canvas, regular, semibold, "Số công", HrPayrollMessageRenderer.value(payload, "cong"), y, false);
                 if (HrPayrollMessageRenderer.hasValue(payload, "soCaDem")) {
                     y = amountRow(canvas, regular, semibold, "Số ca đêm", HrPayrollMessageRenderer.value(payload, "soCaDem"), y, false);
                 }
@@ -75,7 +73,6 @@ public final class HrPayrollPdfRenderer {
                 y -= 12;
                 section(canvas, semibold, "KHOẢN THU TRONG LƯƠNG", 58, y);
                 y -= 18;
-                if (leadership) for (var field : HrLeadershipPayrollFields.DEDUCTIONS.entrySet()) y = amountRow(canvas, regular, semibold, field.getValue(), HrPayrollMessageRenderer.formattedMoney(payload, field.getKey()), y, true);
                 y = amountRow(canvas, regular, semibold, "Tổng khoản thu", HrPayrollMessageRenderer.formattedMoney(payload, "tongThu"), y, true);
 
                 y -= 10;
@@ -97,7 +94,7 @@ public final class HrPayrollPdfRenderer {
         }
     }
 
-    private static PDFont loadFont(PDDocument document, String path) throws Exception {
+    static PDFont loadFont(PDDocument document, String path) throws Exception {
         InputStream stream = HrPayrollPdfRenderer.class.getResourceAsStream(path);
         if (stream == null) throw new IllegalStateException("Payroll font is missing");
         try (stream) { return PDType0Font.load(document, stream); }
@@ -142,7 +139,7 @@ public final class HrPayrollPdfRenderer {
         float width = font.getStringWidth(value) / 1000f * size; text(canvas, font, size, right - width, y, value);
     }
 
-    private static String fileName(HrPayrollImportRow row, String payrollMonth) {
+    static String fileName(HrPayrollImportRow row, String payrollMonth) {
         String month = payrollMonth == null ? "ky-luong" : payrollMonth.replaceAll("[^0-9-]", "").replace('-', '_');
         String code = HrPayrollMessageRenderer.safe(row.getEmployeeCode()).replaceAll("[^A-Za-z0-9_-]", "_");
         return "Phieu_luong_" + month + "_" + (code.isBlank() ? "nhan_vien" : code) + ".pdf";
